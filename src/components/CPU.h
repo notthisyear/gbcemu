@@ -64,7 +64,7 @@ class CPU {
         { CPU::ArithmeticOperation::Decrement, "DEC" },
     };
 
-    CPU();
+    CPU(std::shared_ptr<MMU>);
 
     const std::string get_cpu_name() const { return "Sharp LR35902"; }
 
@@ -210,7 +210,7 @@ class CPU {
     ~CPU();
 
   private:
-    std::unique_ptr<MMU> m_mmu;
+    std::shared_ptr<MMU> m_mmu;
     uint32_t m_current_cycle_count = 0;
     uint16_t m_current_breakpoint;
 

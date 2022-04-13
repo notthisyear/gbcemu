@@ -1,14 +1,15 @@
 set(HEADER_FILES
 		Opcodes.h
 		OpcodeBuilder.h
-		CPU.h
 		MMU.h
+		CPU.h
+        Cartridge.h
 	)
 
 set(SOURCE_FILES 
 		CPU.cpp
 		MMU.cpp
-		
+		Cartridge.cpp
 	)
 
 set(SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/..)

@@ -1,7 +1,10 @@
 #pragma once
 
+#include "Cartridge.h"
 #include "util/LogUtilities.h"
 #include <map>
+#include <memory>
+#include <stdint.h>
 #include <string>
 
 namespace gbcemu {
@@ -19,8 +22,8 @@ class MMU {
         IORegisters,
         HRAM,
         IERegister,
-        Restricted1,
-        Restricted2,
+        EchoRAM,
+        Restricted,
     };
 
     enum class IORegister {
@@ -37,26 +40,50 @@ class MMU {
         WRAMBankSelect,
     };
 
-    MMU(uint32_t memory_size, bool load_boot_rom = true);
+    MMU(uint32_t memory_size);
+
+    bool try_load_boot_rom(const std::string &);
+    bool try_load_cartridge(const std::string &);
+
     bool try_map_data_to_memory(uint8_t *data, uint32_t offset, uint32_t size);
     bool try_read_from_memory(uint8_t *data, uint32_t offset, uint32_t size);
     void set_debug_mode(bool on_or_off);
+    void set_in_boot_mode(bool is_in_boot_mode);
+
     ~MMU();
 
   private:
-    const std::string BootRomPath = "C:\\programming\\gbcemu\\resources\\dmg_rom.bin";
-    const uint32_t BootRomNumberOfBytes = 256;
-
     uint32_t m_memory_size;
     uint8_t *m_memory;
+    uint8_t *m_boot_rom;
 
+    std::unique_ptr<Cartridge> m_cartridge;
     MMU::MemoryRegion find_memory_region(uint32_t address) const;
-    bool m_debug_is_on;
 
-    bool try_load_boot_rom_from_file(uint8_t *boot_rom);
+    bool m_debug_is_on;
+    bool m_is_in_boot_mode;
+    bool m_loading_cartridge;
+    uint64_t m_boot_rom_size;
+
+    void read_from_memory(uint8_t *data, uint32_t offset, uint64_t size) const {
+        for (auto i = 0; i < size; i++)
+            data[i] = m_memory[offset + i];
+    }
+
+    void write_to_memory(uint8_t *data, uint32_t offset, uint64_t size) {
+        for (auto i = 0; i < size; i++)
+            m_memory[offset + i] = data[i];
+    }
+
+    bool is_boot_rom_range(uint32_t offset, uint64_t size) const;
+    void read_from_boot_rom(uint8_t *, uint32_t, uint64_t) const;
+    bool try_load_from_file(const std::string &, uint8_t *, const uint64_t) const;
+
     void log(LogLevel level, const std::string &message) const;
     std::string get_region_name(MMU::MemoryRegion) const;
     std::string get_io_register_name(MMU::IORegister) const;
+
+    bool get_file_size(const std::string &, uint64_t *) const;
 
     static const std::map<MMU::MemoryRegion, std::pair<uint32_t, uint32_t>> m_region_map;
     static const std::map<MMU::IORegister, std::pair<uint8_t, uint8_t>> m_io_register_map;

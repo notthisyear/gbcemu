@@ -2,11 +2,10 @@
 #include "OpcodeBuilder.h"
 #include "util/GeneralUtilities.h"
 #include "util/LogUtilities.h"
+#include <memory>
 
 namespace gbcemu {
-CPU::CPU() : m_reg_af(0x0000), m_reg_bc(0x0000), m_reg_de(0x0000), m_reg_hl(0x0000), m_reg_sp(0x0000), m_reg_pc(0x0000) {
-    m_mmu = std::make_unique<MMU>(0xFFFF);
-}
+CPU::CPU(std::shared_ptr<MMU> mmu) : m_mmu(mmu), m_reg_af(0x0000), m_reg_bc(0x0000), m_reg_de(0x0000), m_reg_hl(0x0000), m_reg_sp(0x0000), m_reg_pc(0x0000) {}
 
 void CPU::tick() {
     uint8_t current_instruction;
