@@ -72,6 +72,8 @@ class CPU {
 
     void enable_breakpoint_at(uint16_t pc);
 
+    void set_interrupt_enable(bool on_or_off);
+
     void set_debug_mode(bool on_or_off);
 
     void show_disassembled_instruction(bool on_or_off);
@@ -221,6 +223,7 @@ class CPU {
 
     bool m_debug_is_on = false;
     bool m_show_disassembled_instruction = false;
+    bool m_interrupt_enabled = false;
 
     uint16_t m_reg_af; // Accumulator and flags
     uint16_t m_reg_bc; // BC (can be accessed as two 8-bit registers)

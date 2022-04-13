@@ -60,6 +60,7 @@ void CPU::set_debug_mode(bool on_or_off) {
     m_debug_is_on = on_or_off;
 }
 
+void CPU::set_interrupt_enable(bool on_or_off) { m_interrupt_enabled = on_or_off; }
 void CPU::show_disassembled_instruction(bool on_or_off) { m_show_disassembled_instruction = on_or_off; }
 
 void CPU::enable_breakpoint_at(uint16_t pc) { m_current_breakpoint = pc; }

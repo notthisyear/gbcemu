@@ -36,7 +36,9 @@ static const std::unordered_map<uint8_t, opcode_builder> _00_opcodes = {
               NOT_IMPLEMENTED("16-bit add");
       } },
     { 2, [](uint8_t identifier) { return construct<Load16bitIndirect>(identifier); } },
+    { 3, [](uint8_t identifier) { return construct<IncrementDecrement16Bit>(identifier); } },
     { 4, [](uint8_t identifier) { return construct<IncrementDecrement8Bit>(identifier); } },
+    { 5, [](uint8_t identifier) { return construct<IncrementDecrement8Bit>(identifier); } },
     { 6, [](uint8_t identifier) { return construct<Load8bitImmediate>(identifier); } },
     { 7,
       [](uint8_t identifier) {
@@ -94,7 +96,7 @@ static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
               return construct<Pop16bitRegister>(identifier);
           case 1:
           case 3:
-              NOT_IMPLEMENTED("Return w. or w/o IE")
+              return construct<UnconditionalReturn>(identifier);
           case 5:
               NOT_IMPLEMENTED("Jump indirect");
           case 7:
@@ -131,6 +133,8 @@ static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
           else
               return construct<Push16bitRegister>(identifier);
       } },
+    { 6, [](uint8_t identifier) { return construct<AccumulatorOperation>(identifier); } },
+
 };
 
 static std::unordered_map<uint8_t, std::shared_ptr<Opcode>> _opcode_cache;

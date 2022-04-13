@@ -377,8 +377,42 @@ struct IncrementDecrement8Bit final : public Opcode {
     }
 
   private:
-    enum class ActionType { Increment, Decrement };
+    CPU::ArithmeticOperation m_type;
+    CPU::Register m_target;
+};
 
+// 16-bit increment/decrement
+struct IncrementDecrement16Bit final : public Opcode {
+  public:
+    IncrementDecrement16Bit(uint8_t opcode) : Opcode(1, 2, opcode) {
+        uint8_t target_selector = (opcode >> 4) & 0x03;
+        uint8_t type_idx = opcode & 0x03;
+
+        if (type_idx == 0x03)
+            m_type = CPU::ArithmeticOperation::Increment;
+        else if (type_idx == 0x0B)
+            m_type = CPU::ArithmeticOperation::Decrement;
+        else
+            throw std::invalid_argument("Increment/Decrement type identifier invalid");
+
+        auto it = CPU::wide_register_map.find(target_selector);
+        if (it == CPU::wide_register_map.end())
+            throw std::invalid_argument("Opcode target is not defined");
+
+        m_target = it->second;
+        auto target_name = CPU::register_name.find(m_target)->second;
+        auto action_name = CPU::arithmetic_operation_name.find(m_type)->second;
+
+        name = GeneralUtilities::formatted_string("%s %s", action_name, target_name);
+    }
+
+    void execute(CPU *cpu, MMU *mmu) override {
+        uint16_t value = cpu->get_16_bit_register(m_target);
+        uint16_t change = m_type == CPU::ArithmeticOperation::Increment ? 1 : -1;
+        cpu->set_register(m_target, static_cast<uint16_t>(value + change));
+    }
+
+  private:
     CPU::ArithmeticOperation m_type;
     CPU::Register m_target;
 };
@@ -474,6 +508,66 @@ struct RegisterOperation final : public Opcode {
 
     RegisterOperation::Operation m_operation;
     CPU::Register m_target;
+};
+
+// Operate on accumulator with immediate
+struct AccumulatorOperation final : Opcode {
+
+  public:
+    AccumulatorOperation(uint8_t opcode) : Opcode(2, 2, opcode) {
+        uint8_t operation_type = (opcode >> 3) & 0x07;
+
+        auto it_op = m_accumulator_operations_map.find(operation_type);
+        if (it_op == m_accumulator_operations_map.end())
+            throw std::invalid_argument("Accumulator operation is not defined");
+
+        m_operation = it_op->second;
+        m_op_name = m_accumulator_operations_name.find(m_operation)->second;
+        name = GeneralUtilities::formatted_string("%s d8", m_op_name);
+    }
+
+    void set_opcode_data(uint8_t *data) override {
+        m_data = data[0];
+        m_disassembled_instruction = GeneralUtilities::formatted_string("%s 0x%X", m_op_name, m_data);
+    }
+
+    std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
+
+    void execute(CPU *cpu, MMU *mmu) override {
+        // TODO: These are the same operations as with the register operation, so find a way to not copy too much code
+        NOT_IMPLEMENTED(name);
+    }
+
+  private:
+    enum class Operation {
+        AddToImmediate,
+        AddToImmediateWithCarry,
+        SubtractFromImmediate,
+        SubtractFromImmediateWithCarry,
+        AndWithImmediate,
+        XorWithImmediate,
+        OrWithImmediate,
+        CompareWithImmediate,
+    };
+
+    static inline std::unordered_map<uint8_t, AccumulatorOperation::Operation> m_accumulator_operations_map = {
+        { 0, Operation::AddToImmediate },        { 1, Operation::AddToImmediateWithCarry },
+        { 2, Operation::SubtractFromImmediate }, { 3, Operation::SubtractFromImmediateWithCarry },
+        { 4, Operation::AndWithImmediate },      { 5, Operation::XorWithImmediate },
+        { 6, Operation::OrWithImmediate },       { 7, Operation::CompareWithImmediate },
+    };
+
+    static inline std::unordered_map<AccumulatorOperation::Operation, std::string> m_accumulator_operations_name = {
+        { Operation::AddToImmediate, "ADD A," },     { Operation::AddToImmediateWithCarry, "ADC A," },
+        { Operation::SubtractFromImmediate, "SUB" }, { Operation::SubtractFromImmediateWithCarry, "SBC A," },
+        { Operation::AndWithImmediate, "AND" },      { Operation::XorWithImmediate, "XOR" },
+        { Operation::OrWithImmediate, "OR" },        { Operation::CompareWithImmediate, "CP" },
+    };
+
+    AccumulatorOperation::Operation m_operation;
+    uint8_t m_data;
+    std::string m_op_name;
+    std::string m_disassembled_instruction;
 };
 
 // Read/Write IO-port C from/to A
@@ -610,6 +704,31 @@ struct Pop16bitRegister final : public Opcode {
 
   private:
     CPU::Register m_target;
+};
+
+// Unconditional returns
+struct UnconditionalReturn final : public Opcode {
+  public:
+    UnconditionalReturn(uint8_t opcode) : Opcode(1, 4, opcode) {
+        m_enable_interrupts = (opcode >> 4) == 0x0D;
+        name = GeneralUtilities::formatted_string("%s", m_enable_interrupts ? "RETI" : "RET");
+    }
+
+    void execute(CPU *cpu, MMU *mmu) override {
+        uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
+
+        uint8_t *data = new uint8_t[2];
+        (void)mmu->try_read_from_memory(data, sp, 2);
+
+        cpu->set_register(CPU::Register::PC, static_cast<uint16_t>(data[1] << 8 | data[0]));
+        cpu->add_offset_to_sp(2);
+
+        if (m_enable_interrupts)
+            cpu->set_interrupt_enable(true);
+    }
+
+  private:
+    bool m_enable_interrupts;
 };
 
 // Extended opcodes, rotations, shifts, swap, bit tests, set and reset
