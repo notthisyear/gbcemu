@@ -87,7 +87,7 @@ static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
           if (y == 1)
               return construct<CallUnconditional>();
           else
-              NOT_IMPLEMENTED("PUSH 16-bit reg")
+              return construct<Push16bitRegister>(identifier);
       } },
 };
 

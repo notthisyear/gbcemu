@@ -283,23 +283,15 @@ struct Load16bitIndirect final : public Opcode {
     Load16bitIndirect(uint8_t opcode) : Opcode(1, 2, opcode) {
         m_target_is_accumulator = ((opcode >> 3) & 0x01) == 1;
         uint8_t target_selector = (opcode >> 4) & 0x03;
+        auto it = CPU::wide_register_map.find(target_selector);
 
-        switch (target_selector) {
-        case 0:
-            m_target_source = CPU::Register::BC;
-            break;
-        case 1:
-            m_target_source = CPU::Register::DE;
-            break;
-        case 2:
-            m_target_source = CPU::Register::HL;
-            m_hl_offset = 1;
-            break;
-        case 3:
-            m_target_source = CPU::Register::HL;
-            m_hl_offset = -1;
-            break;
-        }
+        if (it == CPU::wide_register_map.end())
+            throw std::invalid_argument("Opcode target is not defined");
+        m_target_source = it->second;
+
+        // Target cannot be SP, both values maps to HL but with either increment or decrement
+        m_hl_offset = m_target_source == CPU::Register::HL ? 1 : m_target_source == CPU::Register::SP ? -1 : 0;
+        m_target_source = m_target_source == CPU::Register::SP ? CPU::Register::HL : m_target_source;
 
         auto target_name = CPU::register_name.find(m_target_source)->second;
         auto hl_inc_or_dec = m_hl_offset == 0 ? "" : (m_hl_offset == 1 ? "+" : "-");
@@ -559,6 +551,34 @@ struct ReadWriteIOPortNWithA final : public Opcode {
     ReadWriteIOPortNWithA::ActionType m_type;
     std::string m_disassembled_instruction;
     uint8_t m_data;
+};
+
+// 16-bit push
+struct Push16bitRegister final : public Opcode {
+  public:
+    Push16bitRegister(uint8_t opcode) : Opcode(1, 4, opcode) {
+        uint8_t source_selector = (opcode >> 4) & 0x03;
+        auto it = CPU::wide_register_map.find(source_selector);
+
+        if (it == CPU::wide_register_map.end())
+            throw std::invalid_argument("Opcode source is not defined");
+        m_source = it->second;
+
+        // Target cannot be SP, top value should map to AF
+        m_source = m_source == CPU::Register::HL ? CPU::Register::AF : m_source;
+        name = GeneralUtilities::formatted_string("PUSH %s", CPU::register_name.find(m_source)->second);
+    }
+
+    void execute(CPU *cpu, MMU *mmu) override {
+        uint16_t src = cpu->get_16_bit_register(m_source);
+        uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
+
+        cpu->set_register(CPU::Register::SP, static_cast<uint16_t>(sp - 2));
+        (void)mmu->try_map_data_to_memory((uint8_t *)&src, sp - 2, 2);
+    }
+
+  private:
+    CPU::Register m_source;
 };
 
 // Extended opcodes, rotations, shifts, swap, bit tests, set and reset
