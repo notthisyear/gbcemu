@@ -83,6 +83,26 @@ static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
               __builtin_unreachable();
           }
       } },
+    { 1,
+      [](uint8_t identifier) {
+          uint8_t y = (identifier >> 3) & 0x07;
+          switch (y) {
+          case 0:
+          case 2:
+          case 4:
+          case 6:
+              return construct<Pop16bitRegister>(identifier);
+          case 1:
+          case 3:
+              NOT_IMPLEMENTED("Return w. or w/o IE")
+          case 5:
+              NOT_IMPLEMENTED("Jump indirect");
+          case 7:
+              NOT_IMPLEMENTED("Load HL into SP");
+          default:
+              __builtin_unreachable();
+          }
+      } },
     { 2,
       [](uint8_t identifier) {
           uint8_t y = (identifier >> 3) & 0x07;

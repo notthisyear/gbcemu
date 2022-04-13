@@ -582,6 +582,36 @@ struct Push16bitRegister final : public Opcode {
     CPU::Register m_source;
 };
 
+// 16-bit pop
+struct Pop16bitRegister final : public Opcode {
+  public:
+    Pop16bitRegister(uint8_t opcode) : Opcode(1, 3, opcode) {
+        uint8_t target_selector = (opcode >> 4) & 0x03;
+        auto it = CPU::wide_register_map.find(target_selector);
+
+        if (it == CPU::wide_register_map.end())
+            throw std::invalid_argument("Opcode target is not defined");
+        m_target = it->second;
+
+        // Target cannot be SP, top value should map to AF
+        m_target = m_target == CPU::Register::HL ? CPU::Register::AF : m_target;
+        name = GeneralUtilities::formatted_string("POP %s", CPU::register_name.find(m_target)->second);
+    }
+
+    void execute(CPU *cpu, MMU *mmu) override {
+        uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
+
+        uint8_t *data = new uint8_t[2];
+        (void)mmu->try_read_from_memory(data, sp, 2);
+
+        cpu->set_register(m_target, static_cast<uint16_t>(data[1] << 8 | data[0]));
+        cpu->add_offset_to_sp(2);
+    }
+
+  private:
+    CPU::Register m_target;
+};
+
 // Extended opcodes, rotations, shifts, swap, bit tests, set and reset
 struct ExtendedOpcode final : public Opcode {
   public:
