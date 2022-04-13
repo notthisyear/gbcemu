@@ -38,6 +38,28 @@ static const std::unordered_map<uint8_t, opcode_builder> _00_opcodes = {
     { 2, [](uint8_t identifier) { return construct<Load16bitIndirect>(identifier); } },
     { 4, [](uint8_t identifier) { return construct<IncrementDecrement8Bit>(identifier); } },
     { 6, [](uint8_t identifier) { return construct<Load8bitImmediate>(identifier); } },
+    { 7,
+      [](uint8_t identifier) {
+          uint8_t y = (identifier >> 3) & 0x07;
+          switch (y) {
+
+          case 0:
+          case 1:
+          case 2:
+          case 3:
+              return construct<RotateAccumulator>(identifier);
+          case 4:
+              NOT_IMPLEMENTED("Decimal adjust accumulator");
+          case 5:
+              NOT_IMPLEMENTED("Complement accumulator");
+          case 6:
+              NOT_IMPLEMENTED("Set carry flag");
+          case 7:
+              NOT_IMPLEMENTED("Complement carry flag");
+          default:
+              __builtin_unreachable();
+          }
+      } },
 };
 
 static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
@@ -58,7 +80,7 @@ static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
           case 7:
               NOT_IMPLEMENTED("Set HL to SP + offset");
           default:
-              exit(1);
+              __builtin_unreachable();
           }
       } },
     { 2,
@@ -78,7 +100,7 @@ static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
           case 7:
               NOT_IMPLEMENTED("Load/Set A indirect");
           default:
-              exit(1);
+              __builtin_unreachable();
           }
       } },
     { 5,

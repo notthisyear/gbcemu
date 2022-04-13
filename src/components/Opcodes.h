@@ -8,6 +8,7 @@
 #include <exception>
 #include <float.h>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
@@ -631,9 +632,12 @@ struct ExtendedOpcode final : public Opcode {
             current_register = cpu->get_8_bit_register(m_target);
 
         switch (m_type) {
+
         case ExtendedOpcode::ExtendedOpcodeType::RotationShiftOrSwap:
-            perform_rotation_shift_or_swap(&current_register);
+            perform_rotation_shift_or_swap(cpu, &current_register);
+            cpu->set_register(m_target, current_register);
             break;
+
         case ExtendedOpcode::ExtendedOpcodeType::Test:
             cpu->set_flag(CPU::Flag::Z, !bit_is_set(current_register, m_bit));
             cpu->set_flag(CPU::Flag::N, false);
@@ -661,14 +665,14 @@ struct ExtendedOpcode final : public Opcode {
     };
 
     enum class RotationShiftOrSwapType {
-        RotateLeft,
-        RotateRight,
-        RotateLeftThroughCarry,
-        RotateRightThroughCarry,
-        ShiftLeftArithmetic,
-        ShiftRightArithmetic,
+        RotateLeft,              // C <- [7 <- 0] <- [7]
+        RotateRight,             // [0] -> [7 -> 0] -> C
+        RotateLeftThroughCarry,  // C <- [7 <- 0] <- C
+        RotateRightThroughCarry, // C -> [7 -> 0] -> C
+        ShiftLeftArithmetic,     // C <- [7 <- 0] <- 0
+        ShiftRightArithmetic,    // [7] -> [7 -> 0] -> C
         SwapNibbles,
-        ShiftRightLogic,
+        ShiftRightLogic, // 0 -> [7 -> 0] -> C
     };
 
     static inline std::unordered_map<uint8_t, ExtendedOpcodeType> m_extended_opcode_type_map = {
@@ -699,7 +703,7 @@ struct ExtendedOpcode final : public Opcode {
     static inline std::unordered_map<RotationShiftOrSwapType, std::string> m_rotations_type_name = {
         { RotationShiftOrSwapType::RotateLeft, "RLC" },
         { RotationShiftOrSwapType::RotateRight, "RRC" },
-        { RotationShiftOrSwapType::RotateLeftThroughCarry, "RC" },
+        { RotationShiftOrSwapType::RotateLeftThroughCarry, "RL" },
         { RotationShiftOrSwapType::RotateRightThroughCarry, "RR" },
         { RotationShiftOrSwapType::ShiftLeftArithmetic, "SLA" },
         { RotationShiftOrSwapType::ShiftRightArithmetic, "SRA" },
@@ -712,7 +716,48 @@ struct ExtendedOpcode final : public Opcode {
     CPU::Register m_target;
     uint8_t m_bit;
 
-    void perform_rotation_shift_or_swap(uint8_t *data) { NOT_IMPLEMENTED(name); }
+    void perform_rotation_shift_or_swap(CPU *cpu, uint8_t *data) {
+
+        uint8_t carry_flag = cpu->flag_is_set(CPU::Flag::C) ? 0x01 : 0x00;
+        switch (m_rot_type) {
+
+        case RotationShiftOrSwapType::RotateLeftThroughCarry:
+            cpu->set_flag(CPU::Flag::C, ((*data >> 7) & 0x01) == 0x01);
+            *data = (*data << 1) + carry_flag;
+            cpu->set_flag(CPU::Flag::Z, *data == 0x00);
+            break;
+
+        default:
+            NOT_IMPLEMENTED(name);
+        }
+
+        cpu->set_flag(CPU::Flag::N, false);
+        cpu->set_flag(CPU::Flag::H, false);
+    }
     bool bit_is_set(const uint8_t &data, int bit_to_test) { return ((data >> bit_to_test) & 0x01) == 1; }
+};
+
+// Rotate accumulator
+struct RotateAccumulator final : Opcode {
+
+  public:
+    RotateAccumulator(uint8_t opcode) : Opcode(1, 1, opcode) {
+
+        // These instructions are coded identically to the extended ones targeting the
+        // accumulator, so we can decode the instruction in the same way
+
+        m_extended_opcode = std::make_unique<ExtendedOpcode>(opcode);
+        name = m_extended_opcode->name;
+        auto ws = name.find(' ');
+        name.replace(ws, 1, "");
+    }
+
+    void execute(CPU *cpu, MMU *mmu) override {
+        m_extended_opcode->execute(cpu, mmu);
+        cpu->set_flag(CPU::Flag::Z, false);
+    }
+
+  private:
+    std::unique_ptr<ExtendedOpcode> m_extended_opcode;
 };
 }
