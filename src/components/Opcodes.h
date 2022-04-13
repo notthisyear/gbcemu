@@ -4,12 +4,12 @@
 #include "MMU.h"
 #include "components/Opcodes.h"
 #include "util/GeneralUtilities.h"
-#include <cstdint>
 #include <exception>
 #include <float.h>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <stdint.h>
 #include <string>
 
 #define NOT_IMPLEMENTED(a)                                                                                                                                     \
@@ -95,7 +95,7 @@ struct CallUnconditional final : public Opcode {
         uint16_t pc = cpu->get_16_bit_register(CPU::Register::PC);
         uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
 
-        cpu->set_register(CPU::Register::SP, static_cast<uint16_t>(sp - 2));
+        cpu->add_offset_to_sp(-2);
         (void)mmu->try_map_data_to_memory((uint8_t *)&pc, sp - 2, 2);
         cpu->set_register(CPU::Register::PC, m_data);
     }
@@ -574,7 +574,7 @@ struct Push16bitRegister final : public Opcode {
         uint16_t src = cpu->get_16_bit_register(m_source);
         uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
 
-        cpu->set_register(CPU::Register::SP, static_cast<uint16_t>(sp - 2));
+        cpu->add_offset_to_sp(-2);
         (void)mmu->try_map_data_to_memory((uint8_t *)&src, sp - 2, 2);
     }
 

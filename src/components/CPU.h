@@ -95,7 +95,7 @@ class CPU {
         case CPU::Register::A:
             return get_register_upper(&m_reg_af);
         default:
-            return 0;
+            std::abort();
         }
     }
 
@@ -114,7 +114,7 @@ class CPU {
         case CPU::Register::SP:
             return m_reg_sp;
         default:
-            return 0;
+            std::abort();
         }
     }
 
@@ -142,7 +142,7 @@ class CPU {
             set_register_upper(&m_reg_af, value);
             break;
         default:
-            break;
+            std::abort();
         }
     }
 
@@ -164,7 +164,7 @@ class CPU {
             set_register(&m_reg_pc, value);
             break;
         default:
-            break;
+            std::abort();
         }
     }
 
@@ -197,10 +197,14 @@ class CPU {
         case CPU::Flag::C:
             m_reg_af = value ? (m_reg_af | 0x0010) : (m_reg_af & 0xFFEF);
             break;
+        default:
+            __builtin_unreachable();
         }
     }
 
     void add_offset_to_pc(const int8_t offset) { m_reg_pc += offset; }
+
+    void add_offset_to_sp(const int8_t offset) { m_reg_sp += offset; }
 
     bool breakpoint_hit() const { return m_current_breakpoint == m_reg_pc; }
 
