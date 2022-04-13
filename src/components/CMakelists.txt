@@ -1,0 +1,23 @@
+set(HEADER_FILES
+		Opcodes.h
+		OpcodeBuilder.h
+		CPU.h
+		MMU.h
+	)
+
+set(SOURCE_FILES 
+		CPU.cpp
+		MMU.cpp
+		
+	)
+
+set(SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/..)
+
+add_library(gbcemu_components
+		${SOURCE_FILES}
+		${HEADER_FILES}
+	)
+
+
+target_include_directories(gbcemu_components PUBLIC ${SRC_PATH})
+target_link_libraries(gbcemu_components PRIVATE spdlog::spdlog)

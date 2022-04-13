@@ -1,0 +1,7 @@
+build/*
+resources/*.gb
+resources/*.asm
+resources/*.bin
+.cache/*
+.vscode/
+.clang-format

@@ -1,0 +1,37 @@
+set(ROOT_SYS_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../..)
+set(spdlog_DIR ${ROOT_SYS_PATH}/install/spdlog/lib/cmake/spdlog)
+
+find_package(spdlog REQUIRED)
+
+set(HEADER_FILES
+	#	Application.h
+	)
+
+set(SOURCE_FILES 
+		gbcemu.cpp
+	#	Application.cpp
+	)
+
+#set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+#set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+#set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+# External
+#add_subdirectory(${EXT_PATH}/glad ${EXT_PATH}/glad/build)
+#add_subdirectory(${EXT_PATH}/glfw ${EXT_PATH}/glfw/build)
+
+# Internal
+add_subdirectory(util)
+add_subdirectory(components)
+
+# Target
+add_executable(gbcemu_main ${HEADER_FILES} ${SOURCE_FILES})
+
+# Subdirectories
+#target_include_directories(pclone_main PUBLIC ${EXT_PATH})
+#target_include_directories(pclone_main PUBLIC ${EXT_PATH}/glad/include)
+
+# Libraries
+target_link_libraries(gbcemu_main PRIVATE spdlog::spdlog)
+target_link_libraries(gbcemu_main PRIVATE gbcemu_util)
+target_link_libraries(gbcemu_main PRIVATE gbcemu_components)
