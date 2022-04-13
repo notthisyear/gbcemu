@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
 
     mmu->set_in_boot_mode(true);
 
-    cpu->enable_breakpoint_at(0x28);
+    cpu->enable_breakpoint_at(0x27);
     cpu->set_debug_mode(false);
 
     bool step_mode = false;

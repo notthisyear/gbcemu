@@ -79,6 +79,33 @@ struct Halt final : public Opcode {
     Halt() : Opcode("HALT", 1, 1, byte_identifier) {}
 };
 
+// 0xCD - Unconditional call
+struct CallUnconditional final : public Opcode {
+  public:
+    static const uint8_t byte_identifier = 0xCD;
+    CallUnconditional() : Opcode("CALL", 3, 6, byte_identifier) {}
+
+    void set_opcode_data(uint8_t *data) override {
+        m_data = data[1] << 8 | data[0];
+        m_disassembled_instruction = GeneralUtilities::formatted_string("CALL 0x%X", m_data);
+    }
+
+    void execute(CPU *cpu, MMU *mmu) override {
+        uint16_t pc = cpu->get_16_bit_register(CPU::Register::PC);
+        uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
+
+        cpu->set_register(CPU::Register::SP, static_cast<uint16_t>(sp - 2));
+        (void)mmu->try_map_data_to_memory((uint8_t *)&pc, sp - 2, 2);
+        cpu->set_register(CPU::Register::PC, m_data);
+    }
+
+    std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
+
+  private:
+    uint16_t m_data;
+    std::string m_disassembled_instruction;
+};
+
 // Relative jumps from immediate
 struct RelativeJump final : public Opcode {
 

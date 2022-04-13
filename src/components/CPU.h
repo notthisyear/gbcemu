@@ -161,6 +161,7 @@ class CPU {
             set_register(&m_reg_sp, value);
             break;
         case CPU::Register::PC:
+            set_register(&m_reg_pc, value);
             break;
         default:
             break;

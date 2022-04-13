@@ -81,6 +81,14 @@ static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
               exit(1);
           }
       } },
+    { 5,
+      [](uint8_t identifier) {
+          uint8_t y = (identifier >> 3) & 0x07;
+          if (y == 1)
+              return construct<CallUnconditional>();
+          else
+              NOT_IMPLEMENTED("PUSH 16-bit reg")
+      } },
 };
 
 static std::unordered_map<uint8_t, std::shared_ptr<Opcode>> _opcode_cache;
