@@ -120,7 +120,7 @@ static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
               return construct<ReadWriteIOPortCWithA>(identifier);
           case 5:
           case 7:
-              NOT_IMPLEMENTED("Load/Set A indirect");
+              return construct<LoadFromOrSetAIndirect>(identifier);
           default:
               __builtin_unreachable();
           }

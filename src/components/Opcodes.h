@@ -543,7 +543,7 @@ struct ReadWriteIOPortCWithA final : public Opcode {
         else
             throw std::invalid_argument("Read/Write type identifier invalid");
 
-        name = m_type == ReadWriteIOPortCWithA::ActionType::Write ? "LD ($FF00 + C), A" : "LD A, ($FF00 + C), A";
+        name = m_type == ReadWriteIOPortCWithA::ActionType::Write ? "LD ($FF00 + C), A" : "LD A, ($FF00 + C)";
     }
 
     void execute(CPU *cpu, MMU *mmu) override {
@@ -577,7 +577,7 @@ struct ReadWriteIOPortNWithA final : public Opcode {
         else
             throw std::invalid_argument("Read/Write type identifier invalid");
 
-        name = m_type == ReadWriteIOPortNWithA::ActionType::Write ? "LD ($FF00 + a8), A" : "LD A, ($FF00 + a8), A";
+        name = m_type == ReadWriteIOPortNWithA::ActionType::Write ? "LD ($FF00 + a8), A" : "LD A, ($FF00 + a8)";
     }
 
     void set_opcode_data(uint8_t *data) override {
@@ -606,6 +606,49 @@ struct ReadWriteIOPortNWithA final : public Opcode {
     ReadWriteIOPortNWithA::ActionType m_type;
     std::string m_disassembled_instruction;
     uint8_t m_data;
+};
+
+// Load from or set A indirect
+struct LoadFromOrSetAIndirect final : public Opcode {
+
+  public:
+    LoadFromOrSetAIndirect(uint8_t opcode) : Opcode(3, 4, opcode) {
+        uint8_t type_idx = (opcode >> 3) & 0x07;
+        if (type_idx == 0x05)
+            m_type = LoadFromOrSetAIndirect::Direction::FromAccumulator;
+        else if (type_idx == 0x07)
+            m_type = LoadFromOrSetAIndirect::Direction::ToAccumulator;
+        else
+            throw std::invalid_argument("Direction type identifier invalid");
+
+        name = m_type == LoadFromOrSetAIndirect::Direction::FromAccumulator ? "LD (a16), A" : "LD A, (a16)";
+    }
+
+    void set_opcode_data(uint8_t *data) override {
+        m_data = data[1] << 8 | data[0];
+        m_disassembled_instruction = m_type == LoadFromOrSetAIndirect::Direction::FromAccumulator ? GeneralUtilities::formatted_string("LD (0x%X), A", m_data)
+                                                                                                  : GeneralUtilities::formatted_string("LD A, (0x%X)", m_data);
+    }
+
+    std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
+
+    void execute(CPU *cpu, MMU *mmu) override {
+        if (m_type == LoadFromOrSetAIndirect::Direction::FromAccumulator) {
+            uint8_t reg_a = cpu->get_8_bit_register(CPU::Register::A);
+            (void)mmu->try_map_data_to_memory(&reg_a, m_data, 1);
+        } else {
+            uint8_t value;
+            (void)mmu->try_read_from_memory(&value, m_data, 1);
+            cpu->set_register(CPU::Register::A, value);
+        }
+    }
+
+  private:
+    enum class Direction { FromAccumulator, ToAccumulator };
+
+    LoadFromOrSetAIndirect::Direction m_type;
+    std::string m_disassembled_instruction;
+    uint16_t m_data;
 };
 
 // 16-bit push
