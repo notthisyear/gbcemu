@@ -418,155 +418,141 @@ struct IncrementDecrement16Bit final : public Opcode {
 };
 
 // Register operations
-struct RegisterOperation final : public Opcode {
+struct RegisterOperationBase : public Opcode {
 
-  public:
-    RegisterOperation(uint8_t opcode) : Opcode(1) {
-        uint8_t operation_type = (opcode >> 3) & 0x07;
-        uint8_t register_idx = opcode & 0x07;
-
-        auto it_op = m_register_operations_map.find(operation_type);
-        if (it_op == m_register_operations_map.end())
-            throw std::invalid_argument("Register operation is not defined");
-
-        auto it_reg = CPU::register_map.find(register_idx);
-        if (it_reg == CPU::register_map.end())
-            throw std::invalid_argument("Opcode target is not defined");
-
-        m_operation = it_op->second;
-        m_target = it_reg->second;
-        auto op_name = m_register_operations_name.find(m_operation)->second;
-        auto target_name = CPU::register_name.find(m_target)->second;
-
+  protected:
+    RegisterOperationBase(uint8_t opcode, uint8_t size) : Opcode(size) {
         identifier = opcode;
-        name = m_target == CPU::Register::HL ? GeneralUtilities::formatted_string("%s (%s)", op_name, target_name)
-                                             : GeneralUtilities::formatted_string("%s %s", op_name, target_name);
-        cycles = m_target == CPU::Register::HL ? 2 : 1;
+        set_operation_type(opcode);
     }
+    std::string get_operation_name() const { return m_operations_name.find(m_operation)->second; }
 
-    void execute(CPU *cpu, MMU *mmu) override {
+    void execute_operation(CPU *cpu, uint8_t *operand) {
 
         uint8_t accumulator_value = cpu->get_8_bit_register(CPU::Register::A);
-        uint8_t target_value = cpu->get_8_bit_register(m_target);
+        uint8_t result;
+        bool *flag_pattern; // Z, N, H, C
 
         switch (m_operation) {
-        case RegisterOperation::Operation::AndWithAccumulator:
-            cpu->set_register(CPU::Register::A, static_cast<uint8_t>(accumulator_value ^ target_value));
-            cpu->set_flag(CPU::Flag::Z, cpu->get_8_bit_register(CPU::Register::A) == 0x00);
-            cpu->set_flag(CPU::Flag::N, false);
-            cpu->set_flag(CPU::Flag::H, true);
-            cpu->set_flag(CPU::Flag::C, false);
+        case RegisterOperationBase::Operation::And:
+            result = accumulator_value & *operand;
+            flag_pattern = new bool[]{ result == 0x00, false, true, false };
             break;
 
-        case RegisterOperation::Operation::XorWithAccumulator:
-            cpu->set_register(CPU::Register::A, static_cast<uint8_t>(accumulator_value ^ target_value));
-            cpu->set_flag(CPU::Flag::Z, cpu->get_8_bit_register(CPU::Register::A) == 0x00);
-            cpu->set_flag(CPU::Flag::N, false);
-            cpu->set_flag(CPU::Flag::H, false);
-            cpu->set_flag(CPU::Flag::C, false);
+        case RegisterOperationBase::Operation::Xor:
+            result = accumulator_value ^ *operand;
+            flag_pattern = new bool[]{ result == 0x00, false, false, false };
             break;
 
-        case RegisterOperation::Operation::OrWithAccumulator:
-            cpu->set_register(CPU::Register::A, static_cast<uint8_t>(accumulator_value ^ target_value));
-            cpu->set_flag(CPU::Flag::Z, cpu->get_8_bit_register(CPU::Register::A) == 0x00);
-            cpu->set_flag(CPU::Flag::N, false);
-            cpu->set_flag(CPU::Flag::H, false);
-            cpu->set_flag(CPU::Flag::C, false);
+        case RegisterOperationBase::Operation::Or:
+            result = accumulator_value | *operand;
+            flag_pattern = new bool[]{ result == 0x00, false, false, false };
             break;
 
         default:
             NOT_IMPLEMENTED(name);
             break;
         }
+
+        cpu->set_register(CPU::Register::A, result);
+        cpu->set_flag(CPU::Flag::Z, flag_pattern[0]);
+        cpu->set_flag(CPU::Flag::N, flag_pattern[1]);
+        cpu->set_flag(CPU::Flag::H, flag_pattern[2]);
+        cpu->set_flag(CPU::Flag::C, flag_pattern[3]);
+
+        delete[] flag_pattern;
     }
 
-  private:
     enum class Operation {
         AddToAccumulator,
         AddToAccumulatorWithCarry,
         SubtractFromAccumulator,
         SubtractFromAccumulatorWithCarry,
-        AndWithAccumulator,
-        XorWithAccumulator,
-        OrWithAccumulator,
-        CompareWithAccumulator,
+        And,
+        Xor,
+        Or,
+        Compare,
+    };
+    RegisterOperationBase::Operation m_operation;
+
+  private:
+    static inline RegisterOperationBase::Operation m_operations[] = {
+        RegisterOperationBase::Operation::AddToAccumulator,
+        RegisterOperationBase::Operation::AddToAccumulatorWithCarry,
+        RegisterOperationBase::Operation::SubtractFromAccumulator,
+        RegisterOperationBase::Operation::SubtractFromAccumulatorWithCarry,
+        RegisterOperationBase::Operation::And,
+        RegisterOperationBase::Operation::Xor,
+        RegisterOperationBase::Operation::Or,
+        RegisterOperationBase::Operation::Compare,
     };
 
-    static inline std::unordered_map<uint8_t, RegisterOperation::Operation> m_register_operations_map = {
-        { 0, Operation::AddToAccumulator },        { 1, Operation::AddToAccumulatorWithCarry },
-        { 2, Operation::SubtractFromAccumulator }, { 3, Operation::SubtractFromAccumulatorWithCarry },
-        { 4, Operation::AndWithAccumulator },      { 5, Operation::XorWithAccumulator },
-        { 6, Operation::OrWithAccumulator },       { 7, Operation::CompareWithAccumulator },
+    static inline std::unordered_map<RegisterOperationBase::Operation, std::string> m_operations_name = {
+        { RegisterOperationBase::Operation::AddToAccumulator, "ADD A," },
+        { RegisterOperationBase::Operation::AddToAccumulatorWithCarry, "ADC A," },
+        { RegisterOperationBase::Operation::SubtractFromAccumulator, "SUB" },
+        { RegisterOperationBase::Operation::SubtractFromAccumulatorWithCarry, "SBC A," },
+        { RegisterOperationBase::Operation::And, "AND," },
+        { RegisterOperationBase::Operation::Xor, "XOR" },
+        { RegisterOperationBase::Operation::Or, "OR," },
+        { RegisterOperationBase::Operation::Compare, "CP" },
     };
 
-    static inline std::unordered_map<RegisterOperation::Operation, std::string> m_register_operations_name = {
-        { Operation::AddToAccumulator, "ADD A," },     { Operation::AddToAccumulatorWithCarry, "ADC A," },
-        { Operation::SubtractFromAccumulator, "SUB" }, { Operation::SubtractFromAccumulatorWithCarry, "SBC A," },
-        { Operation::AndWithAccumulator, "AND," },     { Operation::XorWithAccumulator, "XOR" },
-        { Operation::OrWithAccumulator, "OR," },       { Operation::CompareWithAccumulator, "CP" },
-    };
+    void set_operation_type(uint8_t opcode) { m_operation = m_operations[(opcode >> 3) & 0x07]; }
+};
 
-    RegisterOperation::Operation m_operation;
-    CPU::Register m_target;
+// Register operations
+struct RegisterOperation final : public RegisterOperationBase {
+
+  public:
+    RegisterOperation(uint8_t opcode) : RegisterOperationBase(opcode, 1) {
+
+        uint8_t register_idx = opcode & 0x07;
+        auto it_reg = CPU::register_map.find(register_idx);
+        if (it_reg == CPU::register_map.end())
+            throw std::invalid_argument("Opcode target is not defined");
+
+        m_operand_register = it_reg->second;
+
+        auto target_name = CPU::register_name.find(m_operand_register)->second;
+        name = m_operand_register == CPU::Register::HL ? GeneralUtilities::formatted_string("%s (%s)", get_operation_name(), target_name)
+                                                       : GeneralUtilities::formatted_string("%s %s", get_operation_name(), target_name);
+        cycles = m_operand_register == CPU::Register::HL ? 2 : 1;
+    }
+
+    void execute(CPU *cpu, MMU *mmu) override {
+        uint8_t operand_value;
+        if (m_operand_register == CPU::Register::HL)
+            (void)mmu->try_read_from_memory(&operand_value, cpu->get_16_bit_register(CPU::Register::HL), 1);
+        else
+            operand_value = cpu->get_8_bit_register(m_operand_register);
+
+        execute_operation(cpu, &operand_value);
+    }
+
+  private:
+    CPU::Register m_operand_register;
 };
 
 // Operate on accumulator with immediate
-struct AccumulatorOperation final : Opcode {
+struct AccumulatorOperation final : RegisterOperationBase {
 
   public:
-    AccumulatorOperation(uint8_t opcode) : Opcode(2, 2, opcode) {
-        uint8_t operation_type = (opcode >> 3) & 0x07;
-
-        auto it_op = m_accumulator_operations_map.find(operation_type);
-        if (it_op == m_accumulator_operations_map.end())
-            throw std::invalid_argument("Accumulator operation is not defined");
-
-        m_operation = it_op->second;
-        m_op_name = m_accumulator_operations_name.find(m_operation)->second;
-        name = GeneralUtilities::formatted_string("%s d8", m_op_name);
+    AccumulatorOperation(uint8_t opcode) : RegisterOperationBase(opcode, 2) {
+        cycles = 2;
+        name = GeneralUtilities::formatted_string("%s d8", get_operation_name());
     }
 
     void set_opcode_data(uint8_t *data) override {
         m_data = data[0];
-        m_disassembled_instruction = GeneralUtilities::formatted_string("%s 0x%X", m_op_name, m_data);
+        m_disassembled_instruction = GeneralUtilities::formatted_string("%s 0x%X", get_operation_name(), m_data);
     }
 
     std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
 
-    void execute(CPU *cpu, MMU *mmu) override {
-        // TODO: These are the same operations as with the register operation, so find a way to not copy too much code
-        NOT_IMPLEMENTED(name);
-    }
+    void execute(CPU *cpu, MMU *mmu) override { execute_operation(cpu, &m_data); }
 
-  private:
-    enum class Operation {
-        AddToImmediate,
-        AddToImmediateWithCarry,
-        SubtractFromImmediate,
-        SubtractFromImmediateWithCarry,
-        AndWithImmediate,
-        XorWithImmediate,
-        OrWithImmediate,
-        CompareWithImmediate,
-    };
-
-    static inline std::unordered_map<uint8_t, AccumulatorOperation::Operation> m_accumulator_operations_map = {
-        { 0, Operation::AddToImmediate },        { 1, Operation::AddToImmediateWithCarry },
-        { 2, Operation::SubtractFromImmediate }, { 3, Operation::SubtractFromImmediateWithCarry },
-        { 4, Operation::AndWithImmediate },      { 5, Operation::XorWithImmediate },
-        { 6, Operation::OrWithImmediate },       { 7, Operation::CompareWithImmediate },
-    };
-
-    static inline std::unordered_map<AccumulatorOperation::Operation, std::string> m_accumulator_operations_name = {
-        { Operation::AddToImmediate, "ADD A," },     { Operation::AddToImmediateWithCarry, "ADC A," },
-        { Operation::SubtractFromImmediate, "SUB" }, { Operation::SubtractFromImmediateWithCarry, "SBC A," },
-        { Operation::AndWithImmediate, "AND" },      { Operation::XorWithImmediate, "XOR" },
-        { Operation::OrWithImmediate, "OR" },        { Operation::CompareWithImmediate, "CP" },
-    };
-
-    AccumulatorOperation::Operation m_operation;
     uint8_t m_data;
-    std::string m_op_name;
     std::string m_disassembled_instruction;
 };
 
