@@ -425,6 +425,12 @@ struct RegisterOperationBase : public Opcode {
             flag_pattern = new bool[]{ result == 0x00, 1, cpu->half_carry_occurs_on_subtract(accumulator_value, *operand),
                                        cpu->carry_occurs_on_subtract(accumulator_value, *operand) };
             break;
+
+        case RegisterOperationBase::Operation::SubtractFromAccumulator:
+            result = accumulator_value - *operand;
+            flag_pattern = new bool[]{ result == 0x00, 1, cpu->half_carry_occurs_on_subtract(accumulator_value, *operand),
+                                       cpu->carry_occurs_on_subtract(accumulator_value, *operand) };
+            break;
         default:
             NOT_IMPLEMENTED(name);
             break;
