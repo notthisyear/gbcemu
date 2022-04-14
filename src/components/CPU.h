@@ -42,15 +42,14 @@ class CPU {
         Decrement,
     };
 
-    static inline std::unordered_map<uint8_t, CPU::Register> register_map = { { 0, CPU::Register::B },  { 1, CPU::Register::C }, { 2, CPU::Register::D },
-                                                                              { 3, CPU::Register::E },  { 4, CPU::Register::H }, { 5, CPU::Register::L },
-                                                                              { 6, CPU::Register::HL }, { 7, CPU::Register::A } };
+    static inline CPU::Register register_map[] = { CPU::Register::B, CPU::Register::C, CPU::Register::D,  CPU::Register::E,
+                                                   CPU::Register::H, CPU::Register::L, CPU::Register::HL, CPU::Register::A };
 
-    static inline std::unordered_map<uint8_t, CPU::Register> wide_register_map = {
-        { 0, CPU::Register::BC },
-        { 1, CPU::Register::DE },
-        { 2, CPU::Register::HL },
-        { 3, CPU::Register::SP },
+    static inline CPU::Register wide_register_map[] = {
+        CPU::Register::BC,
+        CPU::Register::DE,
+        CPU::Register::HL,
+        CPU::Register::SP,
     };
     static inline std::unordered_map<CPU::Register, std::string> register_name = {
         { CPU::Register::B, "B" },   { CPU::Register::C, "C" },   { CPU::Register::D, "D" },   { CPU::Register::E, "E" },   { CPU::Register::H, "H" },

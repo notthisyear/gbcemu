@@ -158,12 +158,8 @@ struct Load8bitImmediate final : public Opcode {
     Load8bitImmediate(uint8_t opcode) : Opcode(2) {
 
         uint8_t register_idx = (opcode >> 3) & 0x07;
-        auto it = CPU::register_map.find(register_idx);
+        m_target = CPU::register_map[register_idx];
 
-        if (it == CPU::register_map.end())
-            throw std::invalid_argument("Opcode target is not defined");
-
-        m_target = it->second;
         m_target_name = CPU::register_name.find(m_target)->second;
 
         identifier = opcode;
@@ -197,16 +193,8 @@ struct Load8bitRegister final : public Opcode {
         uint8_t target_register_idx = (opcode >> 3) & 0x07;
         uint8_t source_register_idx = opcode & 0x07;
 
-        auto it_target = CPU::register_map.find(target_register_idx);
-        if (it_target == CPU::register_map.end())
-            throw std::invalid_argument("Opcode target register is not defined");
-
-        auto it_source = CPU::register_map.find(source_register_idx);
-        if (it_source == CPU::register_map.end())
-            throw std::invalid_argument("Opcode source register is not defined");
-
-        m_target = it_target->second;
-        m_source = it_source->second;
+        m_target = CPU::register_map[target_register_idx];
+        m_source = CPU::register_map[source_register_idx];
 
         if (m_target == CPU::Register::HL && m_source == CPU::Register::HL)
             throw std::invalid_argument("Loading (HL) with (HL) is invalid, should be HALT instruction");
@@ -252,13 +240,10 @@ struct Load16bitImmediate final : public Opcode {
   public:
     Load16bitImmediate(uint8_t opcode) : Opcode(3, 3, opcode) {
         uint8_t register_idx = (opcode >> 4) & 0x03;
-        auto it = CPU::wide_register_map.find(register_idx);
 
-        if (it == CPU::wide_register_map.end())
-            throw std::invalid_argument("Opcode target is not defined");
-
-        m_target = it->second;
+        m_target = CPU::wide_register_map[register_idx];
         m_target_name = CPU::register_name.find(m_target)->second;
+
         name = GeneralUtilities::formatted_string("LD %s, d16", m_target_name);
     }
 
@@ -284,11 +269,7 @@ struct Load16bitIndirect final : public Opcode {
     Load16bitIndirect(uint8_t opcode) : Opcode(1, 2, opcode) {
         m_target_is_accumulator = ((opcode >> 3) & 0x01) == 1;
         uint8_t target_selector = (opcode >> 4) & 0x03;
-        auto it = CPU::wide_register_map.find(target_selector);
-
-        if (it == CPU::wide_register_map.end())
-            throw std::invalid_argument("Opcode target is not defined");
-        m_target_source = it->second;
+        m_target_source = CPU::wide_register_map[target_selector];
 
         // Target cannot be SP, both values maps to HL but with either increment or decrement
         m_hl_offset = m_target_source == CPU::Register::HL ? 1 : m_target_source == CPU::Register::SP ? -1 : 0;
@@ -338,12 +319,7 @@ struct IncrementDecrement8Bit final : public Opcode {
         else
             throw std::invalid_argument("Increment/Decrement type identifier invalid");
 
-        auto it_target = CPU::register_map.find(target_idx);
-        if (it_target == CPU::register_map.end())
-            throw std::invalid_argument("Opcode target is not defined");
-
-        m_target = it_target->second;
-
+        m_target = CPU::register_map[target_idx];
         identifier = opcode;
 
         auto target_name = CPU::register_name.find(m_target)->second;
@@ -395,11 +371,7 @@ struct IncrementDecrement16Bit final : public Opcode {
         else
             throw std::invalid_argument("Increment/Decrement type identifier invalid");
 
-        auto it = CPU::wide_register_map.find(target_selector);
-        if (it == CPU::wide_register_map.end())
-            throw std::invalid_argument("Opcode target is not defined");
-
-        m_target = it->second;
+        m_target = CPU::wide_register_map[target_selector];
         auto target_name = CPU::register_name.find(m_target)->second;
         auto action_name = CPU::arithmetic_operation_name.find(m_type)->second;
 
@@ -417,7 +389,7 @@ struct IncrementDecrement16Bit final : public Opcode {
     CPU::Register m_target;
 };
 
-// Register operations
+// Register operations common
 struct RegisterOperationBase : public Opcode {
 
   protected:
@@ -508,11 +480,7 @@ struct RegisterOperation final : public RegisterOperationBase {
     RegisterOperation(uint8_t opcode) : RegisterOperationBase(opcode, 1) {
 
         uint8_t register_idx = opcode & 0x07;
-        auto it_reg = CPU::register_map.find(register_idx);
-        if (it_reg == CPU::register_map.end())
-            throw std::invalid_argument("Opcode target is not defined");
-
-        m_operand_register = it_reg->second;
+        m_operand_register = CPU::register_map[register_idx];
 
         auto target_name = CPU::register_name.find(m_operand_register)->second;
         name = m_operand_register == CPU::Register::HL ? GeneralUtilities::formatted_string("%s (%s)", get_operation_name(), target_name)
@@ -639,11 +607,7 @@ struct Push16bitRegister final : public Opcode {
   public:
     Push16bitRegister(uint8_t opcode) : Opcode(1, 4, opcode) {
         uint8_t source_selector = (opcode >> 4) & 0x03;
-        auto it = CPU::wide_register_map.find(source_selector);
-
-        if (it == CPU::wide_register_map.end())
-            throw std::invalid_argument("Opcode source is not defined");
-        m_source = it->second;
+        m_source = CPU::wide_register_map[source_selector];
 
         // Target cannot be SP, top value should map to AF
         m_source = m_source == CPU::Register::HL ? CPU::Register::AF : m_source;
@@ -667,11 +631,7 @@ struct Pop16bitRegister final : public Opcode {
   public:
     Pop16bitRegister(uint8_t opcode) : Opcode(1, 3, opcode) {
         uint8_t target_selector = (opcode >> 4) & 0x03;
-        auto it = CPU::wide_register_map.find(target_selector);
-
-        if (it == CPU::wide_register_map.end())
-            throw std::invalid_argument("Opcode target is not defined");
-        m_target = it->second;
+        m_target = CPU::wide_register_map[target_selector];
 
         // Target cannot be SP, top value should map to AF
         m_target = m_target == CPU::Register::HL ? CPU::Register::AF : m_target;
@@ -726,25 +686,13 @@ struct ExtendedOpcode final : public Opcode {
         uint8_t bit_or_rotation_idx = (opcode >> 3) & 0x07;
         uint8_t target_idx = opcode & 0x07;
 
-        auto it_type = m_extended_opcode_type_map.find(extended_op_code_type_idx);
-        if (it_type == m_extended_opcode_type_map.end())
-            throw std::invalid_argument("Extended opcode type is not defined");
-
-        auto it_target = CPU::register_map.find(target_idx);
-        if (it_target == CPU::register_map.end())
-            throw std::invalid_argument("Extended opcode target is not defined");
-
-        m_type = it_type->second;
-        m_target = it_target->second;
+        m_target = CPU::register_map[target_idx];
+        m_type = m_extended_opcode_type_map[extended_op_code_type_idx];
 
         auto target_name = CPU::register_name.find(m_target)->second;
         if (m_type == ExtendedOpcode::ExtendedOpcodeType::RotationShiftOrSwap) {
 
-            auto it_rot = m_rotations_type_map.find(bit_or_rotation_idx);
-            if (it_rot == m_rotations_type_map.end())
-                throw std::invalid_argument("Opcode rotation type is not defined");
-
-            m_rot_type = it_rot->second;
+            m_rot_type = m_rotations_type_map[bit_or_rotation_idx];
             auto operation_name = m_rotations_type_name.find(m_rot_type)->second;
 
             name = m_target == CPU::Register::HL ? GeneralUtilities::formatted_string("%s (%s)", operation_name, target_name)
@@ -810,11 +758,11 @@ struct ExtendedOpcode final : public Opcode {
         ShiftRightLogic, // 0 -> [7 -> 0] -> C
     };
 
-    static inline std::unordered_map<uint8_t, ExtendedOpcodeType> m_extended_opcode_type_map = {
-        { 0, ExtendedOpcodeType::RotationShiftOrSwap },
-        { 1, ExtendedOpcodeType::Test },
-        { 2, ExtendedOpcodeType::Reset },
-        { 3, ExtendedOpcodeType::Set },
+    static inline ExtendedOpcodeType m_extended_opcode_type_map[] = {
+        ExtendedOpcodeType::RotationShiftOrSwap,
+        ExtendedOpcodeType::Test,
+        ExtendedOpcodeType::Reset,
+        ExtendedOpcodeType::Set,
     };
 
     static inline std::unordered_map<ExtendedOpcodeType, std::string> m_extended_opcode_type_name = {
@@ -824,15 +772,15 @@ struct ExtendedOpcode final : public Opcode {
         { ExtendedOpcodeType::Set, "SET" },
     };
 
-    static inline std::unordered_map<uint8_t, RotationShiftOrSwapType> m_rotations_type_map = {
-        { 0, RotationShiftOrSwapType::RotateLeft },
-        { 1, RotationShiftOrSwapType::RotateRight },
-        { 2, RotationShiftOrSwapType::RotateLeftThroughCarry },
-        { 3, RotationShiftOrSwapType::RotateRightThroughCarry },
-        { 4, RotationShiftOrSwapType::ShiftLeftArithmetic },
-        { 5, RotationShiftOrSwapType::ShiftRightArithmetic },
-        { 6, RotationShiftOrSwapType::SwapNibbles },
-        { 7, RotationShiftOrSwapType::ShiftRightLogic },
+    static inline RotationShiftOrSwapType m_rotations_type_map[] = {
+        RotationShiftOrSwapType::RotateLeft,
+        RotationShiftOrSwapType::RotateRight,
+        RotationShiftOrSwapType::RotateLeftThroughCarry,
+        RotationShiftOrSwapType::RotateRightThroughCarry,
+        RotationShiftOrSwapType::ShiftLeftArithmetic,
+        RotationShiftOrSwapType::ShiftRightArithmetic,
+        RotationShiftOrSwapType::SwapNibbles,
+        RotationShiftOrSwapType::ShiftRightLogic,
     };
 
     static inline std::unordered_map<RotationShiftOrSwapType, std::string> m_rotations_type_name = {
