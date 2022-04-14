@@ -61,6 +61,7 @@ void CPU::set_debug_mode(bool on_or_off) {
 }
 
 void CPU::set_interrupt_enable(bool on_or_off) { m_interrupt_enabled = on_or_off; }
+
 void CPU::show_disassembled_instruction(bool on_or_off) { m_show_disassembled_instruction = on_or_off; }
 
 void CPU::enable_breakpoint_at(uint16_t pc) { m_current_breakpoint = pc; }
@@ -70,6 +71,10 @@ void CPU::clear_breakpoint() { m_current_breakpoint = 0; }
 bool CPU::half_carry_occurs_on_subtract(uint8_t v, const uint8_t value_to_subtract) const { return ((v & 0x0F) - (value_to_subtract & 0x0F)) < 0; }
 
 bool CPU::half_carry_occurs_on_add(uint8_t v, const uint8_t value_to_add) const { return ((v & 0x0F) + (value_to_add & 0x0F)) > 0x0F; }
+
+bool CPU::carry_occurs_on_add(uint8_t v, const uint8_t value_to_add) const { return v + value_to_add > 0xFF; }
+
+bool CPU::carry_occurs_on_subtract(uint8_t v, const uint8_t value_to_subtract) const { return value_to_subtract > v; };
 
 void CPU::log(LogLevel level, const std::string &message) { LogUtilities::log(LoggerType::Cpu, level, message); }
 

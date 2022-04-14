@@ -213,6 +213,10 @@ class CPU {
 
     bool half_carry_occurs_on_subtract(uint8_t v, const uint8_t value_to_subtract) const;
 
+    bool carry_occurs_on_add(uint8_t v, const uint8_t value_to_add) const;
+
+    bool carry_occurs_on_subtract(uint8_t v, const uint8_t value_to_subtract) const;
+
     ~CPU();
 
   private:

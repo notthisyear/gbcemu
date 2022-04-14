@@ -421,12 +421,18 @@ struct RegisterOperationBase : public Opcode {
             flag_pattern = new bool[]{ result == 0x00, false, false, false };
             break;
 
+        case RegisterOperationBase::Operation::Compare:
+            flag_pattern = new bool[]{ result == 0x00, 1, cpu->half_carry_occurs_on_subtract(accumulator_value, *operand),
+                                       cpu->carry_occurs_on_subtract(accumulator_value, *operand) };
+            break;
         default:
             NOT_IMPLEMENTED(name);
             break;
         }
 
-        cpu->set_register(CPU::Register::A, result);
+        if (m_operation != RegisterOperationBase::Operation::Compare)
+            cpu->set_register(CPU::Register::A, result);
+
         cpu->set_flag(CPU::Flag::Z, flag_pattern[0]);
         cpu->set_flag(CPU::Flag::N, flag_pattern[1]);
         cpu->set_flag(CPU::Flag::H, flag_pattern[2]);
