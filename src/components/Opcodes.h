@@ -16,6 +16,10 @@
     std::cout << "Opcode '" << a << "' is not implemented!" << std::endl;                                                                                      \
     exit(1);
 
+#define INVALID_OPCODE(a)                                                                                                                                      \
+    std::cout << "Opcode '" << unsigned(a) << "' is not valid!" << std::endl;                                                                                  \
+    exit(1);
+
 namespace gbcemu {
 
 struct Opcode {
@@ -37,6 +41,7 @@ struct Opcode {
     Opcode(uint8_t size, uint8_t cycles, uint8_t identifier) : size(size), cycles(cycles), identifier(identifier) {}
     Opcode(uint8_t size, uint8_t cycles) : size(size), cycles(cycles) {}
     Opcode(uint8_t size) : size(size) {}
+    Opcode() {}
 };
 
 // 0x00 - NoOp
@@ -71,6 +76,7 @@ struct Stop final : public Opcode {
   public:
     static const uint8_t byte_identifier = 0x10;
     Stop() : Opcode("STOP 0", 2, 2, byte_identifier) {}
+    void execute(CPU *cpu, MMU *mmu) override { NOT_IMPLEMENTED("STOP"); }
 };
 
 // 0x66 - Halts to CPU (low-power mode until interrupt)
@@ -78,77 +84,177 @@ struct Halt final : public Opcode {
   public:
     static const uint8_t byte_identifier = 0x66;
     Halt() : Opcode("HALT", 1, 1, byte_identifier) {}
+    void execute(CPU *cpu, MMU *mmu) override { NOT_IMPLEMENTED("HALT"); }
 };
 
-// 0xCD - Unconditional call
-struct CallUnconditional final : public Opcode {
-  public:
-    static const uint8_t byte_identifier = 0xCD;
-    CallUnconditional() : Opcode("CALL", 3, 6, byte_identifier) {}
-
-    void set_opcode_data(uint8_t *data) override {
-        m_data = data[1] << 8 | data[0];
-        m_disassembled_instruction = GeneralUtilities::formatted_string("CALL 0x%X", m_data);
+// Call, returns and jumps common
+struct ConditionalCallReturnOrJumpBase : public Opcode {
+  protected:
+    ConditionalCallReturnOrJumpBase(uint8_t opcode) : Opcode() { identifier = opcode; }
+    bool condition_is_met(CPU *cpu) const {
+        switch (m_condition) {
+        case ConditionalCallReturnOrJumpBase::Condition::None:
+            return true;
+        case ConditionalCallReturnOrJumpBase::Condition::Zero:
+            return cpu->flag_is_set(CPU::Flag::Z);
+        case ConditionalCallReturnOrJumpBase::Condition::NotZero:
+            return !cpu->flag_is_set(CPU::Flag::Z);
+        case ConditionalCallReturnOrJumpBase::Condition::Carry:
+            return cpu->flag_is_set(CPU::Flag::C);
+        case ConditionalCallReturnOrJumpBase::Condition::NotCarry:
+            return !cpu->flag_is_set(CPU::Flag::C);
+        default:
+            __builtin_unreachable();
+        }
     }
 
-    void execute(CPU *cpu, MMU *mmu) override {
+    void execute_call(CPU *cpu, MMU *mmu, uint16_t *target_address) {
         uint16_t pc = cpu->get_16_bit_register(CPU::Register::PC);
         uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
 
         cpu->add_offset_to_sp(-2);
         (void)mmu->try_map_data_to_memory((uint8_t *)&pc, sp - 2, 2);
-        cpu->set_register(CPU::Register::PC, m_data);
+        cpu->set_register(CPU::Register::PC, *target_address);
     }
 
-    std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
+    void execute_return(CPU *cpu, MMU *mmu) {
+        uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
 
-  private:
-    uint16_t m_data;
-    std::string m_disassembled_instruction;
+        uint8_t *data = new uint8_t[2];
+        (void)mmu->try_read_from_memory(data, sp, 2);
+
+        cpu->set_register(CPU::Register::PC, static_cast<uint16_t>(data[1] << 8 | data[0]));
+        cpu->add_offset_to_sp(2);
+    }
+
+    void execute_jump(CPU *cpu, uint16_t *target_address) { cpu->set_register(CPU::Register::PC, *target_address); }
+
+    enum class Condition { None = -1, NotZero = 0, Zero = 1, NotCarry = 2, Carry = 3 };
+    const std::unordered_map<ConditionalCallReturnOrJumpBase::Condition, std::string> ConditionNameMap = {
+        { ConditionalCallReturnOrJumpBase::Condition::None, "" },   { ConditionalCallReturnOrJumpBase::Condition::NotZero, "NZ" },
+        { ConditionalCallReturnOrJumpBase::Condition::Zero, "Z" },  { ConditionalCallReturnOrJumpBase::Condition::NotCarry, "NC" },
+        { ConditionalCallReturnOrJumpBase::Condition::Carry, "C" },
+    };
+
+    ConditionalCallReturnOrJumpBase::Condition m_condition;
 };
 
+// TODO: E9 - Jump to address pointed to be HL
+
+// TODO: Jump to immediate address
+
 // Relative jumps from immediate
-struct RelativeJump final : public Opcode {
+struct RelativeJump final : public ConditionalCallReturnOrJumpBase {
 
   public:
-    RelativeJump(uint8_t opcode) : Opcode(2) {
-        m_flag_idx = (opcode >> 3) & 0x07;
-        auto flag_to_test_name = m_flag_to_test_name_map.find(m_flag_idx);
-        if (flag_to_test_name == m_flag_to_test_name_map.end())
-            throw std::invalid_argument("Opcode flag idx is not valid");
-
-        identifier = opcode;
-        m_flag_to_test_name = flag_to_test_name->second;
-        name = GeneralUtilities::formatted_string("JR %s d8", m_flag_to_test_name);
+    RelativeJump(uint8_t opcode) : ConditionalCallReturnOrJumpBase(opcode) {
+        size = 2;
+        uint8_t flag_idx = (opcode >> 3) & 0x07;
+        m_condition = static_cast<ConditionalCallReturnOrJumpBase::Condition>(flag_idx - 4);
+        m_flag_to_test_name = ConditionNameMap.find(m_condition)->second;
+        name = m_condition == ConditionalCallReturnOrJumpBase::Condition::None ? "JR d8" : GeneralUtilities::formatted_string("JR %s, d8", m_flag_to_test_name);
     }
 
     void set_opcode_data(uint8_t *data) override {
-        m_data = data[0];
-        memcpy(&m_jump_offset, &m_data, 1);
-        m_disassembled_instruction = GeneralUtilities::formatted_string("JR %s 0x%X", m_flag_to_test_name, m_data);
+        memcpy(&m_jump_offset, data, 1);
+        m_disassembled_instruction = m_condition == ConditionalCallReturnOrJumpBase::Condition::None
+                                         ? GeneralUtilities::formatted_string("JR 0x%X", data[0])
+                                         : GeneralUtilities::formatted_string("JR %s, 0x%X", m_flag_to_test_name, data[0]);
     }
 
     std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
 
     void execute(CPU *cpu, MMU *mmu) override {
-        if (cpu->flag_is_set(CPU::Flag::Z)) {
-            cycles = 2;
-        } else {
+        if (condition_is_met(cpu)) {
             cycles = 3;
-            cpu->add_offset_to_pc(m_jump_offset);
+            auto target_address = static_cast<uint16_t>(cpu->get_16_bit_register(CPU::Register::PC) + m_jump_offset);
+            execute_jump(cpu, &target_address);
+        } else {
+            cycles = 2;
         }
     }
 
   private:
-    uint8_t m_flag_idx;
     std::string m_flag_to_test_name;
     std::string m_disassembled_instruction;
-    uint8_t m_data;
     int8_t m_jump_offset;
+};
 
-    const std::unordered_map<uint8_t, std::string> m_flag_to_test_name_map = {
-        { 3, "" }, { 4, "NZ," }, { 5, "Z," }, { 6, "NC," }, { 7, "C," },
-    };
+// Call instructions
+struct Call final : public ConditionalCallReturnOrJumpBase {
+
+  public:
+    Call(uint8_t opcode) : ConditionalCallReturnOrJumpBase(opcode) {
+        size = 3;
+        if (opcode == UnconditionalCallOpcode) {
+            m_condition = ConditionalCallReturnOrJumpBase::Condition::None;
+        } else {
+            uint8_t flag_idx = (opcode >> 3) & 0x07;
+            m_condition = static_cast<ConditionalCallReturnOrJumpBase::Condition>(flag_idx);
+        }
+        m_flag_to_test_name = ConditionNameMap.find(m_condition)->second;
+        name = m_condition == ConditionalCallReturnOrJumpBase::Condition::None ? "CALL a16"
+                                                                               : GeneralUtilities::formatted_string("CALL %s, a16", m_flag_to_test_name);
+    }
+
+    void set_opcode_data(uint8_t *data) override {
+        m_data = data[1] << 8 | data[0];
+        m_disassembled_instruction = m_condition == ConditionalCallReturnOrJumpBase::Condition::None
+                                         ? GeneralUtilities::formatted_string("CALL 0x%X", m_data)
+                                         : GeneralUtilities::formatted_string("CALL %s, 0x%X", m_flag_to_test_name, m_data);
+    }
+
+    std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
+
+    void execute(CPU *cpu, MMU *mmu) override {
+        if (condition_is_met(cpu)) {
+            cycles = 6;
+            execute_call(cpu, mmu, &m_data);
+        } else {
+            cycles = 3;
+        }
+    }
+
+  private:
+    const uint8_t UnconditionalCallOpcode = 0xCD;
+    uint16_t m_data;
+    std::string m_flag_to_test_name;
+    std::string m_disassembled_instruction;
+};
+
+// Return instructions
+struct ReturnFromCall final : public ConditionalCallReturnOrJumpBase {
+
+  public:
+    ReturnFromCall(uint8_t opcode) : ConditionalCallReturnOrJumpBase(opcode) {
+        size = 1;
+        if ((opcode & 0x0F) == 0x09) {
+            m_condition = ConditionalCallReturnOrJumpBase::Condition::None;
+            m_enable_interrupts = (opcode >> 4) == 0x0D;
+            name = m_enable_interrupts ? "RETI" : "RET";
+        } else {
+            uint8_t flag_idx = (opcode >> 3) & 0x07;
+            m_condition = static_cast<ConditionalCallReturnOrJumpBase::Condition>(flag_idx);
+            auto flag_to_test_name = ConditionNameMap.find(m_condition)->second;
+            name = GeneralUtilities::formatted_string("RET %s", flag_to_test_name);
+        }
+    }
+
+    void execute(CPU *cpu, MMU *mmu) override {
+        if (condition_is_met(cpu)) {
+            cycles = m_condition == ConditionalCallReturnOrJumpBase::Condition::None ? 4 : 5;
+            execute_return(cpu, mmu);
+
+            if (m_enable_interrupts)
+                cpu->set_interrupt_enable(true);
+
+        } else {
+            cycles = 2;
+        }
+    }
+
+  private:
+    bool m_enable_interrupts = false;
 };
 
 // Load 8-bit register from immediate
@@ -422,7 +528,7 @@ struct RegisterOperationBase : public Opcode {
             break;
 
         case RegisterOperationBase::Operation::Compare:
-            flag_pattern = new bool[]{ result == 0x00, 1, cpu->half_carry_occurs_on_subtract(accumulator_value, *operand),
+            flag_pattern = new bool[]{ accumulator_value == *operand, 1, cpu->half_carry_occurs_on_subtract(accumulator_value, *operand),
                                        cpu->carry_occurs_on_subtract(accumulator_value, *operand) };
             break;
 
@@ -471,7 +577,7 @@ struct RegisterOperationBase : public Opcode {
         RegisterOperationBase::Operation::Compare,
     };
 
-    static inline std::unordered_map<RegisterOperationBase::Operation, std::string> m_operations_name = {
+    const std::unordered_map<RegisterOperationBase::Operation, std::string> m_operations_name = {
         { RegisterOperationBase::Operation::AddToAccumulator, "ADD A," },
         { RegisterOperationBase::Operation::AddToAccumulatorWithCarry, "ADC A," },
         { RegisterOperationBase::Operation::SubtractFromAccumulator, "SUB" },
@@ -707,31 +813,6 @@ struct Pop16bitRegister final : public Opcode {
     CPU::Register m_target;
 };
 
-// Unconditional returns
-struct UnconditionalReturn final : public Opcode {
-  public:
-    UnconditionalReturn(uint8_t opcode) : Opcode(1, 4, opcode) {
-        m_enable_interrupts = (opcode >> 4) == 0x0D;
-        name = GeneralUtilities::formatted_string("%s", m_enable_interrupts ? "RETI" : "RET");
-    }
-
-    void execute(CPU *cpu, MMU *mmu) override {
-        uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
-
-        uint8_t *data = new uint8_t[2];
-        (void)mmu->try_read_from_memory(data, sp, 2);
-
-        cpu->set_register(CPU::Register::PC, static_cast<uint16_t>(data[1] << 8 | data[0]));
-        cpu->add_offset_to_sp(2);
-
-        if (m_enable_interrupts)
-            cpu->set_interrupt_enable(true);
-    }
-
-  private:
-    bool m_enable_interrupts;
-};
-
 // Extended opcodes, rotations, shifts, swap, bit tests, set and reset
 struct ExtendedOpcode final : public Opcode {
   public:
@@ -748,13 +829,13 @@ struct ExtendedOpcode final : public Opcode {
         if (m_type == ExtendedOpcode::ExtendedOpcodeType::RotationShiftOrSwap) {
 
             m_rot_type = m_rotations_type_map[bit_or_rotation_idx];
-            auto operation_name = m_rotations_type_name.find(m_rot_type)->second;
+            auto operation_name = RotationsTypeName.find(m_rot_type)->second;
 
             name = m_target == CPU::Register::HL ? GeneralUtilities::formatted_string("%s (%s)", operation_name, target_name)
                                                  : GeneralUtilities::formatted_string("%s %s", operation_name, target_name);
         } else {
             m_bit = bit_or_rotation_idx;
-            auto operation_name = m_extended_opcode_type_name.find(m_type)->second;
+            auto operation_name = ExtendedOpcodeTypeName.find(m_type)->second;
             name = m_target == CPU::Register::HL ? GeneralUtilities::formatted_string("%s %d, (%s)", operation_name, m_bit, target_name)
                                                  : GeneralUtilities::formatted_string("%s %d, %s", operation_name, m_bit, target_name);
         }
@@ -820,7 +901,7 @@ struct ExtendedOpcode final : public Opcode {
         ExtendedOpcodeType::Set,
     };
 
-    static inline std::unordered_map<ExtendedOpcodeType, std::string> m_extended_opcode_type_name = {
+    const std::unordered_map<ExtendedOpcodeType, std::string> ExtendedOpcodeTypeName = {
         { ExtendedOpcodeType::RotationShiftOrSwap, "ROT" },
         { ExtendedOpcodeType::Test, "BIT" },
         { ExtendedOpcodeType::Reset, "RES" },
@@ -838,7 +919,7 @@ struct ExtendedOpcode final : public Opcode {
         RotationShiftOrSwapType::ShiftRightLogic,
     };
 
-    static inline std::unordered_map<RotationShiftOrSwapType, std::string> m_rotations_type_name = {
+    const std::unordered_map<RotationShiftOrSwapType, std::string> RotationsTypeName = {
         { RotationShiftOrSwapType::RotateLeft, "RLC" },
         { RotationShiftOrSwapType::RotateRight, "RRC" },
         { RotationShiftOrSwapType::RotateLeftThroughCarry, "RL" },

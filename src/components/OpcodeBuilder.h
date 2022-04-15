@@ -73,7 +73,7 @@ static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
           case 1:
           case 2:
           case 3:
-              NOT_IMPLEMENTED("Conditional returns");
+              return construct<ReturnFromCall>(identifier);
           case 4:
           case 6:
               return construct<ReadWriteIOPortNWithA>(identifier);
@@ -96,7 +96,7 @@ static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
               return construct<Pop16bitRegister>(identifier);
           case 1:
           case 3:
-              return construct<UnconditionalReturn>(identifier);
+              return construct<ReturnFromCall>(identifier);
           case 5:
               NOT_IMPLEMENTED("Jump indirect");
           case 7:
@@ -125,13 +125,23 @@ static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
               __builtin_unreachable();
           }
       } },
+    { 4,
+      [](uint8_t identifier) {
+          uint8_t y = (identifier >> 3) & 0x07;
+          if (y < 4)
+              return construct<Call>(identifier);
+          else
+              INVALID_OPCODE(identifier)
+      } },
     { 5,
       [](uint8_t identifier) {
           uint8_t y = (identifier >> 3) & 0x07;
           if (y == 1)
-              return construct<CallUnconditional>();
-          else
+              return construct<Call>(identifier);
+          else if ((y & 0x01) == 0)
               return construct<Push16bitRegister>(identifier);
+          else
+              INVALID_OPCODE(identifier)
       } },
     { 6, [](uint8_t identifier) { return construct<AccumulatorOperation>(identifier); } },
 
