@@ -5,6 +5,7 @@ set(HEADER_FILES
 
 set(SOURCE_FILES 
 		LogUtilities.cpp
+		CommandLineParsing.cpp
 	)
 
 add_library(gbcemu_util 
