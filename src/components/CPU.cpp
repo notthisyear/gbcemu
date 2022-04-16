@@ -8,12 +8,16 @@
 
 namespace gbcemu {
 
-CPU::CPU(std::shared_ptr<MMU> mmu) : m_mmu(mmu), m_reg_af(0x0000), m_reg_bc(0x0000), m_reg_de(0x0000), m_reg_hl(0x0000), m_reg_sp(0x0000), m_reg_pc(0x0000) {}
+CPU::CPU(std::shared_ptr<MMU> mmu, std::shared_ptr<PPU> ppu)
+    : m_mmu(mmu), m_ppu(ppu), m_reg_af(0x0000), m_reg_bc(0x0000), m_reg_de(0x0000), m_reg_hl(0x0000), m_reg_sp(0x0000), m_reg_pc(0x0000) {}
 
 void CPU::tick() {
+    auto current_cycles_before_execution = m_current_cycle_count;
     auto opcode = get_next_opcode();
     opcode->execute(this, m_mmu.get());
     m_current_cycle_count += opcode->cycles;
+
+    m_ppu->tick(m_current_cycle_count - current_cycles_before_execution);
 }
 
 std::shared_ptr<Opcode> CPU::get_next_opcode() {

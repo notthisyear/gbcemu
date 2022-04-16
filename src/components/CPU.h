@@ -1,7 +1,7 @@
 #pragma once
 
 #include "MMU.h"
-#include "util/LogUtilities.h"
+#include "PPU.h"
 #include <memory>
 #include <stdint.h>
 #include <string>
@@ -64,7 +64,7 @@ class CPU {
         { CPU::ArithmeticOperation::Decrement, "DEC" },
     };
 
-    CPU(std::shared_ptr<MMU>);
+    CPU(std::shared_ptr<MMU>, std::shared_ptr<PPU>);
 
     void tick();
 
@@ -220,11 +220,11 @@ class CPU {
 
   private:
     std::shared_ptr<MMU> m_mmu;
+    std::shared_ptr<PPU> m_ppu;
     uint32_t m_current_cycle_count = 0;
     uint16_t m_current_breakpoint;
+    const uint32_t CpuCyclesPerFrame = 17556; // TODO: The actual value is 70224, we should change all cycle counts to T-cycles instead...;
 
-    bool m_debug_is_on = false;
-    bool m_show_disassembled_instruction = false;
     bool m_interrupt_enabled = false;
 
     uint16_t m_reg_af; // Accumulator and flags

@@ -47,7 +47,8 @@ int main(int argc, char **argv) {
     }
 
     auto mmu = std::make_shared<gbcemu::MMU>(0xFFFF);
-    auto cpu = std::make_unique<gbcemu::CPU>(mmu);
+    auto ppu = std::make_shared<gbcemu::PPU>(mmu);
+    auto cpu = std::make_unique<gbcemu::CPU>(mmu, ppu);
 
     gbcemu::LogUtilities::log(gbcemu::LoggerType::Internal, gbcemu::LogLevel::Info, "Emulator started!");
 
@@ -66,7 +67,7 @@ int main(int argc, char **argv) {
     delete cartridge_argument;
 
     mmu->set_in_boot_mode(true);
-    cpu->enable_breakpoint_at(0x68); // We'll hang on 0x68 due to VBLANK never occuring
+    cpu->enable_breakpoint_at(0xe0); // We'll hang on 0x68 due to VBLANK never occuring
 
     bool step_mode = true;
     std::string input, cmd;
