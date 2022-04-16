@@ -1,11 +1,13 @@
 set(HEADER_FILES 
 		LogUtilities.h
 		GeneralUtilities.h
+		DebuggerCommand.h
+		CommandLineArgument.h
 	)
 
 set(SOURCE_FILES 
 		LogUtilities.cpp
-		CommandLineParsing.cpp
+		CommandLineArgument.cpp
 	)
 
 add_library(gbcemu_util 

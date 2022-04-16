@@ -1,32 +1,49 @@
 #include "components/CPU.h"
-#include "util/CommandLineParsing.cpp"
+#include "util/CommandLineArgument.h"
+#include "util/DebuggerCommand.h"
 #include "util/GeneralUtilities.h"
 #include "util/LogUtilities.h"
+#include <iostream>
 #include <memory>
 
-std::string get_option_from_arguments(int argc, char **argv, std::string option_to_get, bool *option_found) {
+void print_help() {
+    std::cout << "gbcemu v 0.1\n";
+    std::cout << "A GB/GBC/SGB emulator (at some point).\n\n";
 
-    std::string opt;
-    auto raw_opt = gbcemu::get_option(argv, argv + argc, option_to_get);
-    *option_found = raw_opt != nullptr;
-    if (*option_found)
-        opt = std::string(raw_opt);
-    return opt;
+    gbcemu::CommandLineArgument::print_usage_string(std::cout, "gbcemu");
+    std::cout << "\n" << std::endl;
+    gbcemu::CommandLineArgument::print_options(std::cout);
 }
 
 int main(int argc, char **argv) {
 
     gbcemu::LogUtilities::init();
 
-    bool has_boot_rom, has_catridge;
-    auto boot_rom_path = get_option_from_arguments(argc, argv, "--boot-rom", &has_boot_rom);
-    auto cartridge_path = get_option_from_arguments(argc, argv, "--cartridge", &has_catridge);
+    bool has_help;
+    auto s = gbcemu::CommandLineArgument::get_debugger_cmd(argc, argv, gbcemu::CommandLineArgument::ArgumentType::Help, &has_help);
+    if (has_help) {
+        print_help();
+        return 0;
+    }
 
-    if (has_boot_rom)
-        boot_rom_path = gbcemu::fix_path(boot_rom_path);
+    bool has_boot_rom, has_cartridge;
+    auto boot_rom_argument = gbcemu::CommandLineArgument::get_debugger_cmd(argc, argv, gbcemu::CommandLineArgument::ArgumentType::BootRomPath, &has_boot_rom);
+    auto cartridge_argument =
+        gbcemu::CommandLineArgument::get_debugger_cmd(argc, argv, gbcemu::CommandLineArgument::ArgumentType::CartridgePath, &has_cartridge);
 
-    if (has_catridge)
-        cartridge_path = gbcemu::fix_path(cartridge_path);
+    if (has_boot_rom) {
+        boot_rom_argument->fix_path();
+    } else {
+        gbcemu::LogUtilities::log(gbcemu::LoggerType::Internal, gbcemu::LogLevel::Error, "Running without boot ROM is currently not supported");
+        exit(1);
+    }
+
+    if (has_cartridge) {
+        cartridge_argument->fix_path();
+    } else {
+        gbcemu::LogUtilities::log(gbcemu::LoggerType::Internal, gbcemu::LogLevel::Error, "Running without cartridge is currently not supported");
+        exit(1);
+    }
 
     auto mmu = std::make_shared<gbcemu::MMU>(0xFFFF);
     auto cpu = std::make_unique<gbcemu::CPU>(mmu);
@@ -34,15 +51,19 @@ int main(int argc, char **argv) {
     gbcemu::LogUtilities::log(gbcemu::LoggerType::Internal, gbcemu::LogLevel::Info,
                               gbcemu::GeneralUtilities::formatted_string("Emulator started! CPU is: %s", cpu->get_cpu_name()));
 
-    if (!mmu->try_load_boot_rom(boot_rom_path))
+    if (!mmu->try_load_boot_rom(boot_rom_argument->value))
         exit(1);
 
     gbcemu::LogUtilities::log(gbcemu::LoggerType::Internal, gbcemu::LogLevel::Info, "Boot ROM loaded");
 
-    if (!mmu->try_load_cartridge(cartridge_path))
+    if (!mmu->try_load_cartridge(cartridge_argument->value))
         exit(1);
+
     gbcemu::LogUtilities::log(gbcemu::LoggerType::Internal, gbcemu::LogLevel::Info,
-                              gbcemu::GeneralUtilities::formatted_string("Cartridge '%s' loaded", cartridge_path));
+                              gbcemu::GeneralUtilities::formatted_string("Cartridge '%s' loaded", cartridge_argument->value));
+
+    delete boot_rom_argument;
+    delete cartridge_argument;
 
     mmu->set_in_boot_mode(true);
 
@@ -50,7 +71,11 @@ int main(int argc, char **argv) {
     cpu->set_debug_mode(false);
 
     bool step_mode = false;
+    std::string input, cmd;
     while (true) {
+        std::cout << "> ";
+        std::cin >> input;
+
         if (cpu->breakpoint_hit()) {
             cpu->clear_breakpoint();
             cpu->set_debug_mode(true);
