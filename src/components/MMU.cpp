@@ -291,8 +291,8 @@ const std::map<MMU::MemoryRegion, std::pair<uint16_t, uint16_t>> MMU::m_region_m
     { MMU::MemoryRegion::WRAMSwitchable, MMU::make_address_pair(0xD000, 0xDFFF) },
     { MMU::MemoryRegion::EchoRAM, MMU::make_address_pair(0xE000, 0xFDFF) },
     { MMU::MemoryRegion::SpriteAttributeTable, MMU::make_address_pair(0xFE00, 0xFEFF) },
-    { MMU::MemoryRegion::Restricted, MMU::make_address_pair(0xFF00, 0xFF7F) },
-    { MMU::MemoryRegion::IORegisters, MMU::make_address_pair(0x0000, 0x3FFF) },
+    { MMU::MemoryRegion::Restricted, MMU::make_address_pair(0xFEA0, 0xFEFF) },
+    { MMU::MemoryRegion::IORegisters, MMU::make_address_pair(0xFF00, 0xFF7F) },
     { MMU::MemoryRegion::HRAM, MMU::make_address_pair(0xFF80, 0xFFFE) },
     { MMU::MemoryRegion::IERegister, MMU::make_address_pair(0xFFFF, 0xFFFF) },
 };
