@@ -74,8 +74,38 @@ int main(int argc, char **argv) {
     std::string input, cmd;
     while (true) {
         std::cout << "> ";
-        std::cin >> input;
+        std::getline(std::cin, input);
 
+        auto cmd = input.empty() ? gbcemu::DebuggerCommand::Command::Step : gbcemu::DebuggerCommand::get_debugger_cmd(input);
+
+        switch (cmd) {
+        case gbcemu::DebuggerCommand::Command::Help:
+            std::cout << "help" << std::endl;
+            break;
+        case gbcemu::DebuggerCommand::Command::Show:
+            std::cout << "show" << std::endl;
+            break;
+        case gbcemu::DebuggerCommand::Command::SetBreakpoint:
+            std::cout << "set breakpoint" << std::endl;
+            break;
+        case gbcemu::DebuggerCommand::Command::ClearBreakpoint:
+            std::cout << "clear breakpoint" << std::endl;
+            break;
+        case gbcemu::DebuggerCommand::Command::Step:
+            std::cout << "step" << std::endl;
+            break;
+        case gbcemu::DebuggerCommand::Command::Run:
+            std::cout << "run" << std::endl;
+            break;
+        case gbcemu::DebuggerCommand::Command::Break:
+            std::cout << "break" << std::endl;
+            break;
+        case gbcemu::DebuggerCommand::Command::None:
+            std::cout << "none" << std::endl;
+            break;
+        default:
+            __builtin_unreachable();
+        }
         if (cpu->breakpoint_hit()) {
             cpu->clear_breakpoint();
             cpu->set_debug_mode(true);
