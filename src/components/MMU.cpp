@@ -1,7 +1,6 @@
 #include "MMU.h"
 #include "Cartridge.h"
 #include "util/GeneralUtilities.h"
-#include "util/LogUtilities.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -14,11 +13,12 @@ MMU::MMU(uint16_t memory_size) : m_memory_size(memory_size) {
     memset(m_memory, (uint8_t)0x00, m_memory_size);
 }
 
-bool MMU::try_load_boot_rom(const std::string &path) {
+bool MMU::try_load_boot_rom(std::ostream &stream, const std::string &path) {
 
     uint64_t size;
     if (!get_file_size(path, &size)) {
-        log(LogLevel::Error, GeneralUtilities::formatted_string("Could not load boot ROM from '%s'", path));
+        stream << "\033[1;31m[error] "
+               << "\033[0m Could not load boot ROM from '" << path << "'" << std::endl;
         return false;
     }
 
@@ -27,25 +27,28 @@ bool MMU::try_load_boot_rom(const std::string &path) {
 
     bool success = try_load_from_file(path, m_boot_rom, size);
     if (!success) {
-        log(LogLevel::Error, GeneralUtilities::formatted_string("Could not load boot ROM from '%s'", path));
+        stream << "\033[1;31m[error] "
+               << "\033[0m Could not load boot ROM from '" << path << "'" << std::endl;
         return false;
     }
 
     return true;
 }
 
-bool MMU::try_load_cartridge(const std::string &path) {
+bool MMU::try_load_cartridge(std::ostream &stream, const std::string &path) {
 
     uint64_t size;
     if (!get_file_size(path, &size)) {
-        log(LogLevel::Error, GeneralUtilities::formatted_string("Could not load cartridge from '%s'", path));
+        stream << "\033[1;31m[error] "
+               << "\033[0m Could not load cartridge from '" << path << "'" << std::endl;
         return false;
     }
 
     auto cartridge_data = new uint8_t[size];
     bool success = try_load_from_file(path, cartridge_data, size);
     if (!success) {
-        log(LogLevel::Error, GeneralUtilities::formatted_string("Could not load cartridge from '%s'", path));
+        stream << "\033[1;31m[error] "
+               << "\033[0m Could not load cartridge from '" << path << "'" << std::endl;
         return false;
     }
 
@@ -114,12 +117,6 @@ bool MMU::try_map_data_to_memory(uint8_t *data, uint16_t offset, uint16_t size) 
         break;
     }
 
-    if (m_debug_is_on) {
-        log(LogLevel::Debug,
-            GeneralUtilities::formatted_string("%s %d B in range 0x%x - 0x%x (%s)", result ? "Wrote" : "Failed to write", size, offset, offset + size - 1,
-                                               (m_is_in_boot_mode && offset < m_boot_rom_size) ? "Boot ROM" : get_region_name(region)));
-    }
-
     return result;
 }
 
@@ -177,13 +174,6 @@ bool MMU::try_read_from_memory(uint8_t *data, uint16_t offset, uint64_t size) co
             break;
         }
     }
-
-    // if (m_debug_is_on) {
-    //     log(LogLevel::Debug,
-    //         GeneralUtilities::formatted_string("%s %d B from range 0x%x - 0x%x (%s)", result ? "Read" : "Failed to read", size, offset, offset + size - 1,
-    //                                            (m_is_in_boot_mode && is_boot_rom_range(offset, size)) ? "Boot ROM" : get_region_name(region)));
-    // }
-
     return result;
 }
 
@@ -282,10 +272,6 @@ void MMU::read_from_boot_rom(uint8_t *data, uint16_t offset, uint64_t size) cons
 }
 
 void MMU::set_in_boot_mode(bool is_in_boot_mode) { m_is_in_boot_mode = is_in_boot_mode; }
-
-void MMU::set_debug_mode(bool on_or_off) { m_debug_is_on = on_or_off; }
-
-void MMU::log(LogLevel level, const std::string &message) const { LogUtilities::log(LoggerType::Mmu, level, message); }
 
 MMU::MemoryRegion MMU::find_memory_region(uint16_t address) const {
     for (auto const &entry : m_region_map) {

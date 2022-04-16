@@ -1,12 +1,11 @@
 #pragma once
 
 #include "Cartridge.h"
-#include "util/LogUtilities.h"
 #include <map>
 #include <memory>
 #include <stdint.h>
 #include <string>
-
+#include <unordered_map>
 namespace gbcemu {
 
 class MMU {
@@ -42,8 +41,8 @@ class MMU {
 
     MMU(uint16_t memory_size);
 
-    bool try_load_boot_rom(const std::string &);
-    bool try_load_cartridge(const std::string &);
+    bool try_load_boot_rom(std::ostream &stream, const std::string &);
+    bool try_load_cartridge(std::ostream &stream, const std::string &);
 
     bool try_map_data_to_memory(uint8_t *data, uint16_t offset, uint16_t size);
     bool try_read_from_memory(uint8_t *data, uint16_t offset, uint64_t size) const;
@@ -61,7 +60,6 @@ class MMU {
     std::unique_ptr<Cartridge> m_cartridge;
     MMU::MemoryRegion find_memory_region(uint16_t address) const;
 
-    bool m_debug_is_on;
     bool m_is_in_boot_mode;
     bool m_loading_cartridge;
     uint64_t m_boot_rom_size;
@@ -80,7 +78,6 @@ class MMU {
     void read_from_boot_rom(uint8_t *, uint16_t, uint64_t) const;
     bool try_load_from_file(const std::string &, uint8_t *, const uint64_t) const;
 
-    void log(LogLevel level, const std::string &message) const;
     std::string get_region_name(MMU::MemoryRegion) const;
     std::string get_io_register_name(MMU::IORegister) const;
 

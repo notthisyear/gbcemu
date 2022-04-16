@@ -51,12 +51,12 @@ int main(int argc, char **argv) {
 
     gbcemu::LogUtilities::log(gbcemu::LoggerType::Internal, gbcemu::LogLevel::Info, "Emulator started!");
 
-    if (!mmu->try_load_boot_rom(boot_rom_argument->value))
+    if (!mmu->try_load_boot_rom(std::cout, boot_rom_argument->value))
         exit(1);
 
     gbcemu::LogUtilities::log(gbcemu::LoggerType::Internal, gbcemu::LogLevel::Info, "Boot ROM loaded");
 
-    if (!mmu->try_load_cartridge(cartridge_argument->value))
+    if (!mmu->try_load_cartridge(std::cout, cartridge_argument->value))
         exit(1);
 
     gbcemu::LogUtilities::log(gbcemu::LoggerType::Internal, gbcemu::LogLevel::Info,
@@ -130,9 +130,15 @@ int main(int argc, char **argv) {
                 else
                     cmd->print_command_help(std::cout);
                 continue;
+
             case gbcemu::DebuggerCommand::Command::SetBreakpoint:
-                std::cout << "set breakpoint" << std::endl;
+                uint16_t breakpoint;
+                if (cmd->try_get_numeric_argument(&breakpoint))
+                    cpu->enable_breakpoint_at(breakpoint);
+                else
+                    cmd->print_command_help(std::cout);
                 continue;
+
             case gbcemu::DebuggerCommand::Command::ClearBreakpoint:
                 std::cout << "clear breakpoint" << std::endl;
                 continue;
