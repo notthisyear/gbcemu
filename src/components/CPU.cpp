@@ -13,15 +13,7 @@ CPU::CPU(std::shared_ptr<MMU> mmu) : m_mmu(mmu), m_reg_af(0x0000), m_reg_bc(0x00
 void CPU::tick() {
     auto opcode = get_next_opcode();
     opcode->execute(this, m_mmu.get());
-
     m_current_cycle_count += opcode->cycles;
-    if (m_debug_is_on) {
-        auto flag_string = GeneralUtilities::formatted_string("ZF: %d, NF: %d, HF: %d, CF: %d", flag_is_set(Flag::Z) ? 1 : 0, flag_is_set(Flag::N) ? 1 : 0,
-                                                              flag_is_set(Flag::H) ? 1 : 0, flag_is_set(Flag::C) ? 1 : 0);
-        log(LogLevel::Debug, GeneralUtilities::formatted_string("AF: 0x%x, BC: 0x%x, DE: 0x%x, HL: 0x%x, SP: "
-                                                                "0x%x, PC: 0x%x [%s]",
-                                                                m_reg_af, m_reg_bc, m_reg_de, m_reg_hl, m_reg_sp, m_reg_pc, flag_string));
-    }
 }
 
 std::shared_ptr<Opcode> CPU::get_next_opcode() {
@@ -134,8 +126,6 @@ void CPU::print_additional_info(std::ostream &stream) const {
            << "\033[1;37m" << breakpoint_string << "\033[0;32m\tcurrent_cycles: "
            << "\033[1;37m" << m_current_cycle_count << "\033[0;m" << std::endl;
 }
-
-void CPU::log(LogLevel level, const std::string &message) const { LogUtilities::log(LoggerType::Cpu, level, message); }
 
 CPU::~CPU() {}
 

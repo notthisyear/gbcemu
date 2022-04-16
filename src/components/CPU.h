@@ -252,7 +252,5 @@ class CPU {
     void print_sp_and_pc(std::ostream &stream) const;
 
     void print_additional_info(std::ostream &stream) const;
-
-    void log(LogLevel level, const std::string &message) const;
 };
 }
