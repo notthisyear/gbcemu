@@ -30,10 +30,11 @@ static const std::unordered_map<uint8_t, opcode_builder> _00_opcodes = {
     { 1,
       [](uint8_t identifier) {
           auto q = (identifier >> 3) & 0x01;
-          if (q == 0)
+          if (q == 0) {
               return construct<Load16bitImmediate>(identifier);
-          else
+          } else {
               NOT_IMPLEMENTED("16-bit add");
+          }
       } },
     { 2, [](uint8_t identifier) { return construct<Load16bitIndirect>(identifier); } },
     { 3, [](uint8_t identifier) { return construct<IncrementDecrement16Bit>(identifier); } },
@@ -153,6 +154,7 @@ static std::unordered_map<uint8_t, std::shared_ptr<Opcode>> _extended_opcode_cac
 static std::shared_ptr<Opcode> _check_opcode_cache(const uint8_t identifier, const std::unordered_map<uint8_t, std::shared_ptr<Opcode>> &cache) {
     auto result = cache.find(identifier);
     return result != cache.end() ? result->second : nullptr;
+    ;
 }
 
 static bool is_extended_opcode(const uint8_t identifier) { return identifier == 0xCB; }
@@ -168,8 +170,7 @@ static std::shared_ptr<Opcode> decode_opcode(const uint8_t identifier, bool is_e
 
     if (is_extended) {
         auto opcode = construct<ExtendedOpcode>(identifier);
-        if (opcode != nullptr)
-            _extended_opcode_cache.insert({ identifier, opcode });
+        _extended_opcode_cache.insert({ identifier, opcode });
         return opcode;
     }
 

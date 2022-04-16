@@ -1,14 +1,15 @@
 #pragma once
 
+#include "MMU.h"
+#include "util/LogUtilities.h"
 #include <memory>
 #include <stdint.h>
 #include <string>
 #include <unordered_map>
 
-#include "MMU.h"
-#include "util/LogUtilities.h"
-
 namespace gbcemu {
+
+class Opcode;
 
 class CPU {
   public:
@@ -65,19 +66,15 @@ class CPU {
 
     CPU(std::shared_ptr<MMU>);
 
-    const std::string get_cpu_name() const { return "Sharp LR35902"; }
-
     void tick();
+
+    void print_disassembled_instructions(std::ostream &, uint16_t);
+
+    void clear_breakpoint();
 
     void enable_breakpoint_at(uint16_t pc);
 
     void set_interrupt_enable(bool on_or_off);
-
-    void set_debug_mode(bool on_or_off);
-
-    void show_disassembled_instruction(bool on_or_off);
-
-    void clear_breakpoint();
 
     uint8_t get_8_bit_register(const CPU::Register reg) const {
         switch (reg) {
@@ -217,6 +214,8 @@ class CPU {
 
     bool carry_occurs_on_subtract(uint8_t v, const uint8_t value_to_subtract) const;
 
+    void print_state(std::ostream &) const;
+
     ~CPU();
 
   private:
@@ -235,6 +234,7 @@ class CPU {
     uint16_t m_reg_sp; // Stack pointer
     uint16_t m_reg_pc; // Program counter
 
+    std::shared_ptr<Opcode> get_next_opcode();
     void set_register(uint16_t *reg, const uint16_t value) { (*reg) = value; }
 
     void set_register_lower(uint16_t *reg, const uint8_t value) { (*reg) = ((*reg) & 0xFF00) | value; }
@@ -245,6 +245,14 @@ class CPU {
 
     uint8_t get_register_upper(const uint16_t *reg) const { return (*reg) >> 8; }
 
-    void log(LogLevel level, const std::string &message);
+    void print_flag_value(std::ostream &, const std::string &, const bool, const bool) const;
+
+    void print_reg(std::ostream &, const CPU::Register, const bool) const;
+
+    void print_sp_and_pc(std::ostream &stream) const;
+
+    void print_additional_info(std::ostream &stream) const;
+
+    void log(LogLevel level, const std::string &message) const;
 };
 }

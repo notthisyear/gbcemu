@@ -539,7 +539,6 @@ struct RegisterOperationBase : public Opcode {
             break;
         default:
             NOT_IMPLEMENTED(name);
-            break;
         }
 
         if (m_operation != RegisterOperationBase::Operation::Compare)

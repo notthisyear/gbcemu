@@ -7,8 +7,9 @@ set(HEADER_FILES
 
 set(SOURCE_FILES 
 		LogUtilities.cpp
+		DebuggerCommand.cpp
 		CommandLineArgument.cpp
-	)
+		)
 
 add_library(gbcemu_util 
 		${SOURCE_FILES}

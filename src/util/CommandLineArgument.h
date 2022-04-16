@@ -56,8 +56,11 @@ class CommandLineArgument {
 
   private:
     static std::string get_regexp(ArgumentType type) { return m_argument_regexp_and_help.find(type)->second.first; }
+
     static std::string get_help_text(ArgumentType type) { return m_argument_regexp_and_help.find(type)->second.second; }
+
     static bool argument_is_switch(ArgumentType type) { return get_regexp(type).find(' ') == std::string::npos; }
+
     static std::string get_regexp_printable(const ArgumentType type) {
         auto regexp = get_regexp(type);
         auto location_of_whitespace = regexp.find(' ');
@@ -117,7 +120,6 @@ class CommandLineArgument {
         return result;
     }
 
-  private:
     static inline const std::map<CommandLineArgument::ArgumentType, std::pair<std::string, std::string>> m_argument_regexp_and_help = {
         { CommandLineArgument::ArgumentType::Help, std::make_pair<std::string, std::string>("(-h)|(--help)", "show this help message and exit") },
         { CommandLineArgument::ArgumentType::BootRomPath,

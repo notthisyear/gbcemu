@@ -13,6 +13,7 @@ class LogUtilities {
   public:
     static void log(LoggerType type, LogLevel log_level, const std::string &log_message);
     static void init();
+    static std::string to_tf(const bool b) { return b ? "true" : "false"; }
 
   private:
     static const std::unordered_map<LoggerType, std::string> m_logger_names;

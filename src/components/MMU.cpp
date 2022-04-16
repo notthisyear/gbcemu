@@ -4,11 +4,12 @@
 #include "util/LogUtilities.h"
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <stdexcept>
 #include <utility>
 
 namespace gbcemu {
-MMU::MMU(uint32_t memory_size) : m_memory_size(memory_size) {
+MMU::MMU(uint16_t memory_size) : m_memory_size(memory_size) {
     m_memory = new uint8_t[m_memory_size];
     memset(m_memory, (uint8_t)0x00, m_memory_size);
 }
@@ -58,7 +59,7 @@ bool MMU::try_load_cartridge(const std::string &path) {
     return success;
 }
 
-bool MMU::try_map_data_to_memory(uint8_t *data, uint32_t offset, uint32_t size) {
+bool MMU::try_map_data_to_memory(uint8_t *data, uint16_t offset, uint16_t size) {
 
     auto region = find_memory_region(offset);
     auto region_endpoints = m_region_map.find(region)->second;
@@ -122,13 +123,12 @@ bool MMU::try_map_data_to_memory(uint8_t *data, uint32_t offset, uint32_t size) 
     return result;
 }
 
-bool MMU::try_read_from_memory(uint8_t *data, uint32_t offset, uint32_t size) {
+bool MMU::try_read_from_memory(uint8_t *data, uint16_t offset, uint64_t size) const {
     auto region = find_memory_region(offset);
     auto region_endpoints = m_region_map.find(region)->second;
 
     bool result = true;
-
-    if (region == MMU::MemoryRegion::CartridgeFixed && is_boot_rom_range(offset, size)) {
+    if (region == MMU::MemoryRegion::CartridgeFixed && m_is_in_boot_mode && is_boot_rom_range(offset, size)) {
         read_from_boot_rom(data, offset, size);
     } else {
         if ((offset + size - 1) > region_endpoints.second)
@@ -178,13 +178,71 @@ bool MMU::try_read_from_memory(uint8_t *data, uint32_t offset, uint32_t size) {
         }
     }
 
-    if (m_debug_is_on) {
-        log(LogLevel::Debug,
-            GeneralUtilities::formatted_string("%s %d B from range 0x%x - 0x%x (%s)", result ? "Read" : "Failed to read", size, offset, offset + size - 1,
-                                               (m_is_in_boot_mode && is_boot_rom_range(offset, size)) ? "Boot ROM" : get_region_name(region)));
-    }
+    // if (m_debug_is_on) {
+    //     log(LogLevel::Debug,
+    //         GeneralUtilities::formatted_string("%s %d B from range 0x%x - 0x%x (%s)", result ? "Read" : "Failed to read", size, offset, offset + size - 1,
+    //                                            (m_is_in_boot_mode && is_boot_rom_range(offset, size)) ? "Boot ROM" : get_region_name(region)));
+    // }
 
     return result;
+}
+
+void MMU::print_memory_at_location(std::ostream &stream, uint16_t start, uint16_t end) const {
+
+    stream << std::endl;
+
+    uint16_t address_start;
+    if (start % 16 != 0) {
+        address_start = start - (start % 16);
+    } else {
+        address_start = start;
+    }
+
+    auto number_of_bytes_to_print = (end - start) + 1;
+    auto buffer = new uint8_t[number_of_bytes_to_print];
+
+    if (!try_read_from_memory(buffer, start, number_of_bytes_to_print)) {
+        stream << "\033[1;31m[error] \033[0;mCannot show memory across memory regions" << std::endl;
+        return;
+    }
+
+    auto region = find_memory_region(start);
+    std::cout << "from region "
+              << "\033[1;32m" << get_region_name(region) << "\033[0m\n"
+              << std::endl;
+
+    auto number_of_rows = ((end - address_start) / 16) + 1;
+
+    if (number_of_bytes_to_print == 1) {
+        stream << "\033[1;37m" << std::left << std::setw(10) << std::setfill(' ') << GeneralUtilities::formatted_string("0x%04X", start);
+        stream << "\033[0m" << GeneralUtilities::formatted_string("%02x", buffer[0]) << std::endl;
+        return;
+    }
+
+    stream << std::left << std::setw(10) << std::setfill(' ') << " ";
+    stream << "\033[1;37m";
+    for (auto i = 0; i < 16; i++)
+        stream << std::left << std::setw(4) << GeneralUtilities::formatted_string("%02X", i);
+    stream << "\033[0m" << std::endl;
+
+    uint16_t current_start_offset, row_end;
+    auto buffer_idx = 0;
+    for (auto r = 0; r < number_of_rows; r++) {
+        current_start_offset = address_start + (r * 16);
+        row_end = current_start_offset + 16 < (end + 1) ? current_start_offset + 16 : end + 1;
+        stream << "\033[1;37m" << std::left << std::setw(10) << std::setfill(' ') << GeneralUtilities::formatted_string("0x%04X", current_start_offset);
+        stream << "\033[0m";
+
+        for (auto i = current_start_offset; i < row_end; i++) {
+            stream << std::left << std::setw(4);
+            if (i < start)
+                stream << std::setfill(' ') << " ";
+            else
+                stream << GeneralUtilities::formatted_string("%02x", buffer[buffer_idx++]);
+        }
+
+        stream << std::endl;
+    }
 }
 
 bool MMU::get_file_size(const std::string &path, uint64_t *size) const {
@@ -205,16 +263,16 @@ bool MMU::try_load_from_file(const std::string &path, uint8_t *buffer, const uin
     return true;
 }
 
-bool MMU::is_boot_rom_range(uint32_t offset, uint64_t size) const {
+bool MMU::is_boot_rom_range(uint16_t offset, uint64_t size) const {
     // CGB boot ROM is split into two, 0x0000 - 0x00FF and 0x0200 - 0x08FF
-    if (m_boot_rom_size < 0x100)
-        return offset + size < 0x100;
+    if (m_boot_rom_size == 0x100)
+        return (offset + size) <= 0x100;
 
     auto end = offset + size;
     return end < 0xFF || (offset > 0x01FF && end < 0x0900);
 }
 
-void MMU::read_from_boot_rom(uint8_t *data, uint32_t offset, uint64_t size) const {
+void MMU::read_from_boot_rom(uint8_t *data, uint16_t offset, uint64_t size) const {
 
     if (m_boot_rom_size > 0xFF && offset > 0x01FF)
         offset -= 0x0100;
@@ -229,7 +287,7 @@ void MMU::set_debug_mode(bool on_or_off) { m_debug_is_on = on_or_off; }
 
 void MMU::log(LogLevel level, const std::string &message) const { LogUtilities::log(LoggerType::Mmu, level, message); }
 
-MMU::MemoryRegion MMU::find_memory_region(uint32_t address) const {
+MMU::MemoryRegion MMU::find_memory_region(uint16_t address) const {
     for (auto const &entry : m_region_map) {
         if (address > entry.second.second)
             continue;
@@ -238,7 +296,7 @@ MMU::MemoryRegion MMU::find_memory_region(uint32_t address) const {
     __builtin_unreachable();
 }
 
-const std::map<MMU::MemoryRegion, std::pair<uint32_t, uint32_t>> MMU::m_region_map = {
+const std::map<MMU::MemoryRegion, std::pair<uint16_t, uint16_t>> MMU::m_region_map = {
     { MMU::MemoryRegion::CartridgeFixed, MMU::make_address_pair(0x0000, 0x3FFF) },
     { MMU::MemoryRegion::CartridgeSwitchable, MMU::make_address_pair(0x4000, 0x7FFF) },
     { MMU::MemoryRegion::VRAMSwitchable, MMU::make_address_pair(0x8000, 0x9FFF) },

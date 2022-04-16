@@ -1,5 +1,6 @@
 #include "components/CPU.h"
 #include "util/CommandLineArgument.h"
+#include "util/DebuggerCommand.cpp"
 #include "util/DebuggerCommand.h"
 #include "util/GeneralUtilities.h"
 #include "util/LogUtilities.h"
@@ -48,8 +49,7 @@ int main(int argc, char **argv) {
     auto mmu = std::make_shared<gbcemu::MMU>(0xFFFF);
     auto cpu = std::make_unique<gbcemu::CPU>(mmu);
 
-    gbcemu::LogUtilities::log(gbcemu::LoggerType::Internal, gbcemu::LogLevel::Info,
-                              gbcemu::GeneralUtilities::formatted_string("Emulator started! CPU is: %s", cpu->get_cpu_name()));
+    gbcemu::LogUtilities::log(gbcemu::LoggerType::Internal, gbcemu::LogLevel::Info, "Emulator started!");
 
     if (!mmu->try_load_boot_rom(boot_rom_argument->value))
         exit(1);
@@ -66,56 +66,97 @@ int main(int argc, char **argv) {
     delete cartridge_argument;
 
     mmu->set_in_boot_mode(true);
-
     cpu->enable_breakpoint_at(0x68); // We'll hang on 0x68 due to VBLANK never occuring
-    cpu->set_debug_mode(false);
 
-    bool step_mode = false;
+    bool step_mode = true;
     std::string input, cmd;
+
     while (true) {
-        std::cout << "> ";
-        std::getline(std::cin, input);
 
-        auto cmd = input.empty() ? gbcemu::DebuggerCommand::Command::Step : gbcemu::DebuggerCommand::get_debugger_cmd(input);
+        if (step_mode) {
+            std::cout << gbcemu::GeneralUtilities::formatted_string("[PC: 0x%04X]> ", cpu->get_16_bit_register(gbcemu::CPU::Register::PC));
+            std::getline(std::cin, input);
 
-        switch (cmd) {
-        case gbcemu::DebuggerCommand::Command::Help:
-            std::cout << "help" << std::endl;
-            break;
-        case gbcemu::DebuggerCommand::Command::Show:
-            std::cout << "show" << std::endl;
-            break;
-        case gbcemu::DebuggerCommand::Command::SetBreakpoint:
-            std::cout << "set breakpoint" << std::endl;
-            break;
-        case gbcemu::DebuggerCommand::Command::ClearBreakpoint:
-            std::cout << "clear breakpoint" << std::endl;
-            break;
-        case gbcemu::DebuggerCommand::Command::Step:
-            std::cout << "step" << std::endl;
-            break;
-        case gbcemu::DebuggerCommand::Command::Run:
-            std::cout << "run" << std::endl;
-            break;
-        case gbcemu::DebuggerCommand::Command::Break:
-            std::cout << "break" << std::endl;
-            break;
-        case gbcemu::DebuggerCommand::Command::None:
-            std::cout << "none" << std::endl;
-            break;
-        default:
-            __builtin_unreachable();
+            auto cmd = input.empty() ? gbcemu::DebuggerCommand::get_debugger_cmd("step") : gbcemu::DebuggerCommand::get_debugger_cmd(input);
+
+            if (cmd->command == gbcemu::DebuggerCommand::Command::Help) {
+                std::cout << "\navailable commands:\n\n";
+                gbcemu::DebuggerCommand::print_commands(std::cout);
+                std::cout << std::endl;
+                continue;
+            }
+
+            auto cmd_data = cmd->get_command_data();
+            if (cmd_data.empty() || cmd_data.compare("help") == 0) {
+                cmd->print_command_help(std::cout);
+                continue;
+            }
+
+            switch (cmd->command) {
+
+            case gbcemu::DebuggerCommand::Command::Show:
+                if (cmd_data.compare("cpu") == 0) {
+                    cpu->print_state(std::cout);
+
+                } else if (cmd_data.rfind("mem", 0) == 0) {
+                    auto is_pair = cmd_data.find('-') != std::string::npos;
+                    gbcemu::DebuggerCommand::address_pair address;
+                    bool result;
+
+                    if (is_pair) {
+                        result = cmd->try_get_address_pair_arg(&address);
+                    } else {
+                        uint16_t addr_start;
+                        result = cmd->try_get_numeric_argument(&addr_start);
+                        if (result) {
+                            address.first = addr_start;
+                            address.second = addr_start;
+                        }
+                    }
+
+                    if (result)
+                        mmu->print_memory_at_location(std::cout, address.first, address.second);
+
+                } else {
+                    cmd->print_command_help(std::cout);
+                }
+
+                continue;
+
+            case gbcemu::DebuggerCommand::Command::Disassemble:
+                uint16_t number_of_instructions_to_print;
+                if (cmd->try_get_numeric_argument(&number_of_instructions_to_print))
+                    cpu->print_disassembled_instructions(std::cout, number_of_instructions_to_print);
+                else
+                    cmd->print_command_help(std::cout);
+                continue;
+            case gbcemu::DebuggerCommand::Command::SetBreakpoint:
+                std::cout << "set breakpoint" << std::endl;
+                continue;
+            case gbcemu::DebuggerCommand::Command::ClearBreakpoint:
+                std::cout << "clear breakpoint" << std::endl;
+                continue;
+            case gbcemu::DebuggerCommand::Command::Step:
+                cpu->tick();
+                continue;
+            case gbcemu::DebuggerCommand::Command::Run:
+                step_mode = false;
+                break;
+            case gbcemu::DebuggerCommand::Command::None:
+                // Do nothing
+                continue;
+            default:
+                __builtin_unreachable();
+            }
         }
-        if (cpu->breakpoint_hit()) {
-            cpu->clear_breakpoint();
-            cpu->set_debug_mode(true);
-            cpu->show_disassembled_instruction(true);
-            step_mode = true;
-        }
+
         cpu->tick();
 
-        if (step_mode)
-            std::cin.get();
+        if (cpu->breakpoint_hit()) {
+            cpu->clear_breakpoint();
+            step_mode = true;
+        }
     }
+
     return 0;
 }
