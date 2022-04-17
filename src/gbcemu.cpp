@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
     delete cartridge_argument;
 
     mmu->set_in_boot_mode(true);
-    cpu->enable_breakpoint_at(0xe0); // We'll hang on 0x68 due to VBLANK never occuring
+    cpu->enable_breakpoint_at(0xf9);
 
     bool step_mode = true;
     std::string input, cmd;
