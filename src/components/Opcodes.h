@@ -411,42 +411,59 @@ struct Load16bitIndirect final : public Opcode {
     int m_hl_offset = 0;
 };
 
-// 8-bit increment/decrement
-struct IncrementDecrement8Bit final : public Opcode {
+// Increment and decrement 16-bit or 8-bit
+struct IncrementOrDecrement8Or16bit : public Opcode {
   public:
-    IncrementDecrement8Bit(uint8_t opcode) : Opcode(1) {
-        uint8_t target_idx = (opcode >> 3) & 0x07;
-        uint8_t type_idx = opcode & 0x07;
-
-        if (type_idx == 0x04)
-            m_type = CPU::ArithmeticOperation::Increment;
-        else if (type_idx == 0x05)
-            m_type = CPU::ArithmeticOperation::Decrement;
-        else
-            throw std::invalid_argument("Increment/Decrement type identifier invalid");
-
-        m_target = CPU::register_map[target_idx];
+    IncrementOrDecrement8Or16bit(uint8_t opcode) : Opcode(1) {
         identifier = opcode;
+        m_is_16_bit = (opcode & 0x03) == 0x03;
 
+        if (m_is_16_bit) {
+            m_target = CPU::wide_register_map[(opcode >> 4) & 0x03];
+            m_operation = ((opcode >> 3) & 0x01) == 0 ? IncrementOrDecrement8Or16bit::Operation::Increment : IncrementOrDecrement8Or16bit::Operation::Decrement;
+            cycles = 8;
+        } else {
+            m_target = CPU::register_map[(opcode >> 3) & 0x07];
+            m_operation = (opcode & 0x01) == 0 ? IncrementOrDecrement8Or16bit::Operation::Increment : IncrementOrDecrement8Or16bit::Operation::Decrement;
+            cycles = m_target == CPU::Register::HL ? 12 : 4;
+        }
+
+        auto operation_name = m_operation_name_map[static_cast<int>(m_operation)];
         auto target_name = CPU::register_name.find(m_target)->second;
-        auto action_name = CPU::arithmetic_operation_name.find(m_type)->second;
-
-        name = m_target == CPU::Register::HL ? GeneralUtilities::formatted_string("%s (%s)", action_name, target_name)
-                                             : GeneralUtilities::formatted_string("%s %s", action_name, target_name);
-        cycles = m_target == CPU::Register::HL ? 3 : 1;
+        name = GeneralUtilities::formatted_string((m_target == CPU::Register::HL && !m_is_16_bit) ? "%s (%s)" : "%s %s", operation_name, target_name);
     }
 
     void execute(CPU *cpu, MMU *mmu) override {
+        if (m_is_16_bit)
+            execute_16_bit_operation(cpu);
+        else
+            execute_8_bit_operation(cpu, mmu);
+    }
+
+  private:
+    enum class Operation { Increment, Decrement };
+    static inline std::string m_operation_name_map[] = { "INC", "DEC" };
+    CPU::Register m_target;
+    IncrementOrDecrement8Or16bit::Operation m_operation;
+    bool m_is_16_bit;
+
+    void execute_16_bit_operation(CPU *cpu) {
+        uint16_t value = cpu->get_16_bit_register(m_target);
+        uint16_t change = m_operation == IncrementOrDecrement8Or16bit::Operation::Increment ? 1 : -1;
+        cpu->set_register(m_target, static_cast<uint16_t>(value + change));
+    }
+
+    void execute_8_bit_operation(CPU *cpu, MMU *mmu) {
         uint8_t value;
         if (m_target == CPU::Register::HL)
             (void)mmu->try_read_from_memory(&value, cpu->get_16_bit_register(CPU::Register::HL), 1);
         else
             value = cpu->get_8_bit_register(m_target);
 
-        bool half_carry_flag =
-            m_type == CPU::ArithmeticOperation::Increment ? cpu->half_carry_occurs_on_add(value, 1) : cpu->half_carry_occurs_on_subtract(value, 1);
+        bool half_carry_flag = m_operation == IncrementOrDecrement8Or16bit::Operation::Increment ? cpu->half_carry_occurs_on_add(value, 1)
+                                                                                                 : cpu->half_carry_occurs_on_subtract(value, 1);
 
-        uint8_t result = m_type == CPU::ArithmeticOperation::Increment ? value + 1 : value - 1;
+        uint8_t result = m_operation == IncrementOrDecrement8Or16bit::Operation::Increment ? value + 1 : value - 1;
 
         if (m_target == CPU::Register::HL)
             (void)mmu->try_map_data_to_memory(&result, cpu->get_16_bit_register(CPU::Register::HL), 1);
@@ -454,45 +471,9 @@ struct IncrementDecrement8Bit final : public Opcode {
             cpu->set_register(m_target, result);
 
         cpu->set_flag(CPU::Flag::Z, result == 0x00);
-        cpu->set_flag(CPU::Flag::N, m_type == CPU::ArithmeticOperation::Decrement);
+        cpu->set_flag(CPU::Flag::N, m_operation == IncrementOrDecrement8Or16bit::Operation::Decrement);
         cpu->set_flag(CPU::Flag::H, half_carry_flag);
     }
-
-  private:
-    CPU::ArithmeticOperation m_type;
-    CPU::Register m_target;
-};
-
-// 16-bit increment/decrement
-struct IncrementDecrement16Bit final : public Opcode {
-  public:
-    IncrementDecrement16Bit(uint8_t opcode) : Opcode(1, 2, opcode) {
-        uint8_t target_selector = (opcode >> 4) & 0x03;
-        uint8_t type_idx = opcode & 0x03;
-
-        if (type_idx == 0x03)
-            m_type = CPU::ArithmeticOperation::Increment;
-        else if (type_idx == 0x0B)
-            m_type = CPU::ArithmeticOperation::Decrement;
-        else
-            throw std::invalid_argument("Increment/Decrement type identifier invalid");
-
-        m_target = CPU::wide_register_map[target_selector];
-        auto target_name = CPU::register_name.find(m_target)->second;
-        auto action_name = CPU::arithmetic_operation_name.find(m_type)->second;
-
-        name = GeneralUtilities::formatted_string("%s %s", action_name, target_name);
-    }
-
-    void execute(CPU *cpu, MMU *mmu) override {
-        uint16_t value = cpu->get_16_bit_register(m_target);
-        uint16_t change = m_type == CPU::ArithmeticOperation::Increment ? 1 : -1;
-        cpu->set_register(m_target, static_cast<uint16_t>(value + change));
-    }
-
-  private:
-    CPU::ArithmeticOperation m_type;
-    CPU::Register m_target;
 };
 
 // Register operations common

@@ -37,9 +37,9 @@ static const std::unordered_map<uint8_t, opcode_builder> _00_opcodes = {
           }
       } },
     { 2, [](uint8_t identifier) { return construct<Load16bitIndirect>(identifier); } },
-    { 3, [](uint8_t identifier) { return construct<IncrementDecrement16Bit>(identifier); } },
-    { 4, [](uint8_t identifier) { return construct<IncrementDecrement8Bit>(identifier); } },
-    { 5, [](uint8_t identifier) { return construct<IncrementDecrement8Bit>(identifier); } },
+    { 3, [](uint8_t identifier) { return construct<IncrementOrDecrement8Or16bit>(identifier); } },
+    { 4, [](uint8_t identifier) { return construct<IncrementOrDecrement8Or16bit>(identifier); } },
+    { 5, [](uint8_t identifier) { return construct<IncrementOrDecrement8Or16bit>(identifier); } },
     { 6, [](uint8_t identifier) { return construct<Load8bitImmediate>(identifier); } },
     { 7,
       [](uint8_t identifier) {

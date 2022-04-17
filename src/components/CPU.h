@@ -36,13 +36,6 @@ class CPU {
         H, // Carry flag
     };
 
-    enum class ArithmeticOperation {
-        Add,
-        Subtract,
-        Increment,
-        Decrement,
-    };
-
     static inline CPU::Register register_map[] = { CPU::Register::B, CPU::Register::C, CPU::Register::D,  CPU::Register::E,
                                                    CPU::Register::H, CPU::Register::L, CPU::Register::HL, CPU::Register::A };
 
@@ -56,12 +49,6 @@ class CPU {
         { CPU::Register::B, "B" },   { CPU::Register::C, "C" },   { CPU::Register::D, "D" },   { CPU::Register::E, "E" },   { CPU::Register::H, "H" },
         { CPU::Register::L, "L" },   { CPU::Register::A, "A" },   { CPU::Register::AF, "AF" }, { CPU::Register::BC, "BC" }, { CPU::Register::DE, "DE" },
         { CPU::Register::HL, "HL" }, { CPU::Register::SP, "SP" }, { CPU::Register::PC, "PC" },
-    };
-    static inline std::unordered_map<CPU::ArithmeticOperation, std::string> arithmetic_operation_name = {
-        { CPU::ArithmeticOperation::Add, "ADD" },
-        { CPU::ArithmeticOperation::Subtract, "SUB" },
-        { CPU::ArithmeticOperation::Increment, "INC" },
-        { CPU::ArithmeticOperation::Decrement, "DEC" },
     };
 
     CPU(std::shared_ptr<MMU>, std::shared_ptr<PPU>);
@@ -235,6 +222,7 @@ class CPU {
     uint16_t m_reg_pc; // Program counter
 
     std::shared_ptr<Opcode> get_next_opcode();
+
     void set_register(uint16_t *reg, const uint16_t value) { (*reg) = value; }
 
     void set_register_lower(uint16_t *reg, const uint8_t value) { (*reg) = ((*reg) & 0xFF00) | value; }
