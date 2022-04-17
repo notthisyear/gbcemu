@@ -17,7 +17,7 @@
     exit(1);
 
 #define INVALID_OPCODE(a)                                                                                                                                      \
-    std::cout << "Opcode '" << unsigned(a) << "' is not valid!" << std::endl;                                                                                  \
+    std::cout << "Opcode '" << std::hex << unsigned(a) << "' is not valid!" << std::endl;                                                                      \
     exit(1);
 
 namespace gbcemu {
@@ -47,15 +47,13 @@ struct Opcode {
 // 0x00 - NoOp
 struct NoOperation final : public Opcode {
   public:
-    static const uint8_t byte_identifier = 0x00;
-    NoOperation() : Opcode("NOP", 1, 1, byte_identifier) {}
+    NoOperation() : Opcode("NOP", 1, 4, 0x00) {}
 };
 
 // 0x08 Store SP at addresses given by 16-bit immediate
 struct StoreStackpointer final : public Opcode {
   public:
-    static const uint8_t byte_identifier = 0x08;
-    StoreStackpointer() : Opcode("LD (a16), SP", 3, 5, byte_identifier) {}
+    StoreStackpointer() : Opcode("LD (a16), SP", 3, 20, 0x08) {}
 
     std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
 
@@ -74,17 +72,70 @@ struct StoreStackpointer final : public Opcode {
 // 0x10 - Stops to CPU (very low power mode, can be used to switch between normal and double CPU speed on GBC)
 struct Stop final : public Opcode {
   public:
-    static const uint8_t byte_identifier = 0x10;
-    Stop() : Opcode("STOP 0", 2, 2, byte_identifier) {}
+    Stop() : Opcode("STOP 0", 2, 4, 0x10) {}
     void execute(CPU *cpu, MMU *mmu) override { NOT_IMPLEMENTED("STOP"); }
 };
 
-// 0x66 - Halts to CPU (low-power mode until interrupt)
+// 0x76 - Halts to CPU (low-power mode until interrupt)
 struct Halt final : public Opcode {
   public:
-    static const uint8_t byte_identifier = 0x66;
-    Halt() : Opcode("HALT", 1, 1, byte_identifier) {}
+    static const uint8_t opcode = 0x76;
+    Halt() : Opcode("HALT", 1, 4, 0x76) {}
     void execute(CPU *cpu, MMU *mmu) override { NOT_IMPLEMENTED("HALT"); }
+};
+
+// 0x27 - Decimal adjust accumulator (changes A to BCD representation)
+struct DecimalAdjustAccumulator final : public Opcode {
+  public:
+    DecimalAdjustAccumulator() : Opcode("DAA", 1, 4, 0x27) {}
+    void execute(CPU *cpu, MMU *mmu) override { NOT_IMPLEMENTED("DAA"); }
+};
+
+// 0x37 - Set carry flag
+struct SetCarryFlag final : public Opcode {
+  public:
+    SetCarryFlag() : Opcode("SCF", 1, 4, 0x37) {}
+    void execute(CPU *cpu, MMU *mmu) override {
+        cpu->set_flag(CPU::Flag::N, false);
+        cpu->set_flag(CPU::Flag::H, false);
+        cpu->set_flag(CPU::Flag::C, true);
+    }
+};
+
+// 0x2F - One's complement the accumulator
+struct InvertAccumulator final : public Opcode {
+  public:
+    InvertAccumulator() : Opcode("CPL", 1, 4, 0x2F) {}
+    void execute(CPU *cpu, MMU *mmu) override {
+        cpu->set_register(CPU::Register::A, static_cast<uint8_t>(!cpu->get_8_bit_register(CPU::Register::A)));
+        cpu->set_flag(CPU::Flag::N, true);
+        cpu->set_flag(CPU::Flag::H, true);
+    }
+};
+
+// 0x3F -Complement carry flag
+struct ComplementCarryFlag final : public Opcode {
+  public:
+    ComplementCarryFlag() : Opcode("CCF", 1, 4, 0x3F) {}
+    void execute(CPU *cpu, MMU *mmu) override {
+        cpu->set_flag(CPU::Flag::N, false);
+        cpu->set_flag(CPU::Flag::H, false);
+        cpu->set_flag(CPU::Flag::C, !cpu->flag_is_set(CPU::Flag::C));
+    }
+};
+
+// 0xF3 Disable interrupt
+struct DisableInterrupt final : public Opcode {
+  public:
+    DisableInterrupt() : Opcode("DI", 1, 4, 0xF3) {}
+    void execute(CPU *cpu, MMU *mmu) override { cpu->set_interrupt_enable(false); }
+};
+
+// 0xF3 Enable interrupt
+struct EnableInterrupt final : public Opcode {
+  public:
+    EnableInterrupt() : Opcode("EI", 1, 4, 0xFB) {}
+    void execute(CPU *cpu, MMU *mmu) override { cpu->set_interrupt_enable(true); }
 };
 
 // Call, returns and jumps common
@@ -166,11 +217,11 @@ struct RelativeJump final : public ConditionalCallReturnOrJumpBase {
 
     void execute(CPU *cpu, MMU *mmu) override {
         if (condition_is_met(cpu)) {
-            cycles = 3;
+            cycles = 12;
             auto target_address = static_cast<uint16_t>(cpu->get_16_bit_register(CPU::Register::PC) + m_jump_offset);
             execute_jump(cpu, &target_address);
         } else {
-            cycles = 2;
+            cycles = 8;
         }
     }
 
@@ -208,10 +259,10 @@ struct Call final : public ConditionalCallReturnOrJumpBase {
 
     void execute(CPU *cpu, MMU *mmu) override {
         if (condition_is_met(cpu)) {
-            cycles = 6;
+            cycles = 24;
             execute_call(cpu, mmu, &m_data);
         } else {
-            cycles = 3;
+            cycles = 12;
         }
     }
 
@@ -242,14 +293,14 @@ struct ReturnFromCall final : public ConditionalCallReturnOrJumpBase {
 
     void execute(CPU *cpu, MMU *mmu) override {
         if (condition_is_met(cpu)) {
-            cycles = m_condition == ConditionalCallReturnOrJumpBase::Condition::None ? 4 : 5;
+            cycles = m_condition == ConditionalCallReturnOrJumpBase::Condition::None ? 16 : 20;
             execute_return(cpu, mmu);
 
             if (m_enable_interrupts)
                 cpu->set_interrupt_enable(true);
 
         } else {
-            cycles = 2;
+            cycles = 8;
         }
     }
 
@@ -269,15 +320,14 @@ struct Load8bitImmediate final : public Opcode {
         m_target_name = CPU::register_name.find(m_target)->second;
 
         identifier = opcode;
-        name = m_target == CPU::Register::HL ? GeneralUtilities::formatted_string("LD (%s), d8", m_target_name)
-                                             : GeneralUtilities::formatted_string("LD %s, d8", m_target_name);
-        cycles = m_target == CPU::Register::HL ? 3 : 2;
+        name = GeneralUtilities::formatted_string((m_target == CPU::Register::HL) ? "LD (%s), d8" : "LD %s, d8", m_target_name);
+        cycles = m_target == CPU::Register::HL ? 12 : 8;
     }
 
     void set_opcode_data(uint8_t *data) override {
         m_data = data[0];
-        m_disassembled_instruction = m_target == CPU::Register::HL ? GeneralUtilities::formatted_string("LD (%s), 0x%X", m_target_name, m_data)
-                                                                   : GeneralUtilities::formatted_string("LD %s, 0x%X", m_target_name, m_data);
+        m_disassembled_instruction =
+            GeneralUtilities::formatted_string((m_target == CPU::Register::HL) ? "LD (%s), 0x%X" : "LD %s, 0x%X", m_target_name, m_data);
     }
 
     std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
@@ -317,10 +367,8 @@ struct Load8bitRegister final : public Opcode {
         else
             name = GeneralUtilities::formatted_string("LD %s, %s", target_name, source_name);
 
-        cycles = (m_target == CPU::Register::HL || m_source == CPU::Register::HL) ? 2 : 1;
+        cycles = (m_target == CPU::Register::HL || m_source == CPU::Register::HL) ? 8 : 4;
     }
-
-    static bool is_halt_instruction(uint8_t opcode) { return opcode == 0x66; }
 
     void execute(CPU *cpu, MMU *mmu) override {
         uint8_t source_value;
@@ -344,7 +392,7 @@ struct Load8bitRegister final : public Opcode {
 struct Load16bitImmediate final : public Opcode {
 
   public:
-    Load16bitImmediate(uint8_t opcode) : Opcode(3, 3, opcode) {
+    Load16bitImmediate(uint8_t opcode) : Opcode(3, 12, opcode) {
         uint8_t register_idx = (opcode >> 4) & 0x03;
 
         m_target = CPU::wide_register_map[register_idx];
@@ -372,7 +420,7 @@ struct Load16bitImmediate final : public Opcode {
 struct Load16bitIndirect final : public Opcode {
 
   public:
-    Load16bitIndirect(uint8_t opcode) : Opcode(1, 2, opcode) {
+    Load16bitIndirect(uint8_t opcode) : Opcode(1, 8, opcode) {
         m_target_is_accumulator = ((opcode >> 3) & 0x01) == 1;
         uint8_t target_selector = (opcode >> 4) & 0x03;
         m_target_source = CPU::wide_register_map[target_selector];
@@ -412,7 +460,7 @@ struct Load16bitIndirect final : public Opcode {
 };
 
 // Increment and decrement 16-bit or 8-bit
-struct IncrementOrDecrement8Or16bit : public Opcode {
+struct IncrementOrDecrement8Or16bit final : public Opcode {
   public:
     IncrementOrDecrement8Or16bit(uint8_t opcode) : Opcode(1) {
         identifier = opcode;
@@ -562,9 +610,9 @@ struct RegisterOperationBase : public Opcode {
         { RegisterOperationBase::Operation::AddToAccumulatorWithCarry, "ADC A," },
         { RegisterOperationBase::Operation::SubtractFromAccumulator, "SUB" },
         { RegisterOperationBase::Operation::SubtractFromAccumulatorWithCarry, "SBC A," },
-        { RegisterOperationBase::Operation::And, "AND," },
+        { RegisterOperationBase::Operation::And, "AND" },
         { RegisterOperationBase::Operation::Xor, "XOR" },
-        { RegisterOperationBase::Operation::Or, "OR," },
+        { RegisterOperationBase::Operation::Or, "OR" },
         { RegisterOperationBase::Operation::Compare, "CP" },
     };
 
@@ -583,7 +631,7 @@ struct RegisterOperation final : public RegisterOperationBase {
         auto target_name = CPU::register_name.find(m_operand_register)->second;
         name = m_operand_register == CPU::Register::HL ? GeneralUtilities::formatted_string("%s (%s)", get_operation_name(), target_name)
                                                        : GeneralUtilities::formatted_string("%s %s", get_operation_name(), target_name);
-        cycles = m_operand_register == CPU::Register::HL ? 2 : 1;
+        cycles = m_operand_register == CPU::Register::HL ? 8 : 4;
     }
 
     void execute(CPU *cpu, MMU *mmu) override {
@@ -622,11 +670,35 @@ struct AccumulatorOperation final : RegisterOperationBase {
     std::string m_disassembled_instruction;
 };
 
+// 16-bit add
+struct Add16bitRegister final : public Opcode {
+
+  public:
+    Add16bitRegister(uint8_t opcode) : Opcode(1, 8, opcode) {
+        m_target = CPU::wide_register_map[(opcode >> 4) & 0x03];
+        name = GeneralUtilities::formatted_string("ADD HL, %s", CPU::register_name.find(m_target)->second);
+    }
+
+    void execute(CPU *cpu, MMU *mmu) override {
+        uint16_t v = cpu->get_16_bit_register(m_target);
+        uint16_t hl = cpu->get_16_bit_register(CPU::Register::HL);
+
+        cpu->set_register(CPU::Register::HL, static_cast<uint16_t>(hl + v));
+
+        cpu->set_flag(CPU::Flag::H, cpu->half_carry_occurs_on_add(hl, v));
+        cpu->set_flag(CPU::Flag::N, false);
+        cpu->set_flag(CPU::Flag::C, cpu->carry_occurs_on_add(hl, v));
+    }
+
+  private:
+    CPU::Register m_target;
+};
+
 // Read/Write IO-port C from/to A
 struct ReadWriteIOPortCWithA final : public Opcode {
 
   public:
-    ReadWriteIOPortCWithA(uint8_t opcode) : Opcode(1, 2, opcode) {
+    ReadWriteIOPortCWithA(uint8_t opcode) : Opcode(1, 8, opcode) {
         uint8_t type_idx = (opcode >> 3) & 0x07;
         if (type_idx == 0x04)
             m_type = ReadWriteIOPortCWithA::ActionType::Write;
@@ -660,7 +732,7 @@ struct ReadWriteIOPortCWithA final : public Opcode {
 struct ReadWriteIOPortNWithA final : public Opcode {
 
   public:
-    ReadWriteIOPortNWithA(uint8_t opcode) : Opcode(2, 3, opcode) {
+    ReadWriteIOPortNWithA(uint8_t opcode) : Opcode(2, 12, opcode) {
         uint8_t type_idx = (opcode >> 3) & 0x07;
         if (type_idx == 0x04)
             m_type = ReadWriteIOPortNWithA::ActionType::Write;
@@ -770,12 +842,12 @@ struct Push16bitRegister final : public Opcode {
 // 16-bit pop
 struct Pop16bitRegister final : public Opcode {
   public:
-    Pop16bitRegister(uint8_t opcode) : Opcode(1, 3, opcode) {
+    Pop16bitRegister(uint8_t opcode) : Opcode(1, 12, opcode) {
         uint8_t target_selector = (opcode >> 4) & 0x03;
         m_target = CPU::wide_register_map[target_selector];
 
         // Target cannot be SP, top value should map to AF
-        m_target = m_target == CPU::Register::HL ? CPU::Register::AF : m_target;
+        m_target = m_target == CPU::Register::SP ? CPU::Register::AF : m_target;
         name = GeneralUtilities::formatted_string("POP %s", CPU::register_name.find(m_target)->second);
     }
 
@@ -940,7 +1012,7 @@ struct ExtendedOpcode final : public Opcode {
 struct RotateAccumulator final : Opcode {
 
   public:
-    RotateAccumulator(uint8_t opcode) : Opcode(1, 1, opcode) {
+    RotateAccumulator(uint8_t opcode) : Opcode(1, 4, opcode) {
 
         // These instructions are coded identically to the extended ones targeting the
         // accumulator, so we can decode the instruction in the same way

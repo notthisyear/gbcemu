@@ -33,7 +33,7 @@ static const std::unordered_map<uint8_t, opcode_builder> _00_opcodes = {
           if (q == 0) {
               return construct<Load16bitImmediate>(identifier);
           } else {
-              NOT_IMPLEMENTED("16-bit add");
+              return construct<Add16bitRegister>(identifier);
           }
       } },
     { 2, [](uint8_t identifier) { return construct<Load16bitIndirect>(identifier); } },
@@ -52,13 +52,13 @@ static const std::unordered_map<uint8_t, opcode_builder> _00_opcodes = {
           case 3:
               return construct<RotateAccumulator>(identifier);
           case 4:
-              NOT_IMPLEMENTED("Decimal adjust accumulator");
+              return construct<DecimalAdjustAccumulator>();
           case 5:
-              NOT_IMPLEMENTED("Complement accumulator");
+              return construct<InvertAccumulator>();
           case 6:
-              NOT_IMPLEMENTED("Set carry flag");
+              return construct<SetCarryFlag>();
           case 7:
-              NOT_IMPLEMENTED("Complement carry flag");
+              return construct<ComplementCarryFlag>();
           default:
               __builtin_unreachable();
           }
@@ -126,13 +126,26 @@ static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
               __builtin_unreachable();
           }
       } },
+    { 3,
+      [](uint8_t identifier) {
+          uint8_t y = (identifier >> 3) & 0x07;
+          switch (y) {
+          case 0:
+              NOT_IMPLEMENTED("Jump indirect");
+          case 6:
+              return construct<DisableInterrupt>();
+          case 7:
+              return construct<EnableInterrupt>();
+          default:
+              INVALID_OPCODE(identifier);
+          }
+      } },
     { 4,
       [](uint8_t identifier) {
           uint8_t y = (identifier >> 3) & 0x07;
           if (y < 4)
               return construct<Call>(identifier);
-          else
-              INVALID_OPCODE(identifier)
+          INVALID_OPCODE(identifier)
       } },
     { 5,
       [](uint8_t identifier) {
@@ -141,8 +154,7 @@ static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
               return construct<Call>(identifier);
           else if ((y & 0x01) == 0)
               return construct<Push16bitRegister>(identifier);
-          else
-              INVALID_OPCODE(identifier)
+          INVALID_OPCODE(identifier)
       } },
     { 6, [](uint8_t identifier) { return construct<AccumulatorOperation>(identifier); } },
 
@@ -188,7 +200,7 @@ static std::shared_ptr<Opcode> decode_opcode(const uint8_t identifier, bool is_e
     } break;
 
     case 1:
-        if (Load8bitRegister::is_halt_instruction(identifier))
+        if (identifier == Halt::opcode)
             result = construct<Halt>();
         else
             result = construct<Load8bitRegister>(identifier);

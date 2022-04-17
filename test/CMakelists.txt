@@ -1,0 +1,23 @@
+cmake_minimum_required(VERSION 3.20)
+project(gbcemu_test)
+
+set(CMAKE_CXX_STANDARD 20)
+
+set(ROOT_SYS_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../..)
+set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/x64)
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/x64)
+set(spdlog_DIR ${ROOT_SYS_PATH}/install/spdlog/lib/cmake/spdlog)
+
+find_package(spdlog REQUIRED)
+
+set(SOURCE_FILES 
+		gbcemu_test.cpp
+	)
+
+add_executable(gbcemu_test_main ${SOURCE_FILES})
+
+add_subdirectory(../src/util ./src/util)
+add_subdirectory(../src/components ./src/components)
+
+target_link_libraries(gbcemu_test_main PRIVATE gbcemu_util)
+target_link_libraries(gbcemu_test_main PRIVATE gbcemu_components)
