@@ -420,7 +420,12 @@ struct Load8bitImmediate final : public Opcode {
 
     std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
 
-    void execute(CPU *cpu, MMU *mmu) override { cpu->set_register(m_target, m_data); }
+    void execute(CPU *cpu, MMU *mmu) override {
+        if (m_target == CPU::Register::HL)
+            (void)mmu->try_map_data_to_memory(&m_data, cpu->get_16_bit_register(CPU::Register::HL), 1);
+        else
+            cpu->set_register(m_target, m_data);
+    }
 
   private:
     CPU::Register m_target;
