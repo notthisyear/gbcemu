@@ -2,7 +2,6 @@
 
 #include "CPU.h"
 #include "MMU.h"
-#include "components/Opcodes.h"
 #include "util/GeneralUtilities.h"
 #include <exception>
 #include <float.h>
@@ -173,9 +172,9 @@ struct ConditionalCallReturnOrJumpBase : public Opcode {
         uint16_t pc = cpu->get_16_bit_register(CPU::Register::PC);
         uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
 
-        cpu->add_offset_to_sp(-2);
-        (void)mmu->try_map_data_to_memory((uint8_t *)&pc, sp, 2);
+        (void)mmu->try_map_data_to_memory((uint8_t *)&pc, sp - 2, 2);
         cpu->set_register(CPU::Register::PC, *target_address);
+        cpu->set_register(CPU::Register::SP, static_cast<uint16_t>(sp - 2));
     }
 
     void execute_return(CPU *cpu, MMU *mmu) {
@@ -185,7 +184,7 @@ struct ConditionalCallReturnOrJumpBase : public Opcode {
         (void)mmu->try_read_from_memory(data, sp, 2);
 
         cpu->set_register(CPU::Register::PC, static_cast<uint16_t>(data[1] << 8 | data[0]));
-        cpu->add_offset_to_sp(2);
+        cpu->set_register(CPU::Register::SP, static_cast<uint16_t>(sp + 2));
     }
 
     void execute_jump(CPU *cpu, uint16_t *target_address) { cpu->set_register(CPU::Register::PC, *target_address); }
@@ -965,8 +964,8 @@ struct Push16bitRegister final : public Opcode {
         uint16_t src = cpu->get_16_bit_register(m_source);
         uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
 
-        cpu->add_offset_to_sp(-2);
-        (void)mmu->try_map_data_to_memory((uint8_t *)&src, sp, 2);
+        (void)mmu->try_map_data_to_memory((uint8_t *)&src, sp - 2, 2);
+        cpu->set_register(CPU::Register::SP, static_cast<uint16_t>(sp - 2));
     }
 
   private:
@@ -992,7 +991,7 @@ struct Pop16bitRegister final : public Opcode {
         (void)mmu->try_read_from_memory(data, sp, 2);
 
         cpu->set_register(m_target, static_cast<uint16_t>(data[1] << 8 | data[0]));
-        cpu->add_offset_to_sp(2);
+        cpu->set_register(CPU::Register::SP, static_cast<uint16_t>(sp + 2));
     }
 
   private:
