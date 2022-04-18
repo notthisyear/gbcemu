@@ -17,7 +17,7 @@
     exit(1);
 
 #define INVALID_OPCODE(a)                                                                                                                                      \
-    std::cout << "Opcode '" << std::hex << unsigned(a) << "' is not valid!" << std::endl;                                                                      \
+    throw std::runtime_error(GeneralUtilities::formatted_string("Opcode '0x%02X' is not valid!", a));                                                          \
     exit(1);
 
 namespace gbcemu {
@@ -164,7 +164,7 @@ struct ConditionalCallReturnOrJumpBase : public Opcode {
         uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
 
         cpu->add_offset_to_sp(-2);
-        (void)mmu->try_map_data_to_memory((uint8_t *)&pc, sp - 2, 2);
+        (void)mmu->try_map_data_to_memory((uint8_t *)&pc, sp, 2);
         cpu->set_register(CPU::Register::PC, *target_address);
     }
 
@@ -653,7 +653,7 @@ struct AccumulatorOperation final : RegisterOperationBase {
 
   public:
     AccumulatorOperation(uint8_t opcode) : RegisterOperationBase(opcode, 2) {
-        cycles = 2;
+        cycles = 8;
         name = GeneralUtilities::formatted_string("%s d8", get_operation_name());
     }
 
@@ -776,7 +776,7 @@ struct ReadWriteIOPortNWithA final : public Opcode {
 struct LoadFromOrSetAIndirect final : public Opcode {
 
   public:
-    LoadFromOrSetAIndirect(uint8_t opcode) : Opcode(3, 4, opcode) {
+    LoadFromOrSetAIndirect(uint8_t opcode) : Opcode(3, 16, opcode) {
         uint8_t type_idx = (opcode >> 3) & 0x07;
         if (type_idx == 0x05)
             m_type = LoadFromOrSetAIndirect::Direction::FromAccumulator;
@@ -818,12 +818,12 @@ struct LoadFromOrSetAIndirect final : public Opcode {
 // 16-bit push
 struct Push16bitRegister final : public Opcode {
   public:
-    Push16bitRegister(uint8_t opcode) : Opcode(1, 4, opcode) {
+    Push16bitRegister(uint8_t opcode) : Opcode(1, 16, opcode) {
         uint8_t source_selector = (opcode >> 4) & 0x03;
         m_source = CPU::wide_register_map[source_selector];
 
         // Target cannot be SP, top value should map to AF
-        m_source = m_source == CPU::Register::HL ? CPU::Register::AF : m_source;
+        m_source = m_source == CPU::Register::SP ? CPU::Register::AF : m_source;
         name = GeneralUtilities::formatted_string("PUSH %s", CPU::register_name.find(m_source)->second);
     }
 
@@ -832,7 +832,7 @@ struct Push16bitRegister final : public Opcode {
         uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
 
         cpu->add_offset_to_sp(-2);
-        (void)mmu->try_map_data_to_memory((uint8_t *)&src, sp - 2, 2);
+        (void)mmu->try_map_data_to_memory((uint8_t *)&src, sp, 2);
     }
 
   private:
@@ -892,7 +892,7 @@ struct ExtendedOpcode final : public Opcode {
                                                  : GeneralUtilities::formatted_string("%s %d, %s", operation_name, m_bit, target_name);
         }
         identifier = opcode;
-        cycles = m_target == CPU::Register::HL ? 4 : 2;
+        cycles = m_target == CPU::Register::HL ? 16 : 8;
     }
 
     void execute(CPU *cpu, MMU *mmu) override {
