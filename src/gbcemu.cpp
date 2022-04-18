@@ -63,13 +63,12 @@ int main(int argc, char **argv) {
     delete cartridge_argument;
 
     mmu->set_in_boot_mode(true);
-    cpu->enable_breakpoint_at(0xf9);
+    cpu->enable_breakpoint_at(0x100);
 
     bool step_mode = true;
     std::string input, cmd;
 
     while (true) {
-
         if (step_mode) {
             std::cout << gbcemu::GeneralUtilities::formatted_string("[PC: 0x%04X]> ", cpu->get_16_bit_register(gbcemu::CPU::Register::PC));
             std::getline(std::cin, input);

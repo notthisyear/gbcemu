@@ -2,6 +2,7 @@
 
 #include "CPU.h"
 #include "MMU.h"
+#include "components/Opcodes.h"
 #include "util/GeneralUtilities.h"
 #include <exception>
 #include <float.h>
@@ -629,6 +630,19 @@ struct RegisterOperationBase : public Opcode {
         bool *flag_pattern; // Z, N, H, C
 
         switch (m_operation) {
+        case RegisterOperationBase::Operation::AddToAccumulator:
+            result = accumulator_value + *operand;
+            flag_pattern = new bool[]{ result == 0x00, false, cpu->half_carry_occurs_on_add(accumulator_value, *operand),
+                                       cpu->carry_occurs_on_add(accumulator_value, *operand) };
+            break;
+
+        case RegisterOperationBase::Operation::AddToAccumulatorWithCarry:
+            *operand += cpu->flag_is_set(CPU::Flag::C) ? 1 : 0;
+            result = accumulator_value + *operand;
+            flag_pattern = new bool[]{ result == 0x00, false, cpu->half_carry_occurs_on_add(accumulator_value, *operand),
+                                       cpu->carry_occurs_on_add(accumulator_value, *operand) };
+            break;
+
         case RegisterOperationBase::Operation::And:
             result = accumulator_value & *operand;
             flag_pattern = new bool[]{ result == 0x00, false, true, false };
@@ -654,8 +668,15 @@ struct RegisterOperationBase : public Opcode {
             flag_pattern = new bool[]{ result == 0x00, 1, cpu->half_carry_occurs_on_subtract(accumulator_value, *operand),
                                        cpu->carry_occurs_on_subtract(accumulator_value, *operand) };
             break;
+
+        case RegisterOperationBase::Operation::SubtractFromAccumulatorWithCarry:
+            *operand -= cpu->flag_is_set(CPU::Flag::C) ? 1 : 0;
+            result = accumulator_value - *operand;
+            flag_pattern = new bool[]{ result == 0x00, 1, cpu->half_carry_occurs_on_subtract(accumulator_value, *operand),
+                                       cpu->carry_occurs_on_subtract(accumulator_value, *operand) };
+            break;
         default:
-            NOT_IMPLEMENTED(name);
+            __builtin_unreachable();
         }
 
         if (m_operation != RegisterOperationBase::Operation::Compare)

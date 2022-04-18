@@ -187,10 +187,6 @@ class CPU {
         }
     }
 
-    void add_offset_to_pc(const int8_t offset) { m_reg_pc += offset; }
-
-    void add_offset_to_sp(const int8_t offset) { m_reg_sp += offset; }
-
     bool breakpoint_hit() const { return m_current_breakpoint == m_reg_pc; }
 
     bool half_carry_occurs_on_add(uint8_t v, const uint8_t value_to_add) const;

@@ -36,6 +36,7 @@ class PPU {
     std::shared_ptr<MMU> m_mmu;
     uint32_t m_current_dot;
     uint8_t m_current_scanline;
+    uint8_t m_last_scanline;
 
     PPU::Mode m_mode;
 };

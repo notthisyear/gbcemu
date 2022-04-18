@@ -1,10 +1,12 @@
 #include "PPU.h"
-//#include "util/LogUtilities.h"
+#include <iostream>
+
 namespace gbcemu {
 
 PPU::PPU(std::shared_ptr<MMU> mmu) : m_mmu(mmu) {
     m_current_dot = 0;
     m_current_scanline = 0;
+    m_last_scanline = 0;
 }
 
 void PPU::tick(uint32_t number_of_cycles) {
@@ -34,13 +36,15 @@ void PPU::tick(uint32_t number_of_cycles) {
         }
     } else {
         if (m_mode != PPU::Mode::VBlank) {
-            // LogUtilities::log(LoggerType::Internal, LogLevel::Info, "hit vblank scanline");
             set_mode(PPU::Mode::VBlank);
             // TODO: Trigger interrupt
         }
     }
 
-    m_mmu->try_map_data_to_memory(&m_current_scanline, 0xFF00 | LCDYCoordinateRegisterOffset, 1);
+    if (m_current_scanline != m_last_scanline) {
+        m_mmu->try_map_data_to_memory(&m_current_scanline, 0xFF00 | LCDYCoordinateRegisterOffset, 1);
+        m_last_scanline = m_current_scanline;
+    }
 }
 
 void PPU::set_mode(const PPU::Mode mode) { m_mode = mode; }

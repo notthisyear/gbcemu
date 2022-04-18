@@ -21,5 +21,4 @@ add_library(gbcemu_components
 		${HEADER_FILES}
 	)
 
-
 target_include_directories(gbcemu_components PUBLIC ${SRC_PATH})
