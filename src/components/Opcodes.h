@@ -138,10 +138,19 @@ struct EnableInterrupt final : public Opcode {
     void execute(CPU *cpu, MMU *mmu) override { cpu->set_interrupt_enable(true); }
 };
 
+// 0xF9 - Load HL into SP
+struct LoadSPWithHL final : public Opcode {
+
+  public:
+    LoadSPWithHL() : Opcode(1, 8, 0xF9, "LD SP, HL") {}
+    void execute(CPU *cpu, MMU *mmu) override { cpu->set_register(CPU::Register::SP, cpu->get_16_bit_register(CPU::Register::HL)); }
+};
+
 // Call, returns and jumps common
 struct ConditionalCallReturnOrJumpBase : public Opcode {
   protected:
     ConditionalCallReturnOrJumpBase(uint8_t opcode) : Opcode() { identifier = opcode; }
+
     bool condition_is_met(CPU *cpu) const {
         switch (m_condition) {
         case ConditionalCallReturnOrJumpBase::Condition::None:
@@ -190,9 +199,63 @@ struct ConditionalCallReturnOrJumpBase : public Opcode {
     ConditionalCallReturnOrJumpBase::Condition m_condition;
 };
 
-// TODO: E9 - Jump to address pointed to be HL
+// 0xE9 - Jump to address pointed to be HL
+struct JumpToAddressInHL final : public ConditionalCallReturnOrJumpBase {
+  public:
+    JumpToAddressInHL() : ConditionalCallReturnOrJumpBase(0xE9) {
+        size = 1;
+        cycles = 4;
+        name = "JP (HL)";
+    }
 
-// TODO: Jump to immediate address
+    void execute(CPU *cpu, MMU *) override {
+        uint16_t target_address = cpu->get_16_bit_register(CPU::Register::HL);
+        execute_jump(cpu, &target_address);
+    }
+};
+
+// Jump to immediate address
+struct JumpToImmediate final : public ConditionalCallReturnOrJumpBase {
+
+  public:
+    JumpToImmediate(uint8_t opcode) : ConditionalCallReturnOrJumpBase(opcode) {
+        size = 3;
+        if (opcode == UnconditionalJumpOpcode) {
+            m_condition = ConditionalCallReturnOrJumpBase::Condition::None;
+        } else {
+            uint8_t flag_idx = (opcode >> 3) & 0x07;
+            m_condition = static_cast<ConditionalCallReturnOrJumpBase::Condition>(flag_idx);
+        }
+
+        m_flag_to_test_name = ConditionNameMap.find(m_condition)->second;
+        name =
+            m_condition == ConditionalCallReturnOrJumpBase::Condition::None ? "JP a16" : GeneralUtilities::formatted_string("JP %s, a16", m_flag_to_test_name);
+    }
+
+    void set_opcode_data(uint8_t *data) override {
+        m_data = data[1] << 8 | data[0];
+        m_disassembled_instruction = m_condition == ConditionalCallReturnOrJumpBase::Condition::None
+                                         ? GeneralUtilities::formatted_string("JP 0x%X", m_data)
+                                         : GeneralUtilities::formatted_string("JP %s, 0x%X", m_flag_to_test_name, m_data);
+    }
+
+    std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
+
+    void execute(CPU *cpu, MMU *mmu) override {
+        if (condition_is_met(cpu)) {
+            cycles = 16;
+            execute_jump(cpu, &m_data);
+        } else {
+            cycles = 12;
+        }
+    }
+
+  private:
+    const uint8_t UnconditionalJumpOpcode = 0xC3;
+    std::string m_flag_to_test_name;
+    std::string m_disassembled_instruction;
+    uint16_t m_data;
+};
 
 // Relative jumps from immediate
 struct RelativeJump final : public ConditionalCallReturnOrJumpBase {
@@ -306,6 +369,22 @@ struct ReturnFromCall final : public ConditionalCallReturnOrJumpBase {
 
   private:
     bool m_enable_interrupts = false;
+};
+
+// Reset instruction
+struct Reset final : public ConditionalCallReturnOrJumpBase {
+  public:
+    Reset(uint8_t opcode) : ConditionalCallReturnOrJumpBase(opcode) {
+        size = 1;
+        cycles = 16;
+        m_reset_target = opcode - 0xC7; // Note: these opcodes are spaced 0x08 apart and the reset vectors are 0x00, 0x08, 0x10, ...
+        name = GeneralUtilities::formatted_string("RST %02XH", m_reset_target);
+    }
+
+    void execute(CPU *cpu, MMU *mmu) override { execute_call(cpu, mmu, &m_reset_target); }
+
+  private:
+    uint16_t m_reset_target;
 };
 
 // Load 8-bit register from immediate
@@ -769,6 +848,43 @@ struct ReadWriteIOPortNWithA final : public Opcode {
 
     ReadWriteIOPortNWithA::ActionType m_type;
     std::string m_disassembled_instruction;
+    uint8_t m_data;
+};
+
+// Add or subtract from stackpointer and store in HL or SP
+struct SetSPOrHLToSPAndOffset final : public Opcode {
+
+  public:
+    SetSPOrHLToSPAndOffset(uint8_t opcode) : Opcode(2) {
+        identifier = opcode;
+        m_target = (opcode & 0xF0) == 0xE0 ? CPU::Register::SP : CPU::Register::HL;
+        cycles = m_target == CPU::Register::SP ? 16 : 12;
+        name = m_target == CPU::Register::SP ? "ADD SP, d8" : "LD HL, SP + d8";
+    }
+
+    void set_opcode_data(uint8_t *data) override {
+        m_data = data[0];
+        memcpy(&m_offset, data, 1);
+        m_disassembled_instruction = GeneralUtilities::formatted_string(m_target == CPU::Register::SP ? "ADD SP, %02X" : "LD HL, SP + %02X", m_data);
+    }
+
+    std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
+
+    void execute(CPU *cpu, MMU *mmu) override {
+        uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
+
+        cpu->set_flag(CPU::Flag::Z, 0);
+        cpu->set_flag(CPU::Flag::N, 0);
+        cpu->set_flag(CPU::Flag::H, cpu->half_carry_occurs_on_add(static_cast<uint8_t>(sp & 0x00FF), m_data));
+        cpu->set_flag(CPU::Flag::C, cpu->carry_occurs_on_add(static_cast<uint8_t>(sp & 0x00FF), m_data));
+
+        cpu->set_register(m_target, static_cast<uint16_t>(sp + m_offset));
+    }
+
+  private:
+    CPU::Register m_target;
+    std::string m_disassembled_instruction;
+    int8_t m_offset;
     uint8_t m_data;
 };
 

@@ -79,9 +79,8 @@ static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
           case 6:
               return construct<ReadWriteIOPortNWithA>(identifier);
           case 5:
-              NOT_IMPLEMENTED("Add/subtract from SP");
           case 7:
-              NOT_IMPLEMENTED("Set HL to SP + offset");
+              return construct<SetSPOrHLToSPAndOffset>(identifier);
           default:
               __builtin_unreachable();
           }
@@ -99,9 +98,9 @@ static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
           case 3:
               return construct<ReturnFromCall>(identifier);
           case 5:
-              NOT_IMPLEMENTED("Jump indirect");
+              return construct<JumpToAddressInHL>();
           case 7:
-              NOT_IMPLEMENTED("Load HL into SP");
+              return construct<LoadSPWithHL>();
           default:
               __builtin_unreachable();
           }
@@ -115,7 +114,7 @@ static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
           case 1:
           case 2:
           case 3:
-              NOT_IMPLEMENTED("Conditional jumps");
+              return construct<JumpToImmediate>(identifier);
           case 4:
           case 6:
               return construct<ReadWriteIOPortCWithA>(identifier);
@@ -131,7 +130,7 @@ static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
           uint8_t y = (identifier >> 3) & 0x07;
           switch (y) {
           case 0:
-              NOT_IMPLEMENTED("Jump indirect");
+              return construct<JumpToImmediate>(identifier);
           case 6:
               return construct<DisableInterrupt>();
           case 7:
@@ -145,6 +144,7 @@ static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
           uint8_t y = (identifier >> 3) & 0x07;
           if (y < 4)
               return construct<Call>(identifier);
+
           INVALID_OPCODE(identifier)
       } },
     { 5,
@@ -154,9 +154,11 @@ static const std::unordered_map<uint8_t, opcode_builder> _11_opcodes = {
               return construct<Call>(identifier);
           else if ((y & 0x01) == 0)
               return construct<Push16bitRegister>(identifier);
+
           INVALID_OPCODE(identifier)
       } },
     { 6, [](uint8_t identifier) { return construct<AccumulatorOperation>(identifier); } },
+    { 7, [](uint8_t identifier) { return construct<Reset>(identifier); } },
 
 };
 
@@ -190,14 +192,9 @@ static std::shared_ptr<Opcode> decode_opcode(const uint8_t identifier, bool is_e
     std::shared_ptr<Opcode> result;
 
     switch (x) {
-    case 0: {
-        auto builder = _00_opcodes.find(z);
-        if (builder == _00_opcodes.end())
-            result = nullptr;
-        else
-            result = builder->second(identifier);
-
-    } break;
+    case 0:
+        result = _00_opcodes.find(z)->second(identifier);
+        break;
 
     case 1:
         if (identifier == Halt::opcode)
@@ -210,23 +207,16 @@ static std::shared_ptr<Opcode> decode_opcode(const uint8_t identifier, bool is_e
         result = construct<RegisterOperation>(identifier);
         break;
 
-    case 3: {
-        auto builder = _11_opcodes.find(z);
-        if (builder == _11_opcodes.end())
-            result = nullptr;
-        else
-            result = builder->second(identifier);
-
-    } break;
-    default:
-        result = nullptr;
+    case 3:
+        result = _11_opcodes.find(z)->second(identifier);
         break;
+
+    default:
+        __builtin_unreachable();
     }
 
-    if (result != nullptr)
-        _opcode_cache.insert({ identifier, result });
+    _opcode_cache.insert({ identifier, result });
 
     return result;
 }
-
 }
