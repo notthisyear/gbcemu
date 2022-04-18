@@ -34,10 +34,10 @@ class CommandLineArgument {
     static void print_usage_string(std::ostream &stream, const std::string &program_name) {
         stream << "usage: " << program_name << " ";
         int i = 0;
-        for (auto const &it : m_argument_regexp_and_help) {
+        for (auto const &it : s_argument_regexp_and_help) {
             stream << get_regexp_in_usage(it.first);
 
-            if (i < m_argument_regexp_and_help.size() - 1)
+            if (i < s_argument_regexp_and_help.size() - 1)
                 stream << " ";
             i++;
         }
@@ -45,7 +45,7 @@ class CommandLineArgument {
 
     static void print_options(std::ostream &stream) {
         stream << "options:\n";
-        for (auto const &it : m_argument_regexp_and_help) {
+        for (auto const &it : s_argument_regexp_and_help) {
             stream << std::left << std::setw(20) << CommandLineArgument::get_regexp_printable(it.first) << std::right << get_help_text(it.first) << std::endl;
         }
     }
@@ -55,9 +55,9 @@ class CommandLineArgument {
     ~CommandLineArgument() {}
 
   private:
-    static std::string get_regexp(ArgumentType type) { return m_argument_regexp_and_help.find(type)->second.first; }
+    static std::string get_regexp(ArgumentType type) { return s_argument_regexp_and_help.find(type)->second.first; }
 
-    static std::string get_help_text(ArgumentType type) { return m_argument_regexp_and_help.find(type)->second.second; }
+    static std::string get_help_text(ArgumentType type) { return s_argument_regexp_and_help.find(type)->second.second; }
 
     static bool argument_is_switch(ArgumentType type) { return get_regexp(type).find(' ') == std::string::npos; }
 
@@ -120,7 +120,7 @@ class CommandLineArgument {
         return result;
     }
 
-    static inline const std::map<CommandLineArgument::ArgumentType, std::pair<std::string, std::string>> m_argument_regexp_and_help = {
+    static inline const std::map<CommandLineArgument::ArgumentType, std::pair<std::string, std::string>> s_argument_regexp_and_help = {
         { CommandLineArgument::ArgumentType::Help, std::make_pair<std::string, std::string>("(-h)|(--help)", "show this help message and exit") },
         { CommandLineArgument::ArgumentType::BootRomPath,
           std::make_pair<std::string, std::string>(R"((--boot-rom) ([\w\\:\.-/\\(\\)\[\]]+))", "path to boot rom") },

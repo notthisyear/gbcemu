@@ -476,7 +476,7 @@ struct IncrementOrDecrement8Or16bit final : public Opcode {
             cycles = m_target == CPU::Register::HL ? 12 : 4;
         }
 
-        auto operation_name = m_operation_name_map[static_cast<int>(m_operation)];
+        auto operation_name = s_operation_name_map[static_cast<int>(m_operation)];
         auto target_name = CPU::register_name.find(m_target)->second;
         name = GeneralUtilities::formatted_string((m_target == CPU::Register::HL && !m_is_16_bit) ? "%s (%s)" : "%s %s", operation_name, target_name);
     }
@@ -490,7 +490,7 @@ struct IncrementOrDecrement8Or16bit final : public Opcode {
 
   private:
     enum class Operation { Increment, Decrement };
-    static inline std::string m_operation_name_map[] = { "INC", "DEC" };
+    static inline std::string s_operation_name_map[] = { "INC", "DEC" };
     CPU::Register m_target;
     IncrementOrDecrement8Or16bit::Operation m_operation;
     bool m_is_16_bit;
@@ -594,7 +594,7 @@ struct RegisterOperationBase : public Opcode {
     RegisterOperationBase::Operation m_operation;
 
   private:
-    static inline RegisterOperationBase::Operation m_operations[] = {
+    static inline RegisterOperationBase::Operation s_operations[] = {
         RegisterOperationBase::Operation::AddToAccumulator,
         RegisterOperationBase::Operation::AddToAccumulatorWithCarry,
         RegisterOperationBase::Operation::SubtractFromAccumulator,
@@ -616,7 +616,7 @@ struct RegisterOperationBase : public Opcode {
         { RegisterOperationBase::Operation::Compare, "CP" },
     };
 
-    void set_operation_type(uint8_t opcode) { m_operation = m_operations[(opcode >> 3) & 0x07]; }
+    void set_operation_type(uint8_t opcode) { m_operation = s_operations[(opcode >> 3) & 0x07]; }
 };
 
 // Register operations
@@ -875,12 +875,12 @@ struct ExtendedOpcode final : public Opcode {
         uint8_t target_idx = opcode & 0x07;
 
         m_target = CPU::register_map[target_idx];
-        m_type = m_extended_opcode_type_map[extended_op_code_type_idx];
+        m_type = s_extended_opcode_type_map[extended_op_code_type_idx];
 
         auto target_name = CPU::register_name.find(m_target)->second;
         if (m_type == ExtendedOpcode::ExtendedOpcodeType::RotationShiftOrSwap) {
 
-            m_rot_type = m_rotations_type_map[bit_or_rotation_idx];
+            m_rot_type = s_rotations_type_map[bit_or_rotation_idx];
             auto operation_name = RotationsTypeName.find(m_rot_type)->second;
 
             name = m_target == CPU::Register::HL ? GeneralUtilities::formatted_string("%s (%s)", operation_name, target_name)
@@ -946,7 +946,7 @@ struct ExtendedOpcode final : public Opcode {
         ShiftRightLogic, // 0 -> [7 -> 0] -> C
     };
 
-    static inline ExtendedOpcodeType m_extended_opcode_type_map[] = {
+    static inline ExtendedOpcodeType s_extended_opcode_type_map[] = {
         ExtendedOpcodeType::RotationShiftOrSwap,
         ExtendedOpcodeType::Test,
         ExtendedOpcodeType::Reset,
@@ -960,7 +960,7 @@ struct ExtendedOpcode final : public Opcode {
         { ExtendedOpcodeType::Set, "SET" },
     };
 
-    static inline RotationShiftOrSwapType m_rotations_type_map[] = {
+    static inline RotationShiftOrSwapType s_rotations_type_map[] = {
         RotationShiftOrSwapType::RotateLeft,
         RotationShiftOrSwapType::RotateRight,
         RotationShiftOrSwapType::RotateLeftThroughCarry,

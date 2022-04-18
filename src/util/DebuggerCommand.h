@@ -37,19 +37,19 @@ class DebuggerCommand {
 
     static DebuggerCommand *get_debugger_cmd(const std::string &input) {
         int i = 0;
-        for (const auto &cmd_info : m_command_info_map) {
+        for (const auto &cmd_info : s_command_info_map) {
             std::regex r(cmd_info.regex, std::regex_constants::icase);
             if (std::regex_search(input, r)) {
                 DebuggerCommand *result;
                 auto cmd = static_cast<DebuggerCommand::Command>(i);
-                auto it = _m_command_cache.find(cmd);
+                auto it = _s_command_cache.find(cmd);
 
-                if (it != _m_command_cache.end()) {
+                if (it != _s_command_cache.end()) {
                     result = it->second;
                     result->set_input(input);
                 } else {
                     result = new DebuggerCommand(cmd, input);
-                    _m_command_cache.insert({ cmd, result });
+                    _s_command_cache.insert({ cmd, result });
                 }
                 return result;
             }
@@ -60,7 +60,7 @@ class DebuggerCommand {
     }
 
     static void print_commands(std::ostream &stream) {
-        for (const auto &cmd_info : m_command_info_map) {
+        for (const auto &cmd_info : s_command_info_map) {
             if (cmd_info.include)
                 stream << std::left << std::setw(35) << cmd_info.command << std::right << cmd_info.description << std::endl;
         }
@@ -82,8 +82,8 @@ class DebuggerCommand {
     void parse_input();
 
     bool static try_parse_as_number(const std::string &, uint16_t *, int);
-    static std::unordered_map<DebuggerCommand::Command, DebuggerCommand *> _m_command_cache;
-    static inline CommandInfo m_command_info_map[] = {
+    static std::unordered_map<DebuggerCommand::Command, DebuggerCommand *> _s_command_cache;
+    static inline CommandInfo s_command_info_map[] = {
         { "(^((h)|(help))$)", "[h|help]", "show available commands", false, true },
         { "((sh)|(show))", "[sh|show]", "show registers and memory, type 'show help' to see options", true, true },
         { "((dasm)|(disassemble))", "[dasm|disassemble d]", "disassemble the next d instructions", true, true },

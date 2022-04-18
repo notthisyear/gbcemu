@@ -83,10 +83,10 @@ class MMU {
 
     bool get_file_size(const std::string &, uint64_t *) const;
 
-    static const std::map<MMU::MemoryRegion, std::pair<uint16_t, uint16_t>> m_region_map;
-    static const std::map<MMU::IORegister, std::pair<uint8_t, uint8_t>> m_io_register_map;
-    static const std::unordered_map<MMU::MemoryRegion, std::string> m_region_names;
-    static const std::unordered_map<MMU::IORegister, std::string> m_io_register_names;
+    static const std::map<MMU::MemoryRegion, std::pair<uint16_t, uint16_t>> s_region_map;
+    static const std::map<MMU::IORegister, std::pair<uint8_t, uint8_t>> s_io_register_map;
+    static const std::unordered_map<MMU::MemoryRegion, std::string> s_region_names;
+    static const std::unordered_map<MMU::IORegister, std::string> s_io_register_names;
 
     static std::pair<uint8_t, uint8_t> make_offset_and_size_pair(uint8_t offset, uint8_t size) { return std::make_pair(offset, size); }
     static std::pair<uint16_t, uint16_t> make_address_pair(uint16_t lower, uint16_t upper) { return std::make_pair(lower, upper); }

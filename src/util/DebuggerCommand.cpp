@@ -5,10 +5,10 @@
 
 namespace gbcemu {
 
-std::unordered_map<DebuggerCommand::Command, DebuggerCommand *> DebuggerCommand::_m_command_cache;
+std::unordered_map<DebuggerCommand::Command, DebuggerCommand *> DebuggerCommand::_s_command_cache;
 
 DebuggerCommand::DebuggerCommand(const DebuggerCommand::Command command, const std::string &input)
-    : command(command), m_input(input), m_command_info(m_command_info_map[static_cast<int>(command)]) {
+    : command(command), m_input(input), m_command_info(s_command_info_map[static_cast<int>(command)]) {
     parse_input();
 }
 

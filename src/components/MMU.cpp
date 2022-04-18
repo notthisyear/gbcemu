@@ -53,7 +53,7 @@ bool MMU::try_load_cartridge(std::ostream &stream, const std::string &path) {
     }
 
     m_cartridge = std::make_unique<Cartridge>(cartridge_data, size);
-    auto fixed_cartridge_location = m_region_map.find(MMU::MemoryRegion::CartridgeFixed)->second;
+    auto fixed_cartridge_location = s_region_map.find(MMU::MemoryRegion::CartridgeFixed)->second;
 
     m_loading_cartridge = true;
     success = try_map_data_to_memory(cartridge_data, fixed_cartridge_location.first, fixed_cartridge_location.second - fixed_cartridge_location.first + 1);
@@ -65,7 +65,7 @@ bool MMU::try_load_cartridge(std::ostream &stream, const std::string &path) {
 bool MMU::try_map_data_to_memory(uint8_t *data, uint16_t offset, uint16_t size) {
 
     auto region = find_memory_region(offset);
-    auto region_endpoints = m_region_map.find(region)->second;
+    auto region_endpoints = s_region_map.find(region)->second;
 
     if ((offset + size - 1) > region_endpoints.second)
         return false;
@@ -122,7 +122,7 @@ bool MMU::try_map_data_to_memory(uint8_t *data, uint16_t offset, uint16_t size) 
 
 bool MMU::try_read_from_memory(uint8_t *data, uint16_t offset, uint64_t size) const {
     auto region = find_memory_region(offset);
-    auto region_endpoints = m_region_map.find(region)->second;
+    auto region_endpoints = s_region_map.find(region)->second;
 
     bool result = true;
     if (region == MMU::MemoryRegion::CartridgeFixed && m_is_in_boot_mode && is_boot_rom_range(offset, size)) {
@@ -274,7 +274,7 @@ void MMU::read_from_boot_rom(uint8_t *data, uint16_t offset, uint64_t size) cons
 void MMU::set_in_boot_mode(bool is_in_boot_mode) { m_is_in_boot_mode = is_in_boot_mode; }
 
 MMU::MemoryRegion MMU::find_memory_region(uint16_t address) const {
-    for (auto const &entry : m_region_map) {
+    for (auto const &entry : s_region_map) {
         if (address > entry.second.second)
             continue;
         return entry.first;
@@ -282,7 +282,7 @@ MMU::MemoryRegion MMU::find_memory_region(uint16_t address) const {
     __builtin_unreachable();
 }
 
-const std::map<MMU::MemoryRegion, std::pair<uint16_t, uint16_t>> MMU::m_region_map = {
+const std::map<MMU::MemoryRegion, std::pair<uint16_t, uint16_t>> MMU::s_region_map = {
     { MMU::MemoryRegion::CartridgeFixed, MMU::make_address_pair(0x0000, 0x3FFF) },
     { MMU::MemoryRegion::CartridgeSwitchable, MMU::make_address_pair(0x4000, 0x7FFF) },
     { MMU::MemoryRegion::VRAMSwitchable, MMU::make_address_pair(0x8000, 0x9FFF) },
@@ -297,7 +297,7 @@ const std::map<MMU::MemoryRegion, std::pair<uint16_t, uint16_t>> MMU::m_region_m
     { MMU::MemoryRegion::IERegister, MMU::make_address_pair(0xFFFF, 0xFFFF) },
 };
 
-const std::map<MMU::IORegister, std::pair<uint8_t, uint8_t>> MMU::m_io_register_map = {
+const std::map<MMU::IORegister, std::pair<uint8_t, uint8_t>> MMU::s_io_register_map = {
     { MMU::IORegister::Joypad, MMU::make_offset_and_size_pair(0x00, 0x01) },
     { MMU::IORegister::SerialTranfer, MMU::make_offset_and_size_pair(0x01, 0x02) },
     { MMU::IORegister::TimerAndDivider, MMU::make_offset_and_size_pair(0x04, 0x04) },
@@ -311,7 +311,7 @@ const std::map<MMU::IORegister, std::pair<uint8_t, uint8_t>> MMU::m_io_register_
     { MMU::IORegister::WRAMBankSelect, MMU::make_offset_and_size_pair(0x70, 0x01) },
 };
 
-const std::unordered_map<MMU::MemoryRegion, std::string> MMU::m_region_names = {
+const std::unordered_map<MMU::MemoryRegion, std::string> MMU::s_region_names = {
     { MMU::MemoryRegion::CartridgeFixed, "CartridgeFixed" },
     { MMU::MemoryRegion::CartridgeSwitchable, "CartridgeSwitchable" },
     { MMU::MemoryRegion::VRAMSwitchable, "VRAMSwitchable" },
@@ -326,7 +326,7 @@ const std::unordered_map<MMU::MemoryRegion, std::string> MMU::m_region_names = {
     { MMU::MemoryRegion::IERegister, "IERegister" },
 };
 
-const std::unordered_map<MMU::IORegister, std::string> MMU::m_io_register_names = {
+const std::unordered_map<MMU::IORegister, std::string> MMU::s_io_register_names = {
     { MMU::IORegister::Joypad, "Joypad" },
     { MMU::IORegister::SerialTranfer, "SerialTranfer" },
     { MMU::IORegister::TimerAndDivider, "TimerAndDivider" },
@@ -340,8 +340,8 @@ const std::unordered_map<MMU::IORegister, std::string> MMU::m_io_register_names 
     { MMU::IORegister::WRAMBankSelect, "WRAMBankSelect" },
 };
 
-std::string MMU::get_region_name(MMU::MemoryRegion region) const { return MMU::m_region_names.find(region)->second; }
-std::string MMU::get_io_register_name(MMU::IORegister reg) const { return MMU::m_io_register_names.find(reg)->second; }
+std::string MMU::get_region_name(MMU::MemoryRegion region) const { return MMU::s_region_names.find(region)->second; }
+std::string MMU::get_io_register_name(MMU::IORegister reg) const { return MMU::s_io_register_names.find(reg)->second; }
 
 MMU::~MMU() { delete[] m_memory; }
 }
