@@ -55,6 +55,10 @@ class CPU {
 
     void tick();
 
+    bool cycles_per_frame_reached() const;
+
+    void acknowledge_frame();
+
     void print_disassembled_instructions(std::ostream &, uint16_t);
 
     void clear_breakpoint();
@@ -62,10 +66,6 @@ class CPU {
     void enable_breakpoint_at(uint16_t);
 
     void set_interrupt_enable(bool);
-
-    void stop_execution();
-
-    void set_debug_mode(bool);
 
     uint8_t get_8_bit_register(const CPU::Register reg) const {
         switch (reg) {
@@ -214,11 +214,12 @@ class CPU {
     std::shared_ptr<PPU> m_ppu;
     uint32_t m_current_cycle_count = 0;
     uint16_t m_current_breakpoint;
+    bool m_has_breakpoint = false;
+    bool m_frame_done_flag;
+
     const uint32_t CpuCyclesPerFrame = 70224;
 
     bool m_interrupt_enabled = false;
-    bool m_is_in_debug_mode = false;
-    bool m_execution_stop_called = false;
 
     uint16_t m_reg_af; // Accumulator and flags
     uint16_t m_reg_bc; // BC (can be accessed as two 8-bit registers)

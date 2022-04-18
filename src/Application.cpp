@@ -1,18 +1,18 @@
 #include "Application.h"
+#include "util/GeneralUtilities.h"
 #include "util/LogUtilities.h"
 #include <iostream>
 
 namespace gbcemu {
 
-Application::Application(const WindowProperties &properties) : m_window_properties(properties) {}
+Application::Application(std::shared_ptr<CPU> cpu, const WindowProperties &properties) : m_cpu(cpu), m_window_properties(properties) {}
 
 void Application::init() {
 
-    // TODO: Add sanity checks for the properties struct
     m_window = std::make_unique<WindowsWindow>(m_window_properties);
 
     if (!m_window->is_initialized)
-        m_should_run = false;
+        m_app_should_run = false;
 
     register_event_callback(EventType::WindowResized, [this](Event &arg) -> void {
         return this->Application::window_resized_event(std::forward<WindowResizeEvent &>(dynamic_cast<WindowResizeEvent &>(arg)));
@@ -24,15 +24,27 @@ void Application::init() {
 
     m_window->set_event_callback([this](Event &arg) -> void { return this->Application::handle_event(std::forward<decltype(arg)>(arg)); });
 
-    m_should_run = true;
+    m_app_should_run = true;
 }
+
+void Application::set_cpu_debug_mode(const bool on_or_off) { m_cpu_should_run = !on_or_off; }
 
 void Application::run() {
 
-    while (m_should_run) {
-        float ts = m_window->calculate_time_delta_since_last_frame();
+    float ts;
+    while (m_app_should_run) {
+        ts = m_window->calculate_time_delta_since_last_frame();
 
-        m_window->update();
+        if (m_cpu_should_run) {
+            m_cpu->tick();
+            if (m_cpu->breakpoint_hit())
+                m_cpu_should_run = false;
+        }
+
+        if (ts > MaxTimePerFrameSec || m_cpu->cycles_per_frame_reached()) {
+            m_cpu->acknowledge_frame();
+            m_window->update();
+        }
     }
 }
 
@@ -76,7 +88,7 @@ void Application::handle_event(Event &e) {
 
 void Application::window_closed_event(WindowCloseEvent &e) {
     LogUtilities::log_info(std::cout, e.to_string());
-    m_should_run = false;
+    m_app_should_run = false;
     return;
 }
 

@@ -19,7 +19,7 @@ class WindowsWindow {
     WindowsWindow(const WindowProperties &);
 
     float calculate_time_delta_since_last_frame();
-    void update() const;
+    void update();
     void set_event_callback(const EventCallbackHandler &);
 
     ~WindowsWindow();

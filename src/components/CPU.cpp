@@ -19,9 +19,15 @@ void CPU::tick() {
 
     m_ppu->tick(m_current_cycle_count - current_cycles_before_execution);
 
-    if (m_current_cycle_count > CpuCyclesPerFrame)
+    if (m_current_cycle_count > CpuCyclesPerFrame) {
+        m_frame_done_flag = true;
         m_current_cycle_count -= CpuCyclesPerFrame;
+    }
 }
+
+bool CPU::cycles_per_frame_reached() const { return m_frame_done_flag; }
+
+void CPU::acknowledge_frame() { m_frame_done_flag = false; }
 
 std::shared_ptr<Opcode> CPU::get_next_opcode(bool should_disassemble) {
     uint8_t current_instruction;
@@ -60,15 +66,14 @@ void CPU::print_disassembled_instructions(std::ostream &stream, uint16_t number_
 
 void CPU::set_interrupt_enable(bool on_or_off) { m_interrupt_enabled = on_or_off; }
 
-void CPU::enable_breakpoint_at(uint16_t pc) { m_current_breakpoint = pc; }
+void CPU::enable_breakpoint_at(uint16_t pc) {
+    m_current_breakpoint = pc;
+    m_has_breakpoint = true;
+}
 
-bool CPU::breakpoint_hit() const { return m_current_breakpoint == m_reg_pc; }
+bool CPU::breakpoint_hit() const { return m_has_breakpoint && m_current_breakpoint == m_reg_pc; }
 
-void CPU::clear_breakpoint() { m_current_breakpoint = 0; }
-
-void CPU::stop_execution() { m_execution_stop_called = true; }
-
-void CPU::set_debug_mode(bool on_or_off) { m_is_in_debug_mode = false; }
+void CPU::clear_breakpoint() { m_has_breakpoint = false; }
 
 bool CPU::half_carry_occurs_on_subtract(uint8_t v, const uint8_t value_to_subtract) const { return ((v & 0x0F) - (value_to_subtract & 0x0F)) < 0; }
 
@@ -134,7 +139,7 @@ void CPU::print_sp_and_pc(std::ostream &stream) const {
 
 void CPU::print_additional_info(std::ostream &stream) const {
 
-    auto breakpoint_string = m_current_breakpoint != 0 ? GeneralUtilities::formatted_string("0x%04x", m_current_breakpoint) : "none";
+    auto breakpoint_string = m_has_breakpoint ? GeneralUtilities::formatted_string("0x%04x", m_current_breakpoint) : "none";
     stream << "\033[0;32mbreakpoint: "
            << "\033[1;37m" << breakpoint_string << "\033[0;32m\tcurrent_cycles: "
            << "\033[1;37m" << m_current_cycle_count << "\033[0;m" << std::endl;

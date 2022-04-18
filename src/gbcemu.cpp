@@ -68,14 +68,13 @@ int main(int argc, char **argv) {
     delete boot_rom_argument;
     delete cartridge_argument;
 
-    auto dbg = attach_debugger ? new gbcemu::Debugger(cpu, mmu) : nullptr;
-    auto dbg_thread = attach_debugger ? new std::thread(&gbcemu::Debugger::run, dbg, std::ref(std::cout)) : nullptr;
-    cpu->set_debug_mode(attach_debugger);
+    auto app = std::make_shared<gbcemu::Application>(cpu, gbcemu::WindowProperties());
 
-    auto application = new gbcemu::Application(gbcemu::WindowProperties());
-    application->init();
-    application->run();
-    delete application;
+    auto dbg = attach_debugger ? new gbcemu::Debugger(cpu, mmu, app) : nullptr;
+    auto dbg_thread = attach_debugger ? new std::thread(&gbcemu::Debugger::run, dbg, std::ref(std::cout)) : nullptr;
+
+    app->init();
+    app->run();
 
     if (attach_debugger) {
         dbg_thread->join();

@@ -18,3 +18,4 @@ add_library(gbcemu_debugger
 target_include_directories(gbcemu_debugger PUBLIC ${SRC_PATH})
 
 target_link_libraries(gbcemu_debugger PRIVATE gbcemu_components)
+target_link_libraries(gbcemu_debugger PRIVATE gbcemu_windows)

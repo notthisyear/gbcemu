@@ -7,7 +7,7 @@ set(HEADER_FILES
 
 set(SOURCE_FILES 
 		GraphicsContext.cpp
-		${EXT_PATH}/glad/glad.c
+		${EXT_PATH}/glad/src/glad.c
 	)
 
 

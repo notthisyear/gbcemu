@@ -18,8 +18,6 @@ WindowsWindow::WindowsWindow(const WindowProperties &properties) : m_properties(
         return;
     }
 
-    LogUtilities::log_info(std::cout, GeneralUtilities::formatted_string("Constructing window (%s)", properties.to_string()));
-
     if (!glfwInit()) {
         LogUtilities::log_error(std::cout, "GLFW initialization failed");
         return;
@@ -49,18 +47,15 @@ WindowsWindow::WindowsWindow(const WindowProperties &properties) : m_properties(
     set_glfw_callbacks();
 
     is_initialized = true;
-
-    LogUtilities::log_info(std::cout, "Window built");
 }
 
 float WindowsWindow::calculate_time_delta_since_last_frame() {
     float time = (float)glfwGetTime();
-    float result = time - m_last_frame_time;
-    m_last_frame_time = time;
-    return result;
+    return time - m_last_frame_time;
 }
 
-void WindowsWindow::update() const {
+void WindowsWindow::update() {
+    m_last_frame_time = (float)glfwGetTime();
     glfwPollEvents();
     m_context->swap_buffers();
 }

@@ -29,6 +29,7 @@ class DebuggerCommand {
         ClearBreakpoint,
         Step,
         Run,
+        Break,
         None,
     };
 
@@ -88,9 +89,10 @@ class DebuggerCommand {
         { "((sh)|(show))", "[sh|show]", "show registers and memory, type 'show help' to see options", true, true },
         { "((dasm)|(disassemble))", "[dasm|disassemble d]", "disassemble the next d instructions", true, true },
         { "((sb)|(setbreakpoint))", "[sb|setbreakpoint] a16", "set a breakpoint at address a16", true, true },
-        { "((cb)|(clearbreakpoint))", "[cb|clearbreakpoint] [all|a16]", "clear either all breakpoints or at address a16", true, true },
+        { "((cb)|(clearbreakpoint))", "[cb|clearbreakpoint]", "clear breakpoint", false, true },
         { "((st)|(step))", "[st|step]", "step execution one tick", false, true },
-        { "(^((r)|(run))$)", "[r|run]", "let execution run until a breakpoint is hit", false, true },
+        { "(^((r)|(run))$)", "[r|run]", "let execution run until a breakpoint is hit or break is called", false, true },
+        { "((br)|(break))", "[br|break]", "halt execution", false, true },
         { "\\.*", "invalid", "used as catchall", false, false },
     };
 };

@@ -18,8 +18,8 @@ struct WindowProperties {
     std::uint32_t width;
     std::uint32_t height;
 
-    WindowProperties(const std::string &title = "We'll see what it'll become...", WindowMode mode = WindowMode::Windowed, bool capture_mouse = false,
-                     bool enable_vsync = true, bool use_raw_mouse_motion_if_possible = true, uint32_t width = 1600, uint32_t height = 900)
+    WindowProperties(const std::string &title = "gbcemu v 0.1", WindowMode mode = WindowMode::Windowed, bool capture_mouse = false, bool enable_vsync = true,
+                     bool use_raw_mouse_motion_if_possible = true, uint32_t width = 320, uint32_t height = 288)
         : title(title), mode(mode), capture_mouse(capture_mouse), enable_vsync(enable_vsync),
           use_raw_mouse_motion_if_possible(use_raw_mouse_motion_if_possible), width(width), height(height) {}
 

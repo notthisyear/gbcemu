@@ -1,11 +1,13 @@
 #include "MMU.h"
 #include "Cartridge.h"
 #include "util/GeneralUtilities.h"
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <utility>
+
 
 namespace gbcemu {
 MMU::MMU(uint16_t memory_size) : m_memory_size(memory_size) {

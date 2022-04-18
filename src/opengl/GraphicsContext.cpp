@@ -14,9 +14,6 @@ bool GraphicsContext::init() {
         LogUtilities::log_error(std::cout, "Failed to initialize GLAD");
         return false;
     }
-
-    LogUtilities::log_info(std::cout, GeneralUtilities::formatted_string("Open GL Info -- Vendor: %s, Renderer: %s, Version: %s", glGetString(GL_VENDOR),
-                                                                         glGetString(GL_RENDERER), glGetString(GL_VERSION)));
     return true;
 }
 
