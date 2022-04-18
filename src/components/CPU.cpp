@@ -18,9 +18,12 @@ void CPU::tick() {
     m_current_cycle_count += opcode->cycles;
 
     m_ppu->tick(m_current_cycle_count - current_cycles_before_execution);
+
+    if (m_current_cycle_count > CpuCyclesPerFrame)
+        m_current_cycle_count -= CpuCyclesPerFrame;
 }
 
-std::shared_ptr<Opcode> CPU::get_next_opcode() {
+std::shared_ptr<Opcode> CPU::get_next_opcode(bool should_disassemble) {
     uint8_t current_instruction;
     m_mmu->try_read_from_memory(&current_instruction, m_reg_pc, 1);
     m_reg_pc++;
@@ -32,15 +35,11 @@ std::shared_ptr<Opcode> CPU::get_next_opcode() {
     }
 
     std::shared_ptr<Opcode> opcode = decode_opcode(current_instruction, is_extended);
-    if (opcode == nullptr) {
-        NOT_IMPLEMENTED(GeneralUtilities::formatted_string("0x%x at PC: 0x%04x", current_instruction, m_reg_pc - 1));
-    }
-
     if (opcode->size > 1) {
         uint8_t *remainder = new uint8_t[opcode->size - 1];
         m_mmu->try_read_from_memory(remainder, m_reg_pc, opcode->size - 1);
         m_reg_pc += opcode->size - 1;
-        opcode->set_opcode_data(remainder);
+        opcode->set_opcode_data(remainder, should_disassemble);
         delete[] remainder;
     }
 
@@ -52,7 +51,7 @@ void CPU::print_disassembled_instructions(std::ostream &stream, uint16_t number_
     for (auto i = 0; i < number_of_instructions; i++) {
         stream << "\033[1;37m" << std::left << std::setw(10) << std::setfill(' ') << GeneralUtilities::formatted_string("0x%04X", m_reg_pc);
         stream << "\033[0;m";
-        auto opcode = get_next_opcode();
+        auto opcode = get_next_opcode(true);
         stream << opcode->fully_disassembled_instruction() << std::endl;
     }
 

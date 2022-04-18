@@ -31,8 +31,6 @@ class PPU {
     const uint16_t WindowYPositionRegister = 0x4A;
     const uint16_t WindowXPositionRegister = 0x4B;
 
-    // PPU has 1 dot / T-state
-    static uint32_t m_cycles_to_dots(uint32_t cpu_cycles) { return 4 * cpu_cycles; }
     void set_mode(const PPU::Mode);
 
     std::shared_ptr<MMU> m_mmu;

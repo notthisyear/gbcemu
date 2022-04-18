@@ -31,7 +31,7 @@ struct Opcode {
     std::string name;
 
     virtual std::string fully_disassembled_instruction() const { return name; }
-    virtual void set_opcode_data(uint8_t *data) {}
+    virtual void set_opcode_data(uint8_t *data, bool set_disassembled_name = false) {}
     virtual void execute(CPU *cpu, MMU *mmu) {}
 
     virtual ~Opcode() {}
@@ -57,9 +57,10 @@ struct StoreStackpointer final : public Opcode {
 
     std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
 
-    void set_opcode_data(uint8_t *data) override {
+    void set_opcode_data(uint8_t *data, bool set_disassembled_name) override {
         m_data = data[1] << 8 | data[0];
-        m_disassembled_instruction = GeneralUtilities::formatted_string("LD (%s), SP", m_data);
+        if (set_disassembled_name)
+            m_disassembled_instruction = GeneralUtilities::formatted_string("LD (%s), SP", m_data);
     }
 
     void execute(CPU *cpu, MMU *mmu) override { exit(1); }
@@ -232,11 +233,13 @@ struct JumpToImmediate final : public ConditionalCallReturnOrJumpBase {
             m_condition == ConditionalCallReturnOrJumpBase::Condition::None ? "JP a16" : GeneralUtilities::formatted_string("JP %s, a16", m_flag_to_test_name);
     }
 
-    void set_opcode_data(uint8_t *data) override {
+    void set_opcode_data(uint8_t *data, bool set_disassembled_name) override {
         m_data = data[1] << 8 | data[0];
-        m_disassembled_instruction = m_condition == ConditionalCallReturnOrJumpBase::Condition::None
-                                         ? GeneralUtilities::formatted_string("JP 0x%X", m_data)
-                                         : GeneralUtilities::formatted_string("JP %s, 0x%X", m_flag_to_test_name, m_data);
+        if (set_disassembled_name) {
+            m_disassembled_instruction = m_condition == ConditionalCallReturnOrJumpBase::Condition::None
+                                             ? GeneralUtilities::formatted_string("JP 0x%X", m_data)
+                                             : GeneralUtilities::formatted_string("JP %s, 0x%X", m_flag_to_test_name, m_data);
+        }
     }
 
     std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
@@ -269,11 +272,13 @@ struct RelativeJump final : public ConditionalCallReturnOrJumpBase {
         name = m_condition == ConditionalCallReturnOrJumpBase::Condition::None ? "JR d8" : GeneralUtilities::formatted_string("JR %s, d8", m_flag_to_test_name);
     }
 
-    void set_opcode_data(uint8_t *data) override {
+    void set_opcode_data(uint8_t *data, bool set_disassembled_name) override {
         memcpy(&m_jump_offset, data, 1);
-        m_disassembled_instruction = m_condition == ConditionalCallReturnOrJumpBase::Condition::None
-                                         ? GeneralUtilities::formatted_string("JR 0x%X", data[0])
-                                         : GeneralUtilities::formatted_string("JR %s, 0x%X", m_flag_to_test_name, data[0]);
+        if (set_disassembled_name) {
+            m_disassembled_instruction = m_condition == ConditionalCallReturnOrJumpBase::Condition::None
+                                             ? GeneralUtilities::formatted_string("JR 0x%X", data[0])
+                                             : GeneralUtilities::formatted_string("JR %s, 0x%X", m_flag_to_test_name, data[0]);
+        }
     }
 
     std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
@@ -311,11 +316,13 @@ struct Call final : public ConditionalCallReturnOrJumpBase {
                                                                                : GeneralUtilities::formatted_string("CALL %s, a16", m_flag_to_test_name);
     }
 
-    void set_opcode_data(uint8_t *data) override {
+    void set_opcode_data(uint8_t *data, bool set_disassembled_name) override {
         m_data = data[1] << 8 | data[0];
-        m_disassembled_instruction = m_condition == ConditionalCallReturnOrJumpBase::Condition::None
-                                         ? GeneralUtilities::formatted_string("CALL 0x%X", m_data)
-                                         : GeneralUtilities::formatted_string("CALL %s, 0x%X", m_flag_to_test_name, m_data);
+        if (set_disassembled_name) {
+            m_disassembled_instruction = m_condition == ConditionalCallReturnOrJumpBase::Condition::None
+                                             ? GeneralUtilities::formatted_string("CALL 0x%X", m_data)
+                                             : GeneralUtilities::formatted_string("CALL %s, 0x%X", m_flag_to_test_name, m_data);
+        }
     }
 
     std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
@@ -403,10 +410,12 @@ struct Load8bitImmediate final : public Opcode {
         cycles = m_target == CPU::Register::HL ? 12 : 8;
     }
 
-    void set_opcode_data(uint8_t *data) override {
+    void set_opcode_data(uint8_t *data, bool set_disassembled_name) override {
         m_data = data[0];
-        m_disassembled_instruction =
-            GeneralUtilities::formatted_string((m_target == CPU::Register::HL) ? "LD (%s), 0x%X" : "LD %s, 0x%X", m_target_name, m_data);
+        if (set_disassembled_name) {
+            m_disassembled_instruction =
+                GeneralUtilities::formatted_string((m_target == CPU::Register::HL) ? "LD (%s), 0x%X" : "LD %s, 0x%X", m_target_name, m_data);
+        }
     }
 
     std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
@@ -480,9 +489,10 @@ struct Load16bitImmediate final : public Opcode {
         name = GeneralUtilities::formatted_string("LD %s, d16", m_target_name);
     }
 
-    void set_opcode_data(uint8_t *data) override {
+    void set_opcode_data(uint8_t *data, bool set_disassembled_name) override {
         m_data = data[1] << 8 | data[0];
-        m_disassembled_instruction = GeneralUtilities::formatted_string("LD %s, 0x%X", m_target_name, m_data);
+        if (set_disassembled_name)
+            m_disassembled_instruction = GeneralUtilities::formatted_string("LD %s, 0x%X", m_target_name, m_data);
     }
 
     std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
@@ -736,9 +746,10 @@ struct AccumulatorOperation final : RegisterOperationBase {
         name = GeneralUtilities::formatted_string("%s d8", get_operation_name());
     }
 
-    void set_opcode_data(uint8_t *data) override {
+    void set_opcode_data(uint8_t *data, bool set_disassembled_name) override {
         m_data = data[0];
-        m_disassembled_instruction = GeneralUtilities::formatted_string("%s 0x%X", get_operation_name(), m_data);
+        if (set_disassembled_name)
+            m_disassembled_instruction = GeneralUtilities::formatted_string("%s 0x%X", get_operation_name(), m_data);
     }
 
     std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
@@ -823,10 +834,13 @@ struct ReadWriteIOPortNWithA final : public Opcode {
         name = m_type == ReadWriteIOPortNWithA::ActionType::Write ? "LD ($FF00 + a8), A" : "LD A, ($FF00 + a8)";
     }
 
-    void set_opcode_data(uint8_t *data) override {
+    void set_opcode_data(uint8_t *data, bool set_disassembled_name) override {
         m_data = data[0];
-        m_disassembled_instruction = m_type == ReadWriteIOPortNWithA::ActionType::Write ? GeneralUtilities::formatted_string("LD ($%X), A", 0xFF00 + m_data)
-                                                                                        : GeneralUtilities::formatted_string("LD A, ($%X)", 0xFF00 + m_data);
+        if (set_disassembled_name) {
+            m_disassembled_instruction = m_type == ReadWriteIOPortNWithA::ActionType::Write
+                                             ? GeneralUtilities::formatted_string("LD ($%X), A", 0xFF00 + m_data)
+                                             : GeneralUtilities::formatted_string("LD A, ($%X)", 0xFF00 + m_data);
+        }
     }
 
     std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
@@ -862,10 +876,11 @@ struct SetSPOrHLToSPAndOffset final : public Opcode {
         name = m_target == CPU::Register::SP ? "ADD SP, d8" : "LD HL, SP + d8";
     }
 
-    void set_opcode_data(uint8_t *data) override {
+    void set_opcode_data(uint8_t *data, bool set_disassembled_name) override {
         m_data = data[0];
         memcpy(&m_offset, data, 1);
-        m_disassembled_instruction = GeneralUtilities::formatted_string(m_target == CPU::Register::SP ? "ADD SP, %02X" : "LD HL, SP + %02X", m_data);
+        if (set_disassembled_name)
+            m_disassembled_instruction = GeneralUtilities::formatted_string(m_target == CPU::Register::SP ? "ADD SP, %02X" : "LD HL, SP + %02X", m_data);
     }
 
     std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
@@ -904,10 +919,13 @@ struct LoadFromOrSetAIndirect final : public Opcode {
         name = m_type == LoadFromOrSetAIndirect::Direction::FromAccumulator ? "LD (a16), A" : "LD A, (a16)";
     }
 
-    void set_opcode_data(uint8_t *data) override {
+    void set_opcode_data(uint8_t *data, bool set_disassembled_name) override {
         m_data = data[1] << 8 | data[0];
-        m_disassembled_instruction = m_type == LoadFromOrSetAIndirect::Direction::FromAccumulator ? GeneralUtilities::formatted_string("LD (0x%X), A", m_data)
-                                                                                                  : GeneralUtilities::formatted_string("LD A, (0x%X)", m_data);
+        if (set_disassembled_name) {
+            m_disassembled_instruction = m_type == LoadFromOrSetAIndirect::Direction::FromAccumulator
+                                             ? GeneralUtilities::formatted_string("LD (0x%X), A", m_data)
+                                             : GeneralUtilities::formatted_string("LD A, (0x%X)", m_data);
+        }
     }
 
     std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }

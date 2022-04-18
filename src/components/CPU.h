@@ -214,7 +214,7 @@ class CPU {
     std::shared_ptr<PPU> m_ppu;
     uint32_t m_current_cycle_count = 0;
     uint16_t m_current_breakpoint;
-    const uint32_t CpuCyclesPerFrame = 17556; // TODO: The actual value is 70224, we should change all cycle counts to T-cycles instead...;
+    const uint32_t CpuCyclesPerFrame = 70224;
 
     bool m_interrupt_enabled = false;
 
@@ -225,7 +225,7 @@ class CPU {
     uint16_t m_reg_sp; // Stack pointer
     uint16_t m_reg_pc; // Program counter
 
-    std::shared_ptr<Opcode> get_next_opcode();
+    std::shared_ptr<Opcode> get_next_opcode(bool should_disassemble = false);
 
     void set_register(uint16_t *reg, const uint16_t value) { (*reg) = value; }
 

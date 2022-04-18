@@ -8,7 +8,7 @@ PPU::PPU(std::shared_ptr<MMU> mmu) : m_mmu(mmu) {
 }
 
 void PPU::tick(uint32_t number_of_cycles) {
-    m_current_dot += PPU::m_cycles_to_dots(number_of_cycles);
+    m_current_dot += number_of_cycles;
     if (m_current_dot >= PPU::DotsPerScanline) {
         m_current_dot = 0;
         m_current_scanline++;
