@@ -37,7 +37,7 @@ struct Opcode {
     virtual ~Opcode() {}
 
   protected:
-    Opcode(const std::string &name, uint8_t size, uint8_t cycles, uint8_t identifier) : name(name), size(size), cycles(cycles), identifier(identifier) {}
+    Opcode(uint8_t size, uint8_t cycles, uint8_t identifier, const std::string &name) : size(size), cycles(cycles), identifier(identifier), name(name) {}
     Opcode(uint8_t size, uint8_t cycles, uint8_t identifier) : size(size), cycles(cycles), identifier(identifier) {}
     Opcode(uint8_t size, uint8_t cycles) : size(size), cycles(cycles) {}
     Opcode(uint8_t size) : size(size) {}
@@ -47,13 +47,13 @@ struct Opcode {
 // 0x00 - NoOp
 struct NoOperation final : public Opcode {
   public:
-    NoOperation() : Opcode("NOP", 1, 4, 0x00) {}
+    NoOperation() : Opcode(1, 4, 0x00, "NOP") {}
 };
 
 // 0x08 Store SP at addresses given by 16-bit immediate
 struct StoreStackpointer final : public Opcode {
   public:
-    StoreStackpointer() : Opcode("LD (a16), SP", 3, 20, 0x08) {}
+    StoreStackpointer() : Opcode(3, 20, 0x08, "LD (a16), SP") {}
 
     std::string fully_disassembled_instruction() const override { return m_disassembled_instruction; }
 
@@ -72,7 +72,7 @@ struct StoreStackpointer final : public Opcode {
 // 0x10 - Stops to CPU (very low power mode, can be used to switch between normal and double CPU speed on GBC)
 struct Stop final : public Opcode {
   public:
-    Stop() : Opcode("STOP 0", 2, 4, 0x10) {}
+    Stop() : Opcode(2, 4, 0x10, "STOP 0") {}
     void execute(CPU *cpu, MMU *mmu) override { NOT_IMPLEMENTED("STOP"); }
 };
 
@@ -80,21 +80,21 @@ struct Stop final : public Opcode {
 struct Halt final : public Opcode {
   public:
     static const uint8_t opcode = 0x76;
-    Halt() : Opcode("HALT", 1, 4, 0x76) {}
+    Halt() : Opcode(1, 4, 0x76, "HALT") {}
     void execute(CPU *cpu, MMU *mmu) override { NOT_IMPLEMENTED("HALT"); }
 };
 
 // 0x27 - Decimal adjust accumulator (changes A to BCD representation)
 struct DecimalAdjustAccumulator final : public Opcode {
   public:
-    DecimalAdjustAccumulator() : Opcode("DAA", 1, 4, 0x27) {}
+    DecimalAdjustAccumulator() : Opcode(1, 4, 0x27, "DAA") {}
     void execute(CPU *cpu, MMU *mmu) override { NOT_IMPLEMENTED("DAA"); }
 };
 
 // 0x37 - Set carry flag
 struct SetCarryFlag final : public Opcode {
   public:
-    SetCarryFlag() : Opcode("SCF", 1, 4, 0x37) {}
+    SetCarryFlag() : Opcode(1, 4, 0x37, "SCF") {}
     void execute(CPU *cpu, MMU *mmu) override {
         cpu->set_flag(CPU::Flag::N, false);
         cpu->set_flag(CPU::Flag::H, false);
@@ -105,7 +105,7 @@ struct SetCarryFlag final : public Opcode {
 // 0x2F - One's complement the accumulator
 struct InvertAccumulator final : public Opcode {
   public:
-    InvertAccumulator() : Opcode("CPL", 1, 4, 0x2F) {}
+    InvertAccumulator() : Opcode(1, 4, 0x2F, "CPL") {}
     void execute(CPU *cpu, MMU *mmu) override {
         cpu->set_register(CPU::Register::A, static_cast<uint8_t>(!cpu->get_8_bit_register(CPU::Register::A)));
         cpu->set_flag(CPU::Flag::N, true);
@@ -116,7 +116,7 @@ struct InvertAccumulator final : public Opcode {
 // 0x3F -Complement carry flag
 struct ComplementCarryFlag final : public Opcode {
   public:
-    ComplementCarryFlag() : Opcode("CCF", 1, 4, 0x3F) {}
+    ComplementCarryFlag() : Opcode(1, 4, 0x3F, "CCF") {}
     void execute(CPU *cpu, MMU *mmu) override {
         cpu->set_flag(CPU::Flag::N, false);
         cpu->set_flag(CPU::Flag::H, false);
@@ -127,14 +127,14 @@ struct ComplementCarryFlag final : public Opcode {
 // 0xF3 Disable interrupt
 struct DisableInterrupt final : public Opcode {
   public:
-    DisableInterrupt() : Opcode("DI", 1, 4, 0xF3) {}
+    DisableInterrupt() : Opcode(1, 4, 0xF3, "DI") {}
     void execute(CPU *cpu, MMU *mmu) override { cpu->set_interrupt_enable(false); }
 };
 
 // 0xF3 Enable interrupt
 struct EnableInterrupt final : public Opcode {
   public:
-    EnableInterrupt() : Opcode("EI", 1, 4, 0xFB) {}
+    EnableInterrupt() : Opcode(1, 4, 0xFB, "EI") {}
     void execute(CPU *cpu, MMU *mmu) override { cpu->set_interrupt_enable(true); }
 };
 
