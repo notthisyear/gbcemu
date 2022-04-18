@@ -17,9 +17,6 @@ void print_help() {
 }
 
 int main(int argc, char **argv) {
-
-    gbcemu::LogUtilities::init();
-
     bool has_help;
     auto s = gbcemu::CommandLineArgument::get_debugger_cmd(argc, argv, gbcemu::CommandLineArgument::ArgumentType::Help, &has_help);
     if (has_help) {
@@ -35,14 +32,14 @@ int main(int argc, char **argv) {
     if (has_boot_rom) {
         boot_rom_argument->fix_path();
     } else {
-        gbcemu::LogUtilities::log(gbcemu::LoggerType::Internal, gbcemu::LogLevel::Error, "Running without boot ROM is currently not supported");
+        gbcemu::LogUtilities::log_error(std::cout, "Running without boot ROM is currently not supported");
         exit(1);
     }
 
     if (has_cartridge) {
         cartridge_argument->fix_path();
     } else {
-        gbcemu::LogUtilities::log(gbcemu::LoggerType::Internal, gbcemu::LogLevel::Error, "Running without cartridge is currently not supported");
+        gbcemu::LogUtilities::log_error(std::cout, "Running without cartridge is currently not supported");
         exit(1);
     }
 
@@ -50,18 +47,17 @@ int main(int argc, char **argv) {
     auto ppu = std::make_shared<gbcemu::PPU>(mmu);
     auto cpu = std::make_unique<gbcemu::CPU>(mmu, ppu);
 
-    gbcemu::LogUtilities::log(gbcemu::LoggerType::Internal, gbcemu::LogLevel::Info, "Emulator started!");
+    gbcemu::LogUtilities::log_info(std::cout, "Emulator started!");
 
     if (!mmu->try_load_boot_rom(std::cout, boot_rom_argument->value))
         exit(1);
 
-    gbcemu::LogUtilities::log(gbcemu::LoggerType::Internal, gbcemu::LogLevel::Info, "Boot ROM loaded");
+    gbcemu::LogUtilities::log_info(std::cout, "Boot ROM loaded");
 
     if (!mmu->try_load_cartridge(std::cout, cartridge_argument->value))
         exit(1);
 
-    gbcemu::LogUtilities::log(gbcemu::LoggerType::Internal, gbcemu::LogLevel::Info,
-                              gbcemu::GeneralUtilities::formatted_string("Cartridge '%s' loaded", cartridge_argument->value));
+    gbcemu::LogUtilities::log_info(std::cout, gbcemu::GeneralUtilities::formatted_string("Cartridge '%s' loaded", cartridge_argument->value));
 
     delete boot_rom_argument;
     delete cartridge_argument;
