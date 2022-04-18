@@ -1,13 +1,15 @@
 #include "Application.h"
 #include "common/WindowProperties.h"
 #include "components/CPU.h"
+#include "debugger/Debugger.h"
+#include "debugger/DebuggerCommand.cpp"
+#include "debugger/DebuggerCommand.h"
 #include "util/CommandLineArgument.h"
-#include "util/DebuggerCommand.cpp"
-#include "util/DebuggerCommand.h"
 #include "util/GeneralUtilities.h"
 #include "util/LogUtilities.h"
 #include <iostream>
 #include <memory>
+#include <thread>
 
 void print_help() {
     std::cout << "gbcemu v 0.1\n";
@@ -27,9 +29,10 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    bool has_boot_rom, has_cartridge;
+    bool has_boot_rom, has_cartridge, attach_debugger;
     auto boot_rom_argument = gbcemu::CommandLineArgument::get_argument(argc, argv, gbcemu::CommandLineArgument::ArgumentType::BootRomPath, &has_boot_rom);
     auto cartridge_argument = gbcemu::CommandLineArgument::get_argument(argc, argv, gbcemu::CommandLineArgument::ArgumentType::CartridgePath, &has_cartridge);
+    (void)gbcemu::CommandLineArgument::get_argument(argc, argv, gbcemu::CommandLineArgument::ArgumentType::AttachDebugger, &attach_debugger);
 
     if (has_boot_rom) {
         boot_rom_argument->fix_path();
@@ -47,7 +50,7 @@ int main(int argc, char **argv) {
 
     auto mmu = std::make_shared<gbcemu::MMU>(0xFFFF);
     auto ppu = std::make_shared<gbcemu::PPU>(mmu);
-    auto cpu = std::make_unique<gbcemu::CPU>(mmu, ppu);
+    auto cpu = std::make_shared<gbcemu::CPU>(mmu, ppu);
 
     gbcemu::LogUtilities::log_info(std::cout, "Emulator started!");
 
@@ -55,6 +58,7 @@ int main(int argc, char **argv) {
         exit(1);
 
     gbcemu::LogUtilities::log_info(std::cout, "Boot ROM loaded");
+    mmu->set_in_boot_mode(true);
 
     if (!mmu->try_load_cartridge(std::cout, cartridge_argument->value))
         exit(1);
@@ -64,108 +68,18 @@ int main(int argc, char **argv) {
     delete boot_rom_argument;
     delete cartridge_argument;
 
+    auto dbg = attach_debugger ? new gbcemu::Debugger(cpu, mmu) : nullptr;
+    auto dbg_thread = attach_debugger ? new std::thread(&gbcemu::Debugger::run, dbg, std::ref(std::cout)) : nullptr;
+    cpu->set_debug_mode(attach_debugger);
+
     auto application = new gbcemu::Application(gbcemu::WindowProperties());
     application->init();
     application->run();
     delete application;
 
-    mmu->set_in_boot_mode(true);
-    cpu->enable_breakpoint_at(0x100);
-
-    bool step_mode = true;
-    std::string input, cmd;
-
-    while (true) {
-        if (step_mode) {
-            std::cout << gbcemu::GeneralUtilities::formatted_string("[PC: 0x%04X]> ", cpu->get_16_bit_register(gbcemu::CPU::Register::PC));
-            std::getline(std::cin, input);
-
-            auto cmd = input.empty() ? gbcemu::DebuggerCommand::get_debugger_cmd("step") : gbcemu::DebuggerCommand::get_debugger_cmd(input);
-
-            if (cmd->command == gbcemu::DebuggerCommand::Command::Help) {
-                std::cout << "\navailable commands:\n\n";
-                gbcemu::DebuggerCommand::print_commands(std::cout);
-                std::cout << std::endl;
-                continue;
-            }
-
-            auto cmd_data = cmd->get_command_data();
-            if (cmd_data.empty() || cmd_data.compare("help") == 0) {
-                cmd->print_command_help(std::cout);
-                continue;
-            }
-
-            switch (cmd->command) {
-
-            case gbcemu::DebuggerCommand::Command::Show:
-                if (cmd_data.compare("cpu") == 0) {
-                    cpu->print_state(std::cout);
-
-                } else if (cmd_data.rfind("mem", 0) == 0) {
-                    auto is_pair = cmd_data.find('-') != std::string::npos;
-                    gbcemu::DebuggerCommand::address_pair address;
-                    bool result;
-
-                    if (is_pair) {
-                        result = cmd->try_get_address_pair_arg(&address);
-                    } else {
-                        uint16_t addr_start;
-                        result = cmd->try_get_numeric_argument(&addr_start);
-                        if (result) {
-                            address.first = addr_start;
-                            address.second = addr_start;
-                        }
-                    }
-
-                    if (result)
-                        mmu->print_memory_at_location(std::cout, address.first, address.second);
-
-                } else {
-                    cmd->print_command_help(std::cout);
-                }
-
-                continue;
-
-            case gbcemu::DebuggerCommand::Command::Disassemble:
-                uint16_t number_of_instructions_to_print;
-                if (cmd->try_get_numeric_argument(&number_of_instructions_to_print))
-                    cpu->print_disassembled_instructions(std::cout, number_of_instructions_to_print);
-                else
-                    cmd->print_command_help(std::cout);
-                continue;
-
-            case gbcemu::DebuggerCommand::Command::SetBreakpoint:
-                uint16_t breakpoint;
-                if (cmd->try_get_numeric_argument(&breakpoint))
-                    cpu->enable_breakpoint_at(breakpoint);
-                else
-                    cmd->print_command_help(std::cout);
-                continue;
-
-            case gbcemu::DebuggerCommand::Command::ClearBreakpoint:
-                std::cout << "clear breakpoint" << std::endl;
-                continue;
-            case gbcemu::DebuggerCommand::Command::Step:
-                cpu->tick();
-                continue;
-            case gbcemu::DebuggerCommand::Command::Run:
-                step_mode = false;
-                break;
-            case gbcemu::DebuggerCommand::Command::None:
-                // Do nothing
-                continue;
-            default:
-                __builtin_unreachable();
-            }
-        }
-
-        cpu->tick();
-
-        if (cpu->breakpoint_hit()) {
-            cpu->clear_breakpoint();
-            step_mode = true;
-        }
+    if (attach_debugger) {
+        dbg_thread->join();
+        delete dbg_thread;
+        delete dbg;
     }
-
-    return 0;
 }

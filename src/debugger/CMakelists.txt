@@ -1,0 +1,20 @@
+set(HEADER_FILES
+        DebuggerCommand.h
+		Debugger.h
+	)
+
+set(SOURCE_FILES
+    DebuggerCommand.cpp 
+    Debugger.cpp
+	)
+
+set(SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/..)
+
+add_library(gbcemu_debugger
+		${SOURCE_FILES}
+		${HEADER_FILES}
+	)
+
+target_include_directories(gbcemu_debugger PUBLIC ${SRC_PATH})
+
+target_link_libraries(gbcemu_debugger PRIVATE gbcemu_components)

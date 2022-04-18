@@ -22,3 +22,6 @@ add_library(gbcemu_components
 	)
 
 target_include_directories(gbcemu_components PUBLIC ${SRC_PATH})
+
+
+target_link_libraries(gbcemu_components PRIVATE gbcemu_util)

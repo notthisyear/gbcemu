@@ -19,6 +19,7 @@ add_subdirectory(${EXT_PATH}/glfw ${EXT_PATH}/glfw/build)
 
 # Internal
 add_subdirectory(util)
+add_subdirectory(debugger)
 add_subdirectory(common)
 add_subdirectory(event)
 add_subdirectory(opengl)
@@ -34,5 +35,6 @@ target_include_directories(gbcemu_main PUBLIC ${EXT_PATH}/glad/include)
 
 # Libraries
 target_link_libraries(gbcemu_main PRIVATE gbcemu_util)
+target_link_libraries(gbcemu_main PRIVATE gbcemu_debugger)
 target_link_libraries(gbcemu_main PRIVATE gbcemu_components)
 target_link_libraries(gbcemu_main PRIVATE gbcemu_windows)

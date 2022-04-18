@@ -14,8 +14,9 @@ class CommandLineArgument {
   public:
     enum class ArgumentType {
         Help = 0,
-        BootRomPath = 1,
-        CartridgePath = 2,
+        AttachDebugger = 1,
+        BootRomPath = 2,
+        CartridgePath = 3,
     };
 
     ArgumentType argument_type;
@@ -122,6 +123,7 @@ class CommandLineArgument {
 
     static inline const std::map<CommandLineArgument::ArgumentType, std::pair<std::string, std::string>> s_argument_regexp_and_help = {
         { CommandLineArgument::ArgumentType::Help, std::make_pair<std::string, std::string>("(-h)|(--help)", "show this help message and exit") },
+        { CommandLineArgument::ArgumentType::AttachDebugger, std::make_pair<std::string, std::string>("(-d)|(--dgb)", "attach the debugger at startup") },
         { CommandLineArgument::ArgumentType::BootRomPath,
           std::make_pair<std::string, std::string>(R"((--boot-rom) ([\w\\:\.-/\\(\\)\[\]]+))", "path to boot rom") },
         { CommandLineArgument::ArgumentType::CartridgePath,

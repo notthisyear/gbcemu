@@ -59,9 +59,13 @@ class CPU {
 
     void clear_breakpoint();
 
-    void enable_breakpoint_at(uint16_t pc);
+    void enable_breakpoint_at(uint16_t);
 
-    void set_interrupt_enable(bool on_or_off);
+    void set_interrupt_enable(bool);
+
+    void stop_execution();
+
+    void set_debug_mode(bool);
 
     uint8_t get_8_bit_register(const CPU::Register reg) const {
         switch (reg) {
@@ -187,7 +191,7 @@ class CPU {
         }
     }
 
-    bool breakpoint_hit() const { return m_current_breakpoint == m_reg_pc; }
+    bool breakpoint_hit() const;
 
     bool half_carry_occurs_on_add(uint8_t v, const uint8_t value_to_add) const;
 
@@ -213,6 +217,8 @@ class CPU {
     const uint32_t CpuCyclesPerFrame = 70224;
 
     bool m_interrupt_enabled = false;
+    bool m_is_in_debug_mode = false;
+    bool m_execution_stop_called = false;
 
     uint16_t m_reg_af; // Accumulator and flags
     uint16_t m_reg_bc; // BC (can be accessed as two 8-bit registers)

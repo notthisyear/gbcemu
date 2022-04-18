@@ -62,7 +62,13 @@ void CPU::set_interrupt_enable(bool on_or_off) { m_interrupt_enabled = on_or_off
 
 void CPU::enable_breakpoint_at(uint16_t pc) { m_current_breakpoint = pc; }
 
+bool CPU::breakpoint_hit() const { return m_current_breakpoint == m_reg_pc; }
+
 void CPU::clear_breakpoint() { m_current_breakpoint = 0; }
+
+void CPU::stop_execution() { m_execution_stop_called = true; }
+
+void CPU::set_debug_mode(bool on_or_off) { m_is_in_debug_mode = false; }
 
 bool CPU::half_carry_occurs_on_subtract(uint8_t v, const uint8_t value_to_subtract) const { return ((v & 0x0F) - (value_to_subtract & 0x0F)) < 0; }
 
