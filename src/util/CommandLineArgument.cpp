@@ -4,7 +4,7 @@
 
 namespace gbcemu {
 
-CommandLineArgument *CommandLineArgument::get_debugger_cmd(int argc, char **argv, CommandLineArgument::ArgumentType type, bool *did_match) {
+CommandLineArgument *CommandLineArgument::get_argument(int argc, char **argv, CommandLineArgument::ArgumentType type, bool *did_match) {
     auto total_length = 0;
     for (int i = 1; i < argc; i++)
         total_length += std::strlen(argv[i]);
@@ -18,10 +18,10 @@ CommandLineArgument *CommandLineArgument::get_debugger_cmd(int argc, char **argv
     }
     std::string result(combined_argument);
     delete[] combined_argument;
-    return get_debugger_cmd(result, type, did_match);
+    return get_argument(result, type, did_match);
 }
 
-CommandLineArgument *CommandLineArgument::get_debugger_cmd(const std::string &input, CommandLineArgument::ArgumentType type, bool *did_match) {
+CommandLineArgument *CommandLineArgument::get_argument(const std::string &input, CommandLineArgument::ArgumentType type, bool *did_match) {
     auto regexp = get_regexp(type);
 
     std::smatch sm;

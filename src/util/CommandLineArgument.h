@@ -28,8 +28,8 @@ class CommandLineArgument {
         }
     }
 
-    static CommandLineArgument *get_debugger_cmd(int argc, char **argv, CommandLineArgument::ArgumentType type, bool *did_match);
-    static CommandLineArgument *get_debugger_cmd(const std::string &input, CommandLineArgument::ArgumentType type, bool *did_match);
+    static CommandLineArgument *get_argument(int argc, char **argv, CommandLineArgument::ArgumentType type, bool *did_match);
+    static CommandLineArgument *get_argument(const std::string &input, CommandLineArgument::ArgumentType type, bool *did_match);
 
     static void print_usage_string(std::ostream &stream, const std::string &program_name) {
         stream << "usage: " << program_name << " ";

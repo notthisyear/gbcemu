@@ -1,3 +1,5 @@
+#include "Application.h"
+#include "common/WindowProperties.h"
 #include "components/CPU.h"
 #include "util/CommandLineArgument.h"
 #include "util/DebuggerCommand.cpp"
@@ -17,17 +19,17 @@ void print_help() {
 }
 
 int main(int argc, char **argv) {
+
     bool has_help;
-    auto s = gbcemu::CommandLineArgument::get_debugger_cmd(argc, argv, gbcemu::CommandLineArgument::ArgumentType::Help, &has_help);
+    auto s = gbcemu::CommandLineArgument::get_argument(argc, argv, gbcemu::CommandLineArgument::ArgumentType::Help, &has_help);
     if (has_help) {
         print_help();
         return 0;
     }
 
     bool has_boot_rom, has_cartridge;
-    auto boot_rom_argument = gbcemu::CommandLineArgument::get_debugger_cmd(argc, argv, gbcemu::CommandLineArgument::ArgumentType::BootRomPath, &has_boot_rom);
-    auto cartridge_argument =
-        gbcemu::CommandLineArgument::get_debugger_cmd(argc, argv, gbcemu::CommandLineArgument::ArgumentType::CartridgePath, &has_cartridge);
+    auto boot_rom_argument = gbcemu::CommandLineArgument::get_argument(argc, argv, gbcemu::CommandLineArgument::ArgumentType::BootRomPath, &has_boot_rom);
+    auto cartridge_argument = gbcemu::CommandLineArgument::get_argument(argc, argv, gbcemu::CommandLineArgument::ArgumentType::CartridgePath, &has_cartridge);
 
     if (has_boot_rom) {
         boot_rom_argument->fix_path();
@@ -61,6 +63,11 @@ int main(int argc, char **argv) {
 
     delete boot_rom_argument;
     delete cartridge_argument;
+
+    auto application = new gbcemu::Application(gbcemu::WindowProperties());
+    application->init();
+    application->run();
+    delete application;
 
     mmu->set_in_boot_mode(true);
     cpu->enable_breakpoint_at(0x100);

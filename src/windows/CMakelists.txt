@@ -1,0 +1,23 @@
+set(HEADER_FILES 
+		WindowsWindow.h
+	)
+
+set(SOURCE_FILES 
+		WindowsWindow.cpp
+	)
+
+set(SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/..)
+set(EXT_PATH ${SRC_PATH}/../../external)
+
+add_library(gbcemu_windows
+		${SOURCE_FILES}
+		${HEADER_FILES}
+	)
+
+target_include_directories(gbcemu_windows PUBLIC ${SRC_PATH})
+target_include_directories(gbcemu_windows PUBLIC ${EXT_PATH}/glfw/include)
+
+target_link_libraries(gbcemu_windows PRIVATE gbcemu_graphics_library)
+target_link_libraries(gbcemu_windows PRIVATE gbcemu_event)
+target_link_libraries(gbcemu_windows PRIVATE glfw)
+target_link_libraries(gbcemu_windows PRIVATE gbcemu_common)
