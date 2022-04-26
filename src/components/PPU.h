@@ -6,6 +6,10 @@ namespace gbcemu {
 
 class PPU {
   public:
+    const static uint16_t DisplayWidth = 160;
+    const static uint16_t DisplayHeight = 144;
+    const static uint16_t BytesPerPixel = 4; // RGBA
+
     enum class Mode {
         HBlank,
         VBlank,
@@ -17,12 +21,16 @@ class PPU {
 
     PPU(std::shared_ptr<MMU>);
 
+    ~PPU();
+
   private:
+    const uint32_t PixelsPerScanline = 160;
     const uint32_t ScanlinesPerFrame = 154;
+    const uint32_t VBlankStartScanline = 144;
     const uint32_t DotsPerScanline = 456;
+
     const uint32_t DotsInVBlank = 4560;
     const uint32_t DotsInOAMSearch = 80;
-    const uint32_t VBlankStartScanline = 144;
 
     const uint16_t ScrollYRegisterOffset = 0x42;
     const uint16_t ScrollXRegisterOffset = 0x43;
@@ -34,10 +42,11 @@ class PPU {
     void set_mode(const PPU::Mode);
 
     std::shared_ptr<MMU> m_mmu;
-    uint32_t m_current_dot;
+    uint32_t m_current_dot_in_mode;
     uint8_t m_current_scanline;
     uint8_t m_last_scanline;
 
+    uint8_t *m_framebuffer;
     PPU::Mode m_mode;
 };
 }

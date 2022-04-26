@@ -176,8 +176,10 @@ static bool is_extended_opcode(const uint8_t identifier) { return identifier == 
 static std::shared_ptr<Opcode> decode_opcode(const uint8_t identifier, bool is_extended) {
 
     auto cached_result = is_extended ? _check_opcode_cache(identifier, _extended_opcode_cache) : _check_opcode_cache(identifier, _opcode_cache);
-    if (cached_result != nullptr)
+    if (cached_result != nullptr) {
+        cached_result->reset_state();
         return cached_result;
+    }
 
     // See http://www.z80.info/decoding.htm and https://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html
     uint8_t x = (identifier >> 6) & 0x03;

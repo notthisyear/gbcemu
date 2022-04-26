@@ -21,12 +21,15 @@ class CPU {
         H,
         L,
         A,
+        W, // Intermediate register
+        Z, // Intermediate register
         AF,
         BC,
         DE,
         HL,
         SP,
         PC,
+        WZ, // Intermediate register pair
     };
 
     enum class Flag {
@@ -67,6 +70,12 @@ class CPU {
 
     void set_interrupt_enable(bool);
 
+    uint8_t read_at_pc();
+
+    void read_at_pc_and_store_in_intermediate(const CPU::Register);
+
+    void load_register_into_intermediate(const CPU::Register);
+
     uint8_t get_8_bit_register(const CPU::Register reg) const {
         switch (reg) {
         case CPU::Register::B:
@@ -83,6 +92,10 @@ class CPU {
             return get_register_lower(&m_reg_hl);
         case CPU::Register::A:
             return get_register_upper(&m_reg_af);
+        case CPU::Register::W:
+            return get_register_upper(&m_reg_wz);
+        case CPU::Register::Z:
+            return get_register_lower(&m_reg_wz);
         default:
             std::abort();
         }
@@ -102,6 +115,8 @@ class CPU {
             return m_reg_pc;
         case CPU::Register::SP:
             return m_reg_sp;
+        case CPU::Register::WZ:
+            return m_reg_wz;
         default:
             std::abort();
         }
@@ -130,6 +145,12 @@ class CPU {
         case CPU::Register::A:
             set_register_upper(&m_reg_af, value);
             break;
+        case CPU::Register::W:
+            set_register_upper(&m_reg_wz, value);
+            break;
+        case CPU::Register::Z:
+            set_register_lower(&m_reg_wz, value);
+            break;
         default:
             std::abort();
         }
@@ -155,6 +176,15 @@ class CPU {
         default:
             std::abort();
         }
+    }
+
+    void set_register_from_intermediate(const CPU::Register target) {
+        auto is_16_bit = target == CPU::Register::PC || target == CPU::Register::SP || target == CPU::Register::HL || target == CPU::Register::BC ||
+                         target == CPU::Register::DE;
+        if (is_16_bit)
+            set_register(target, get_16_bit_register(CPU::Register::WZ));
+        else
+            set_register(target, get_8_bit_register(CPU::Register::Z));
     }
 
     bool flag_is_set(CPU::Flag flag) const {
@@ -205,17 +235,29 @@ class CPU {
 
     bool carry_occurs_on_subtract(uint8_t v, const uint8_t value_to_subtract) const;
 
+    bool at_start_of_instruction() const;
+
     void print_state(std::ostream &) const;
 
     ~CPU();
 
   private:
+    enum class State { Idle, Wait, Execute };
     std::shared_ptr<MMU> m_mmu;
     std::shared_ptr<PPU> m_ppu;
-    uint32_t m_current_cycle_count = 0;
+
+    const uint8_t ExecutionTicksPerOperationStep = 4;
+    bool m_is_extended_opcode;
+    bool m_current_instruction_done;
+    uint8_t m_current_instruction_cycle_count;
+    uint32_t m_current_cycle_count;
+    std::shared_ptr<Opcode> m_current_opcode;
+
+    CPU::State m_state;
+    bool m_frame_done_flag;
+
     uint16_t m_current_breakpoint;
     bool m_has_breakpoint = false;
-    bool m_frame_done_flag;
 
     const uint32_t CpuCyclesPerFrame = 70224;
 
@@ -227,8 +269,9 @@ class CPU {
     uint16_t m_reg_hl; // HL (can be accessed as two 8-bit registers)
     uint16_t m_reg_sp; // Stack pointer
     uint16_t m_reg_pc; // Program counter
+    uint16_t m_reg_wz; // Internal temporary register
 
-    std::shared_ptr<Opcode> get_next_opcode(bool should_disassemble = false);
+    std::string disassemble_next_instruction();
 
     void set_register(uint16_t *reg, const uint16_t value) { (*reg) = value; }
 

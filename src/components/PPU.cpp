@@ -1,44 +1,47 @@
 #include "PPU.h"
+#include <cstring>
 #include <iostream>
+
 
 namespace gbcemu {
 
 PPU::PPU(std::shared_ptr<MMU> mmu) : m_mmu(mmu) {
-    m_current_dot = 0;
+    m_current_dot_in_mode = 0;
     m_current_scanline = 0;
     m_last_scanline = 0;
+    m_framebuffer = new uint8_t[PPU::DisplayWidth * PPU::DisplayHeight * PPU::BytesPerPixel];
+    memset(m_framebuffer, 0, PPU::DisplayWidth * PPU::DisplayHeight * PPU::BytesPerPixel);
 }
 
 void PPU::tick(uint32_t number_of_cycles) {
-    m_current_dot += number_of_cycles;
-    if (m_current_dot >= PPU::DotsPerScanline) {
-        m_current_dot = 0;
-        m_current_scanline++;
 
-        if (m_current_scanline >= PPU::ScanlinesPerFrame)
-            m_current_scanline = 0;
-    }
-
-    if (m_current_scanline < PPU::VBlankStartScanline) {
-        switch (m_mode) {
-        case PPU::Mode::VBlank:
-            m_mode = PPU::Mode::OAMSearch;
-            break;
-        case PPU::Mode::OAMSearch:
-            if (m_current_dot >= PPU::DotsInOAMSearch)
-                m_mode = PPU::Mode::DataTransfer;
-            break;
-        case PPU::Mode::DataTransfer:
-            // TODO: Implement
-            break;
-        default:
-            break;
-        }
-    } else {
-        if (m_mode != PPU::Mode::VBlank) {
-            set_mode(PPU::Mode::VBlank);
-            // TODO: Trigger interrupt
-        }
+    switch (m_mode) {
+    case PPU::Mode::OAMSearch:
+        m_current_dot_in_mode += number_of_cycles;
+        if (m_current_dot_in_mode >= PPU::DotsInOAMSearch)
+            m_mode = PPU::Mode::DataTransfer;
+        break;
+    case PPU::Mode::DataTransfer:
+        // Here, there is a pixel fetcher that could be emulated.
+        // There are two FIFOs, background and sprites. They can hold 16 pixels each.
+        // The pixel fetcher ensures that there
+        // The fetcher fetches a row of 8 pixels.
+        // It has five steps:
+        // 1. Get tile
+        // 2. Get tile data low
+        // 3. Get tile data high
+        // 4. Sleep
+        // 5. Push
+        // Steps 1-4 take two dots each, step 5 run for every dot until it is completed
+        break;
+    case PPU::Mode::VBlank:
+        m_mode = PPU::Mode::OAMSearch;
+        break;
+    case PPU::Mode::HBlank:
+        // TODO: Implement
+        break;
+    default:
+        break;
     }
 
     if (m_current_scanline != m_last_scanline) {
@@ -47,5 +50,6 @@ void PPU::tick(uint32_t number_of_cycles) {
     }
 }
 
+PPU::~PPU() { delete[] m_framebuffer; }
 void PPU::set_mode(const PPU::Mode mode) { m_mode = mode; }
 }

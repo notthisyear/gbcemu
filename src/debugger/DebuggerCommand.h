@@ -87,7 +87,7 @@ class DebuggerCommand {
     static inline CommandInfo s_command_info_map[] = {
         { "(^((h)|(help))$)", "[h|help]", "show available commands", false, true },
         { "((sh)|(show))", "[sh|show]", "show registers and memory, type 'show help' to see options", true, true },
-        { "((dasm)|(disassemble))", "[dasm|disassemble d]", "disassemble the next d instructions", true, true },
+        { "((dasm)|(disassemble))", "[dasm|disassemble] d", "disassemble the next d instructions", true, true },
         { "((sb)|(setbreakpoint))", "[sb|setbreakpoint] a16", "set a breakpoint at address a16", true, true },
         { "((cb)|(clearbreakpoint))", "[cb|clearbreakpoint]", "clear breakpoint", false, true },
         { "((st)|(step))", "[st|step]", "step execution one tick", false, true },

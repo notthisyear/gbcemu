@@ -6,9 +6,8 @@
 
 namespace gbcemu {
 
-Debugger::Debugger(std::shared_ptr<CPU> cpu, std::shared_ptr<MMU> mmu, std::shared_ptr<Application> app) : m_cpu(cpu), m_mmu(mmu), m_app(app) {
-    m_is_in_run_mode = false;
-}
+Debugger::Debugger(std::shared_ptr<CPU> cpu, std::shared_ptr<MMU> mmu, std::shared_ptr<Application> app)
+    : m_cpu(cpu), m_mmu(mmu), m_app(app), m_is_in_run_mode(false) {}
 
 void Debugger::run(std::ostream &output_stream) {
     m_app->set_cpu_debug_mode(true);
@@ -90,8 +89,13 @@ void Debugger::run(std::ostream &output_stream) {
             break;
 
         case gbcemu::DebuggerCommand::Command::Step:
-            if (!m_is_in_run_mode)
-                m_cpu->tick();
+            if (!m_is_in_run_mode) {
+                if (m_cpu->at_start_of_instruction()) {
+                    do {
+                        m_cpu->tick();
+                    } while (!m_cpu->at_start_of_instruction());
+                }
+            }
             break;
 
         case gbcemu::DebuggerCommand::Command::Run:
