@@ -80,6 +80,8 @@ struct StoreStackpointer final : public Opcode {
         m_operations.push_back([](CPU *cpu, MMU *) { cpu->read_at_pc_and_store_in_intermediate(CPU::Register::W); });
 
         // 16-bit operation really takes two cycles, so wait one cycle and do the entire operation at the end
+        // Also, operation involving the SP tend to take one extra cycle for some reason
+        m_operations.push_back([](CPU *cpu, MMU *mmu) {});
         m_operations.push_back([](CPU *cpu, MMU *mmu) {});
         m_operations.push_back([](CPU *cpu, MMU *mmu) {
             uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
@@ -89,7 +91,7 @@ struct StoreStackpointer final : public Opcode {
 
     std::string get_disassembled_instruction(uint8_t *instruction_data) const override {
         uint16_t value = instruction_data[1] << 8 | instruction_data[0];
-        return GeneralUtilities::formatted_string("LD (%04X), SP", value);
+        return GeneralUtilities::formatted_string("LD (0x%04X), SP", value);
     }
 };
 
@@ -262,11 +264,11 @@ struct ConditionalCallReturnOrJumpBase : public Opcode {
     ConditionalCallReturnOrJumpBase::Condition m_condition;
 };
 
-// 0xE9 - Jump to address pointed to be HL
+// 0xE9 - Jump to address pointed to by HL
 struct JumpToAddressInHL final : public ConditionalCallReturnOrJumpBase {
   public:
     JumpToAddressInHL() : ConditionalCallReturnOrJumpBase(1) {
-        m_operations.push_back([](CPU *cpu, MMU *) { cpu->set_register(CPU::Register::PC, cpu->get_16_bit_register(CPU::Register::HL)); });
+        m_operations.push_back([](CPU *cpu, MMU *mmu) { cpu->set_register(CPU::Register::PC, cpu->get_16_bit_register(CPU::Register::HL)); });
     }
 
     std::string get_disassembled_instruction(uint8_t *) const override { return "JP (HL)"; }
@@ -294,8 +296,8 @@ struct JumpToImmediate final : public ConditionalCallReturnOrJumpBase {
     std::string get_disassembled_instruction(uint8_t *instruction_data) const override {
         uint16_t value = instruction_data[1] << 8 | instruction_data[0];
         return m_condition == ConditionalCallReturnOrJumpBase::Condition::None
-                   ? GeneralUtilities::formatted_string("JP 0x%X", value)
-                   : GeneralUtilities::formatted_string("JP %s, 0x%X", get_flag_to_test_name(), value);
+                   ? GeneralUtilities::formatted_string("JP 0x%04X", value)
+                   : GeneralUtilities::formatted_string("JP %s, 0x%04X", get_flag_to_test_name(), value);
     }
 
   private:
@@ -325,8 +327,8 @@ struct RelativeJump final : public ConditionalCallReturnOrJumpBase {
         int8_t jump_offset;
         memcpy(&jump_offset, instruction_data, 1);
         return m_condition == ConditionalCallReturnOrJumpBase::Condition::None
-                   ? GeneralUtilities::formatted_string("JP 0x%X", instruction_data[0])
-                   : GeneralUtilities::formatted_string("JP %s, 0x%X", get_flag_to_test_name(), instruction_data[0]);
+                   ? GeneralUtilities::formatted_string("JR 0x%02X", instruction_data[0])
+                   : GeneralUtilities::formatted_string("JR %s, 0x%02X", get_flag_to_test_name(), instruction_data[0]);
     }
 };
 
@@ -351,8 +353,8 @@ struct Call final : public ConditionalCallReturnOrJumpBase {
     std::string get_disassembled_instruction(uint8_t *instruction_data) const override {
         uint16_t data = instruction_data[1] << 8 | instruction_data[0];
         return m_condition == ConditionalCallReturnOrJumpBase::Condition::None
-                   ? GeneralUtilities::formatted_string("CALL 0x%X", data)
-                   : GeneralUtilities::formatted_string("CALL %s, 0x%X", get_flag_to_test_name(), data);
+                   ? GeneralUtilities::formatted_string("CALL 0x%04X", data)
+                   : GeneralUtilities::formatted_string("CALL %s, 0x%04X", get_flag_to_test_name(), data);
     }
 
   private:
@@ -432,7 +434,7 @@ struct Load8bitImmediate final : public Opcode {
 
     std::string get_disassembled_instruction(uint8_t *instruction_data) const override {
         auto target_name = CPU::register_name.find(m_target)->second;
-        return GeneralUtilities::formatted_string((m_target == CPU::Register::HL) ? "LD (%s), 0x%X" : "LD %s, 0x%X", target_name, instruction_data[0]);
+        return GeneralUtilities::formatted_string((m_target == CPU::Register::HL) ? "LD (%s), 0x%02X" : "LD %s, 0x%02X", target_name, instruction_data[0]);
     }
 
   private:
@@ -607,20 +609,19 @@ struct IncrementOrDecrement8Or16bit final : public Opcode {
                 (void)mmu->try_read_from_memory(&value, cpu->get_16_bit_register(CPU::Register::HL), 1);
                 cpu->set_register(CPU::Register::Z, value);
             });
-            m_operations.push_back([&](CPU *cpu, MMU *mmu) {});
+            m_operations.push_back([](CPU *, MMU *) {});
         }
 
         m_operations.push_back([&](CPU *cpu, MMU *mmu) {
             uint8_t value = cpu->get_8_bit_register(m_target == CPU::Register::HL ? CPU::Register::Z : m_target);
-            uint8_t result = m_operation == IncrementOrDecrement8Or16bit::Operation::Increment ? value + 1 : value - 1;
+            bool half_carry_flag = m_operation == IncrementOrDecrement8Or16bit::Operation::Increment ? cpu->half_carry_occurs_on_add(value, 1)
+                                                                                                     : cpu->half_carry_occurs_on_subtract(value, 1);
 
+            uint8_t result = m_operation == IncrementOrDecrement8Or16bit::Operation::Increment ? value + 1 : value - 1;
             if (m_target == CPU::Register::HL)
                 (void)mmu->try_map_data_to_memory(&result, cpu->get_16_bit_register(CPU::Register::HL), 1);
             else
                 cpu->set_register(m_target, result);
-
-            bool half_carry_flag = m_operation == IncrementOrDecrement8Or16bit::Operation::Increment ? cpu->half_carry_occurs_on_add(value, 1)
-                                                                                                     : cpu->half_carry_occurs_on_subtract(value, 1);
 
             cpu->set_flag(CPU::Flag::Z, result == 0x00);
             cpu->set_flag(CPU::Flag::N, m_operation == IncrementOrDecrement8Or16bit::Operation::Decrement);
@@ -684,10 +685,9 @@ struct RegisterOperationBase : public Opcode {
             break;
 
         case RegisterOperationBase::Operation::SubtractFromAccumulatorWithCarry:
-            *operand -= cpu->flag_is_set(CPU::Flag::C) ? 1 : 0;
-            result = accumulator_value - *operand;
-            flag_pattern = new bool[]{ result == 0x00, 1, cpu->half_carry_occurs_on_subtract(accumulator_value, *operand),
-                                       cpu->carry_occurs_on_subtract(accumulator_value, *operand) };
+            result = accumulator_value - *operand - (cpu->flag_is_set(CPU::Flag::C) ? 1 : 0);
+            flag_pattern = new bool[]{ result == 0x00, 1, cpu->half_carry_occurs_on_subtract_with_carry(accumulator_value, *operand),
+                                       cpu->carry_occurs_on_subtract(accumulator_value, *operand + (cpu->flag_is_set(CPU::Flag::C) ? 1 : 0)) };
             break;
         default:
             __builtin_unreachable();
@@ -787,7 +787,7 @@ struct AccumulatorOperation final : RegisterOperationBase {
     }
 
     std::string get_disassembled_instruction(uint8_t *instruction_data) const override {
-        return GeneralUtilities::formatted_string("%s 0x%X", get_operation_name(), instruction_data[0]);
+        return GeneralUtilities::formatted_string("%s 0x%02X", get_operation_name(), instruction_data[0]);
     }
 };
 
@@ -908,27 +908,23 @@ struct SetSPOrHLToSPAndOffset final : public Opcode {
             uint8_t data = cpu->get_8_bit_register(CPU::Register::Z);
             int8_t offset;
             memcpy(&offset, &data, 1);
-            uint16_t result = data + offset;
+            uint16_t result = sp + offset;
 
-            if (m_target == CPU::Register::SP) {
-                cpu->set_register(CPU::Register::SP, static_cast<uint16_t>(result));
-            } else {
-                cpu->set_register(CPU::Register::Z, static_cast<uint8_t>(result & 0xFF00));
-                cpu->set_register(CPU::Register::W, static_cast<uint8_t>(result & 0x00FF));
-            }
-
+            cpu->set_register(m_target, static_cast<uint16_t>(result));
             cpu->set_flag(CPU::Flag::Z, 0);
             cpu->set_flag(CPU::Flag::N, 0);
-            cpu->set_flag(CPU::Flag::H, cpu->half_carry_occurs_on_add(static_cast<uint8_t>(sp & 0x00FF), offset));
-            cpu->set_flag(CPU::Flag::C, cpu->carry_occurs_on_add(static_cast<uint8_t>(sp & 0x00FF), offset));
+            cpu->set_flag(CPU::Flag::H, offset < 0 ? cpu->half_carry_occurs_on_subtract(sp & 0x00FF, -offset)
+                                                   : cpu->half_carry_occurs_on_add(static_cast<uint8_t>(sp & 0x00FF), offset));
+            cpu->set_flag(CPU::Flag::C, offset < 0 ? cpu->carry_occurs_on_subtract(sp & 0x00FF, -offset)
+                                                   : cpu->carry_occurs_on_add(static_cast<uint8_t>(sp & 0x00FF), offset));
         });
 
-        if (m_target == CPU::Register::HL)
-            m_operations.push_back([](CPU *cpu, MMU *) { cpu->set_register_from_intermediate(CPU::Register::HL); });
+        if (m_target == CPU::Register::SP)
+            m_operations.push_back([](CPU *cpu, MMU *) {});
     }
 
     std::string get_disassembled_instruction(uint8_t *instruction_data) const override {
-        return GeneralUtilities::formatted_string(m_target == CPU::Register::SP ? "ADD SP, %02X" : "LD HL, SP + %02X", instruction_data[0]);
+        return GeneralUtilities::formatted_string(m_target == CPU::Register::SP ? "ADD SP, 0x%02X" : "LD HL, SP + 0x%02X", instruction_data[0]);
     }
 
   private:
@@ -965,8 +961,8 @@ struct LoadFromOrSetAIndirect final : public Opcode {
 
     std::string get_disassembled_instruction(uint8_t *instruction_data) const override {
         uint16_t data = instruction_data[1] << 8 | instruction_data[0];
-        return m_type == LoadFromOrSetAIndirect::Direction::FromAccumulator ? GeneralUtilities::formatted_string("LD (0x%X), A", data)
-                                                                            : GeneralUtilities::formatted_string("LD A, (0x%X)", data);
+        return m_type == LoadFromOrSetAIndirect::Direction::FromAccumulator ? GeneralUtilities::formatted_string("LD (0x%2X), A", data)
+                                                                            : GeneralUtilities::formatted_string("LD A, (0x%2X)", data);
     }
 
   private:
@@ -1049,7 +1045,6 @@ struct ExtendedOpcode : public Opcode {
             m_bit = bit_or_rotation_idx;
 
         if (m_target == CPU::Register::HL) {
-            m_operations.push_back([](CPU *, MMU *) {});
             m_operations.push_back([&](CPU *cpu, MMU *mmu) {
                 uint8_t data;
                 (void)mmu->try_read_from_memory(&data, cpu->get_16_bit_register(CPU::Register::HL), 1);
@@ -1058,29 +1053,38 @@ struct ExtendedOpcode : public Opcode {
         }
 
         m_operations.push_back([&](CPU *cpu, MMU *mmu) {
-            uint8_t current_register = cpu->get_8_bit_register(m_target == CPU::Register::HL ? CPU::Register::Z : m_target);
+            uint8_t current_register_value = cpu->get_8_bit_register(m_target == CPU::Register::HL ? CPU::Register::Z : m_target);
 
             switch (m_type) {
 
             case ExtendedOpcode::ExtendedOpcodeType::RotationShiftOrSwap:
-                perform_rotation_shift_or_swap(cpu, &current_register);
-                cpu->set_register(m_target, current_register);
+                perform_rotation_shift_or_swap(cpu, &current_register_value);
+                if (m_target == CPU::Register::HL)
+                    (void)mmu->try_map_data_to_memory(&current_register_value, cpu->get_16_bit_register(CPU::Register::HL), 1);
+                else
+                    cpu->set_register(m_target, current_register_value);
                 break;
 
             case ExtendedOpcode::ExtendedOpcodeType::Test:
-                cpu->set_flag(CPU::Flag::Z, !bit_is_set(current_register, m_bit));
+                cpu->set_flag(CPU::Flag::Z, !bit_is_set(current_register_value, m_bit));
                 cpu->set_flag(CPU::Flag::N, false);
                 cpu->set_flag(CPU::Flag::H, true);
                 break;
 
             case ExtendedOpcode::ExtendedOpcodeType::Reset:
-                current_register &= (0xFE << m_bit);
-                cpu->set_register(m_target, current_register);
+                current_register_value &= (0xFE << m_bit);
+                if (m_target == CPU::Register::HL)
+                    (void)mmu->try_map_data_to_memory(&current_register_value, cpu->get_16_bit_register(CPU::Register::HL), 1);
+                else
+                    cpu->set_register(m_target, current_register_value);
                 break;
 
             case ExtendedOpcode::ExtendedOpcodeType::Set:
-                current_register |= (0x01 << m_bit);
-                cpu->set_register(m_target, current_register);
+                current_register_value |= (0x01 << m_bit);
+                if (m_target == CPU::Register::HL)
+                    (void)mmu->try_map_data_to_memory(&current_register_value, cpu->get_16_bit_register(CPU::Register::HL), 1);
+                else
+                    cpu->set_register(m_target, current_register_value);
                 break;
             }
         });

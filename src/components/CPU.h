@@ -70,6 +70,8 @@ class CPU {
 
     void set_interrupt_enable(bool);
 
+    bool interrupt_enabled() const;
+
     uint8_t read_at_pc();
 
     void read_at_pc_and_store_in_intermediate(const CPU::Register);
@@ -158,6 +160,9 @@ class CPU {
 
     void set_register(const CPU::Register reg, const uint16_t value) {
         switch (reg) {
+        case CPU::Register::AF:
+            set_register(&m_reg_af, value);
+            break;
         case CPU::Register::BC:
             set_register(&m_reg_bc, value);
             break;
@@ -173,6 +178,9 @@ class CPU {
         case CPU::Register::PC:
             set_register(&m_reg_pc, value);
             break;
+        case CPU::Register::WZ:
+            set_register(&m_reg_wz, value);
+            break;
         default:
             std::abort();
         }
@@ -181,6 +189,7 @@ class CPU {
     void set_register_from_intermediate(const CPU::Register target) {
         auto is_16_bit = target == CPU::Register::PC || target == CPU::Register::SP || target == CPU::Register::HL || target == CPU::Register::BC ||
                          target == CPU::Register::DE;
+
         if (is_16_bit)
             set_register(target, get_16_bit_register(CPU::Register::WZ));
         else
@@ -229,11 +238,13 @@ class CPU {
 
     bool half_carry_occurs_on_subtract(uint8_t v, const uint8_t value_to_subtract) const;
 
+    bool half_carry_occurs_on_subtract_with_carry(uint8_t v, const uint8_t value_to_subtract) const;
+
     bool carry_occurs_on_add(uint8_t v, const uint8_t value_to_add) const;
 
     bool carry_occurs_on_add(uint16_t v, const uint16_t value_to_add) const;
 
-    bool carry_occurs_on_subtract(uint8_t v, const uint8_t value_to_subtract) const;
+    bool carry_occurs_on_subtract(uint16_t v, const uint16_t value_to_subtract) const;
 
     bool at_start_of_instruction() const;
 
