@@ -3,8 +3,9 @@ set(HEADER_FILES
 		OpcodeBuilder.h
 		MMU.h
 		CPU.h
-		PPU.h
         Cartridge.h
+		PPU.h
+		PixelFetcher.h
 	)
 
 set(SOURCE_FILES 
@@ -12,6 +13,7 @@ set(SOURCE_FILES
 		MMU.cpp
 		Cartridge.cpp
 		PPU.cpp
+		PixelFetcher.cpp
 	)
 
 set(SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/..)

@@ -1,5 +1,7 @@
 #pragma once
 #include "MMU.h"
+#include "PixelFetcher.h"
+#include <memory>
 #include <stdint.h>
 
 namespace gbcemu {
@@ -42,6 +44,7 @@ class PPU {
     void set_mode(const PPU::Mode);
 
     std::shared_ptr<MMU> m_mmu;
+    std::unique_ptr<PixelFetcher> m_pixel_fetcher;
     uint32_t m_current_dot_on_line;
     uint8_t m_current_scanline;
     uint8_t m_last_scanline;
