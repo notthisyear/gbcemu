@@ -232,6 +232,10 @@ class CPU {
 
     bool breakpoint_hit() const;
 
+    void interleave_execute_and_decode(const bool);
+
+    bool at_start_of_instruction() const;
+
     bool half_carry_occurs_on_add(uint8_t v, const uint8_t value_to_add) const;
 
     bool half_carry_occurs_on_add(uint16_t v, const uint16_t value_to_add) const;
@@ -246,8 +250,6 @@ class CPU {
 
     bool carry_occurs_on_subtract(uint16_t v, const uint16_t value_to_subtract) const;
 
-    bool at_start_of_instruction() const;
-
     void print_state(std::ostream &) const;
 
     ~CPU();
@@ -259,7 +261,8 @@ class CPU {
 
     const uint8_t ExecutionTicksPerOperationStep = 4;
     bool m_is_extended_opcode;
-    bool m_current_instruction_done;
+    bool m_interleave_execute_and_decode;
+    bool m_at_start_of_instruction;
     uint8_t m_current_instruction_cycle_count;
     uint32_t m_current_cycle_count;
     std::shared_ptr<Opcode> m_current_opcode;

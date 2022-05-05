@@ -12,8 +12,8 @@ namespace gbcemu {
 
 CPU::CPU(std::shared_ptr<MMU> mmu, std::shared_ptr<PPU> ppu)
     : m_mmu(mmu), m_ppu(ppu), m_reg_af(0x0000), m_reg_bc(0x0000), m_reg_de(0x0000), m_reg_hl(0x0000), m_reg_sp(0x0000), m_reg_pc(0x0000),
-      m_current_cycle_count(0), m_current_instruction_cycle_count(0), m_is_extended_opcode(false), m_current_opcode(nullptr), m_current_instruction_done(true) {
-}
+      m_state(CPU::State::Idle), m_current_cycle_count(0), m_current_instruction_cycle_count(0), m_is_extended_opcode(false), m_current_opcode(nullptr),
+      m_interleave_execute_and_decode(true), m_at_start_of_instruction(true), m_interrupt_enabled(false) {}
 
 void CPU::tick() {
     uint8_t current_byte;
@@ -29,11 +29,11 @@ void CPU::tick() {
             m_current_opcode = decode_opcode(current_byte, false);
 
         m_state = CPU::State::Wait;
+        m_at_start_of_instruction = false;
         m_current_instruction_cycle_count++;
         break;
 
     case CPU::State::Wait:
-        m_current_instruction_done = false;
         if (m_current_instruction_cycle_count == ExecutionTicksPerOperationStep) {
             if (m_is_extended_opcode) {
                 current_byte = read_at_pc();
@@ -58,35 +58,29 @@ void CPU::tick() {
     }
 
     if (m_state == CPU::State::Execute) {
-
         if (m_current_instruction_cycle_count == 0) {
             m_current_instruction_cycle_count++;
             m_current_opcode->tick_execution(this, m_mmu.get());
 
             if (m_current_opcode->is_done()) {
                 m_state = CPU::State::Idle;
-                tick(); // Overlapped execution/fetching
-                m_current_instruction_done = true;
+                m_at_start_of_instruction = true;
+                if (m_interleave_execute_and_decode)
+                    tick(); // Overlapped execution/fetching
                 return;
             }
         }
     }
 
+    m_ppu->tick();
+
     m_current_cycle_count++;
 
+    if (m_current_cycle_count == CpuCyclesPerFrame) {
+        m_frame_done_flag = true;
+        m_current_cycle_count -= CpuCyclesPerFrame;
+    }
     return;
-
-    // auto current_cycles_before_execution = m_current_cycle_count;
-    // auto opcode = get_next_opcode();
-    // opcode->execute(this, m_mmu.get());
-    // m_current_cycle_count += opcode->cycles;
-
-    // m_ppu->tick(m_current_cycle_count - current_cycles_before_execution);
-
-    // if (m_current_cycle_count > CpuCyclesPerFrame) {
-    //     m_frame_done_flag = true;
-    //     m_current_cycle_count -= CpuCyclesPerFrame;
-    // }
 }
 
 bool CPU::cycles_per_frame_reached() const { return m_frame_done_flag; }
@@ -95,14 +89,13 @@ void CPU::acknowledge_frame() { m_frame_done_flag = false; }
 
 uint8_t CPU::read_at_pc() {
     uint8_t byte;
-    m_mmu->try_read_from_memory(&byte, m_reg_pc++, 1);
+    (void)m_mmu->try_read_from_memory(&byte, m_reg_pc++, 1);
     return byte;
 }
 
 void CPU::read_at_pc_and_store_in_intermediate(CPU::Register reg) {
     if (reg != CPU::Register::W && reg != CPU::Register::Z)
         throw std::invalid_argument("Method can only be called with either 'W' or 'Z' register");
-
     set_register(reg, read_at_pc());
 }
 
@@ -182,6 +175,9 @@ bool CPU::breakpoint_hit() const { return m_has_breakpoint && m_current_breakpoi
 
 void CPU::clear_breakpoint() { m_has_breakpoint = false; }
 
+void CPU::interleave_execute_and_decode(const bool b) { m_interleave_execute_and_decode = b; }
+
+bool CPU::at_start_of_instruction() const { return m_at_start_of_instruction; }
 bool CPU::half_carry_occurs_on_subtract(uint8_t v, const uint8_t value_to_subtract) const { return ((v & 0x0F) - (value_to_subtract & 0x0F)) & 0x10; }
 
 bool CPU::half_carry_occurs_on_subtract_with_carry(uint8_t v, const uint8_t value_to_subtract) const {
@@ -197,8 +193,6 @@ bool CPU::carry_occurs_on_add(uint8_t v, const uint8_t value_to_add) const { ret
 bool CPU::carry_occurs_on_add(uint16_t v, const uint16_t value_to_add) const { return ((uint32_t)v + (uint32_t)value_to_add) > 0xFFFF; }
 
 bool CPU::carry_occurs_on_subtract(uint16_t v, const uint16_t value_to_subtract) const { return value_to_subtract > v; };
-
-bool CPU::at_start_of_instruction() const { return m_current_instruction_done; }
 
 void CPU::print_state(std::ostream &stream) const {
 

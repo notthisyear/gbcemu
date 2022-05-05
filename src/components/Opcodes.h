@@ -59,8 +59,7 @@ struct Opcode {
     Opcode(uint8_t opcode_number_of_bytes) : size(opcode_number_of_bytes) {}
 
   private:
-    uint8_t m_operation_step;
-    bool m_is_instant;
+    uint8_t m_operation_step = 0;
 };
 
 // 0x00 - NoOp
@@ -231,7 +230,6 @@ struct ConditionalCallReturnOrJumpBase : public Opcode {
     }
 
     void append_return_instructions(bool enable_interrupts) {
-
         // Wait one cycle (16-bit operation)
         m_operations.push_back([](CPU *, MMU *) {});
 
@@ -245,7 +243,7 @@ struct ConditionalCallReturnOrJumpBase : public Opcode {
         });
 
         // Update PC and optionally set interrupt flag
-        m_operations.push_back([&](CPU *cpu, MMU *) {
+        m_operations.push_back([enable_interrupts](CPU *cpu, MMU *) {
             cpu->set_register_from_intermediate(CPU::Register::PC);
             if (enable_interrupts)
                 cpu->set_interrupt_enable(true);

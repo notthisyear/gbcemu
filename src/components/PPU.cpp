@@ -2,23 +2,20 @@
 #include <cstring>
 #include <iostream>
 
-
 namespace gbcemu {
 
-PPU::PPU(std::shared_ptr<MMU> mmu) : m_mmu(mmu) {
-    m_current_dot_in_mode = 0;
-    m_current_scanline = 0;
-    m_last_scanline = 0;
+PPU::PPU(std::shared_ptr<MMU> mmu) : m_mmu(mmu), m_current_dot_on_line(0), m_mode(PPU::Mode::OAMSearch), m_current_scanline(0), m_last_scanline(0) {
     m_framebuffer = new uint8_t[PPU::DisplayWidth * PPU::DisplayHeight * PPU::BytesPerPixel];
     memset(m_framebuffer, 0, PPU::DisplayWidth * PPU::DisplayHeight * PPU::BytesPerPixel);
 }
 
-void PPU::tick(uint32_t number_of_cycles) {
+void PPU::tick() {
+
+    m_current_dot_on_line++;
 
     switch (m_mode) {
     case PPU::Mode::OAMSearch:
-        m_current_dot_in_mode += number_of_cycles;
-        if (m_current_dot_in_mode >= PPU::DotsInOAMSearch)
+        if (m_current_dot_on_line == PPU::DotsInOAMSearch)
             m_mode = PPU::Mode::DataTransfer;
         break;
     case PPU::Mode::DataTransfer:
@@ -33,12 +30,29 @@ void PPU::tick(uint32_t number_of_cycles) {
         // 4. Sleep
         // 5. Push
         // Steps 1-4 take two dots each, step 5 run for every dot until it is completed
+        if (m_current_dot_on_line == 172)
+            m_mode = PPU::Mode::HBlank;
         break;
+
     case PPU::Mode::VBlank:
-        m_mode = PPU::Mode::OAMSearch;
+        if (m_current_dot_on_line == DotsPerScanline) {
+            m_current_dot_on_line = 0;
+            m_current_scanline++;
+        }
+
+        if (m_current_scanline > ScanlinesPerFrame) {
+            m_mode = PPU::Mode::OAMSearch;
+            m_current_scanline = 0;
+        }
         break;
+
     case PPU::Mode::HBlank:
-        // TODO: Implement
+        if (m_current_dot_on_line == DotsPerScanline) {
+            m_current_scanline++;
+            m_current_dot_on_line = 0;
+            if (m_current_scanline == VBlankStartScanline)
+                m_mode = PPU::Mode::VBlank;
+        }
         break;
     default:
         break;

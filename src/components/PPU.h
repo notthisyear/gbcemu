@@ -17,7 +17,7 @@ class PPU {
         DataTransfer,
     };
 
-    void tick(uint32_t number_of_cycles);
+    void tick();
 
     PPU(std::shared_ptr<MMU>);
 
@@ -42,7 +42,7 @@ class PPU {
     void set_mode(const PPU::Mode);
 
     std::shared_ptr<MMU> m_mmu;
-    uint32_t m_current_dot_in_mode;
+    uint32_t m_current_dot_on_line;
     uint8_t m_current_scanline;
     uint8_t m_last_scanline;
 

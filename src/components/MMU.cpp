@@ -8,9 +8,8 @@
 #include <stdexcept>
 #include <utility>
 
-
 namespace gbcemu {
-MMU::MMU(uint16_t memory_size) : m_memory_size(memory_size) {
+MMU::MMU(uint16_t memory_size) : m_memory_size(memory_size), m_is_in_boot_mode(false) {
     m_memory = new uint8_t[m_memory_size];
     memset(m_memory, (uint8_t)0x00, m_memory_size);
 }

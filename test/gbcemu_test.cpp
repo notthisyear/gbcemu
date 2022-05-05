@@ -129,7 +129,6 @@ static uint8_t execute_opcode_verify_pc_and_flags(gbcemu::Opcode *opcode, gbcemu
 
 static void test_relative_jumps(gbcemu::Opcode *opcode, gbcemu::CPU *cpu, gbcemu::MMU *mmu, uint8_t *instruction_data, bool has_condition = false,
                                 bool execute_if_set = true, gbcemu::CPU::Flag flag = gbcemu::CPU::Flag::Z) {
-
     map_instruction_data_to_memory(mmu, { instruction_data[0] });
     int8_t offset;
     memcpy(&offset, instruction_data, 1);

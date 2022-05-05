@@ -90,11 +90,9 @@ void Debugger::run(std::ostream &output_stream) {
 
         case gbcemu::DebuggerCommand::Command::Step:
             if (!m_is_in_run_mode) {
-                if (m_cpu->at_start_of_instruction()) {
-                    do {
-                        m_cpu->tick();
-                    } while (!m_cpu->at_start_of_instruction());
-                }
+                do {
+                    m_cpu->tick();
+                } while (!m_cpu->at_start_of_instruction());
             }
             break;
 
