@@ -76,16 +76,10 @@ void CPU::tick() {
 
     m_current_cycle_count++;
 
-    if (m_current_cycle_count == CpuCyclesPerFrame) {
-        m_frame_done_flag = true;
-        m_current_cycle_count -= CpuCyclesPerFrame;
-    }
+    if (m_ppu->cycles_per_frame_reached())
+        m_current_cycle_count = 0;
     return;
 }
-
-bool CPU::cycles_per_frame_reached() const { return m_frame_done_flag; }
-
-void CPU::acknowledge_frame() { m_frame_done_flag = false; }
 
 uint8_t CPU::read_at_pc() {
     uint8_t byte;
@@ -178,6 +172,7 @@ void CPU::clear_breakpoint() { m_has_breakpoint = false; }
 void CPU::interleave_execute_and_decode(const bool b) { m_interleave_execute_and_decode = b; }
 
 bool CPU::at_start_of_instruction() const { return m_at_start_of_instruction; }
+
 bool CPU::half_carry_occurs_on_subtract(uint8_t v, const uint8_t value_to_subtract) const { return ((v & 0x0F) - (value_to_subtract & 0x0F)) & 0x10; }
 
 bool CPU::half_carry_occurs_on_subtract_with_carry(uint8_t v, const uint8_t value_to_subtract) const {

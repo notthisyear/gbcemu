@@ -18,7 +18,6 @@ class WindowsWindow {
 
     WindowsWindow(const WindowProperties &);
 
-    float calculate_time_delta_since_last_frame();
     void update();
     void set_event_callback(const EventCallbackHandler &);
 
@@ -34,7 +33,6 @@ class WindowsWindow {
     GLFWwindow *m_window = {};
     WindowData m_window_data;
     std::unique_ptr<GraphicsContext> m_context;
-    float m_last_frame_time = 0.0f;
 
     void create_and_set_glfw_window();
     void set_window_hint(int, int);

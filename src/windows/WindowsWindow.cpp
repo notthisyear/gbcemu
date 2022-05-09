@@ -12,7 +12,7 @@ static void glfw_error_callback(int error, const char *description) {
     LogUtilities::log_error(std::cout, GeneralUtilities::formatted_string("GLFW error (%d) - %s", error, description));
 }
 
-WindowsWindow::WindowsWindow(const WindowProperties &properties) : m_properties(properties), m_last_frame_time(0.0f) {
+WindowsWindow::WindowsWindow(const WindowProperties &properties) : m_properties(properties) {
     if (is_initialized) {
         LogUtilities::log_error(std::cout, "Window is already initialized");
         return;
@@ -24,7 +24,7 @@ WindowsWindow::WindowsWindow(const WindowProperties &properties) : m_properties(
     }
 
     set_window_hint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    set_window_hint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    set_window_hint(GLFW_CONTEXT_VERSION_MINOR, 5);
     set_window_hint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     glfwSetErrorCallback(glfw_error_callback);
@@ -49,13 +49,7 @@ WindowsWindow::WindowsWindow(const WindowProperties &properties) : m_properties(
     is_initialized = true;
 }
 
-float WindowsWindow::calculate_time_delta_since_last_frame() {
-    float time = (float)glfwGetTime();
-    return time - m_last_frame_time;
-}
-
 void WindowsWindow::update() {
-    m_last_frame_time = (float)glfwGetTime();
     glfwPollEvents();
     m_context->swap_buffers();
 }

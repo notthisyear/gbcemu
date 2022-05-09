@@ -25,18 +25,55 @@ class MMU {
         Restricted,
     };
 
-    enum class IORegister {
-        Joypad,
-        SerialTranfer,
-        TimerAndDivider,
-        Sound,
-        WavePattern,
-        LCDControl,
-        VRAMBankSelect,
-        DisableBootRom,
-        VRAMDMA,
-        BgObjPalettes,
-        WRAMBankSelect,
+    enum class MemoryRegister {
+        // Joypad input
+        JOYP = 0x00,
+        // Serial data transfer
+        SB = 0x01,
+        SC = 0x02,
+        // Timer
+        DIV = 0x04,
+        TIMA = 0x05,
+        TMA = 0x06,
+        TAC = 0x07,
+        // Sound controller
+        NR10 = 0x10,
+        NR11 = 0x11,
+        NR12 = 0x12,
+        NR13 = 0x13,
+        NR14 = 0x14,
+        NR21 = 0x16,
+        NR22 = 0x17,
+        NR23 = 0x18,
+        NR24 = 0x19,
+        NR30 = 0x1A,
+        NR31 = 0x1B,
+        NR32 = 0x1C,
+        NR33 = 0x1D,
+        NR34 = 0x1E,
+        NR41 = 0x20,
+        NR42 = 0x21,
+        NR43 = 0x22,
+        NR44 = 0x23,
+        NR50 = 0x24,
+        NR51 = 0x25,
+        NR52 = 0x26,
+        // PPU
+        LCDC = 0x40,
+        STAT = 0x41,
+        SCY = 0x42,
+        SCX = 0x43,
+        LY = 0x44,
+        LYC = 0x45,
+        DMA = 0x46,
+        BGP = 0x47,
+        OBP0 = 0x48,
+        OBP1 = 0x49,
+        WY = 0x4A,
+        WX = 0x4B,
+        // Interrupt controller
+        IF = 0x0F,
+        IE = 0xFF,
     };
 
     MMU(uint16_t memory_size);
@@ -48,7 +85,8 @@ class MMU {
     bool try_read_from_memory(uint8_t *data, uint16_t offset, uint64_t size) const;
     void set_debug_mode(bool on_or_off);
     void set_in_boot_mode(bool is_in_boot_mode);
-
+    void set_register(const MMU::MemoryRegister, const uint8_t);
+    uint8_t get_register(const MMU::MemoryRegister) const;
     void print_memory_at_location(std::ostream &stream, uint16_t start, uint16_t end) const;
     ~MMU();
 
@@ -56,6 +94,7 @@ class MMU {
     uint16_t m_memory_size;
     uint8_t *m_memory;
     uint8_t *m_boot_rom;
+    const uint16_t RegisterOffsetBase = 0xFF00;
 
     std::unique_ptr<Cartridge> m_cartridge;
     MMU::MemoryRegion find_memory_region(uint16_t address) const;
@@ -79,14 +118,13 @@ class MMU {
     bool try_load_from_file(const std::string &, uint8_t *, const uint64_t) const;
 
     std::string get_region_name(MMU::MemoryRegion) const;
-    std::string get_io_register_name(MMU::IORegister) const;
+    std::string get_register_name(MMU::MemoryRegister reg) const;
 
     bool get_file_size(const std::string &, uint64_t *) const;
 
     static const std::map<MMU::MemoryRegion, std::pair<uint16_t, uint16_t>> s_region_map;
-    static const std::map<MMU::IORegister, std::pair<uint8_t, uint8_t>> s_io_register_map;
     static const std::unordered_map<MMU::MemoryRegion, std::string> s_region_names;
-    static const std::unordered_map<MMU::IORegister, std::string> s_io_register_names;
+    static const std::unordered_map<MMU::MemoryRegister, std::string> s_register_names;
 
     static std::pair<uint8_t, uint8_t> make_offset_and_size_pair(uint8_t offset, uint8_t size) { return std::make_pair(offset, size); }
     static std::pair<uint16_t, uint16_t> make_address_pair(uint16_t lower, uint16_t upper) { return std::make_pair(lower, upper); }

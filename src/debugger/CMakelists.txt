@@ -1,3 +1,6 @@
+set(SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/..)
+set(EXT_PATH ${SRC_PATH}/../external)
+	
 set(HEADER_FILES
         DebuggerCommand.h
 		Debugger.h
@@ -8,14 +11,14 @@ set(SOURCE_FILES
     Debugger.cpp
 	)
 
-set(SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/..)
-
+	
 add_library(gbcemu_debugger
 		${SOURCE_FILES}
 		${HEADER_FILES}
 	)
 
 target_include_directories(gbcemu_debugger PUBLIC ${SRC_PATH})
+target_include_directories(gbcemu_debugger PUBLIC ${EXT_PATH}/glad/include)
 
 target_link_libraries(gbcemu_debugger PRIVATE gbcemu_components)
 target_link_libraries(gbcemu_debugger PRIVATE gbcemu_windows)

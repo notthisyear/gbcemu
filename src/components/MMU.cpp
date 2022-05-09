@@ -178,6 +178,14 @@ bool MMU::try_read_from_memory(uint8_t *data, uint16_t offset, uint64_t size) co
     return result;
 }
 
+void MMU::set_register(const MMU::MemoryRegister reg, uint8_t value) { write_to_memory(&value, RegisterOffsetBase | static_cast<uint16_t>(reg), 1); }
+
+uint8_t MMU::get_register(const MMU::MemoryRegister reg) const {
+    uint8_t data;
+    read_from_memory(&data, RegisterOffsetBase | static_cast<uint16_t>(reg), 1);
+    return data;
+}
+
 void MMU::print_memory_at_location(std::ostream &stream, uint16_t start, uint16_t end) const {
 
     stream << std::endl;
@@ -298,20 +306,6 @@ const std::map<MMU::MemoryRegion, std::pair<uint16_t, uint16_t>> MMU::s_region_m
     { MMU::MemoryRegion::IERegister, MMU::make_address_pair(0xFFFF, 0xFFFF) },
 };
 
-const std::map<MMU::IORegister, std::pair<uint8_t, uint8_t>> MMU::s_io_register_map = {
-    { MMU::IORegister::Joypad, MMU::make_offset_and_size_pair(0x00, 0x01) },
-    { MMU::IORegister::SerialTranfer, MMU::make_offset_and_size_pair(0x01, 0x02) },
-    { MMU::IORegister::TimerAndDivider, MMU::make_offset_and_size_pair(0x04, 0x04) },
-    { MMU::IORegister::Sound, MMU::make_offset_and_size_pair(0x10, 0x17) },
-    { MMU::IORegister::WavePattern, MMU::make_offset_and_size_pair(0x30, 0x10) },
-    { MMU::IORegister::LCDControl, MMU::make_offset_and_size_pair(0x40, 0x0C) },
-    { MMU::IORegister::VRAMBankSelect, MMU::make_offset_and_size_pair(0x4F, 0x01) },
-    { MMU::IORegister::DisableBootRom, MMU::make_offset_and_size_pair(0x50, 0x01) },
-    { MMU::IORegister::VRAMDMA, MMU::make_offset_and_size_pair(0x51, 0x05) },
-    { MMU::IORegister::BgObjPalettes, MMU::make_offset_and_size_pair(0x68, 0x02) },
-    { MMU::IORegister::WRAMBankSelect, MMU::make_offset_and_size_pair(0x70, 0x01) },
-};
-
 const std::unordered_map<MMU::MemoryRegion, std::string> MMU::s_region_names = {
     { MMU::MemoryRegion::CartridgeFixed, "CartridgeFixed" },
     { MMU::MemoryRegion::CartridgeSwitchable, "CartridgeSwitchable" },
@@ -327,22 +321,52 @@ const std::unordered_map<MMU::MemoryRegion, std::string> MMU::s_region_names = {
     { MMU::MemoryRegion::IERegister, "IERegister" },
 };
 
-const std::unordered_map<MMU::IORegister, std::string> MMU::s_io_register_names = {
-    { MMU::IORegister::Joypad, "Joypad" },
-    { MMU::IORegister::SerialTranfer, "SerialTranfer" },
-    { MMU::IORegister::TimerAndDivider, "TimerAndDivider" },
-    { MMU::IORegister::Sound, "Sound" },
-    { MMU::IORegister::WavePattern, "WavePattern" },
-    { MMU::IORegister::LCDControl, "LCDControl" },
-    { MMU::IORegister::VRAMBankSelect, "VRAMBankSelect" },
-    { MMU::IORegister::DisableBootRom, "DisableBootRom" },
-    { MMU::IORegister::VRAMDMA, "VRAMDMA" },
-    { MMU::IORegister::BgObjPalettes, "BgObjPalettes" },
-    { MMU::IORegister::WRAMBankSelect, "WRAMBankSelect" },
+const std::unordered_map<MMU::MemoryRegister, std::string> MMU::s_register_names = {
+
+    { MMU::MemoryRegister::JOYP, "Joypad" },
+    { MMU::MemoryRegister::SB, "SerialTransferData" },
+    { MMU::MemoryRegister::SC, "SerialTransferControl" },
+    { MMU::MemoryRegister::DIV, "DividerRegister" },
+    { MMU::MemoryRegister::TIMA, "TimerCounter" },
+    { MMU::MemoryRegister::TMA, "TimerModulo" },
+    { MMU::MemoryRegister::TAC, "TimerControl" },
+    { MMU::MemoryRegister::NR10, "SoundChannel1SweepRegister" },
+    { MMU::MemoryRegister::NR11, "SoundChannel1SoundLengthAndWavePattern" },
+    { MMU::MemoryRegister::NR12, "SoundChannel1VolumeEnvelope" },
+    { MMU::MemoryRegister::NR13, "SoundChannel1LowFrequency" },
+    { MMU::MemoryRegister::NR14, "SoundChannel1HighFrequency" },
+    { MMU::MemoryRegister::NR21, "SoundChannel2SoundLengthAndWavePattern" },
+    { MMU::MemoryRegister::NR22, "SoundChannel2VolumeEnvelope" },
+    { MMU::MemoryRegister::NR23, "SoundChannel2LowFrequency" },
+    { MMU::MemoryRegister::NR24, "SoundChannel2HighFrequency" },
+    { MMU::MemoryRegister::NR30, "SoundChannel3Enable" },
+    { MMU::MemoryRegister::NR31, "SoundChannel3SoundlLength" },
+    { MMU::MemoryRegister::NR32, "SoundChannel3OutputLevel" },
+    { MMU::MemoryRegister::NR33, "SoundChannel3LowFrequency" },
+    { MMU::MemoryRegister::NR34, "SoundChannel3HighFrequency" },
+    { MMU::MemoryRegister::NR41, "SoundChannel4SoundLength" },
+    { MMU::MemoryRegister::NR42, "SoundChannel4VolumeEnvelope" },
+    { MMU::MemoryRegister::NR43, "SoundChannel4PolynomialCounter" },
+    { MMU::MemoryRegister::NR44, "SoundChannel4CounterConsecutive" },
+    { MMU::MemoryRegister::NR50, "SoundChannelControl" },
+    { MMU::MemoryRegister::NR51, "SoundSelectOutputTerminal" },
+    { MMU::MemoryRegister::NR52, "SoundEnable" },
+    { MMU::MemoryRegister::LCDC, "LCDControl" },
+    { MMU::MemoryRegister::STAT, "LCDStatus" },
+    { MMU::MemoryRegister::SCY, "LCDScrollY" },
+    { MMU::MemoryRegister::SCX, "LCDScrollX" },
+    { MMU::MemoryRegister::LY, "LCDYCoordinate" },
+    { MMU::MemoryRegister::LYC, "LCDYCompare" },
+    { MMU::MemoryRegister::DMA, "DMATransferAndStart" },
+    { MMU::MemoryRegister::BGP, "BGPaletteData" },
+    { MMU::MemoryRegister::OBP0, "OBJPalette0Data" },
+    { MMU::MemoryRegister::OBP1, "OBJPalette1Data" },
+    { MMU::MemoryRegister::WY, "WindowYPosition" },
+    { MMU::MemoryRegister::WX, "WindowXPositionMinus7" },
 };
 
 std::string MMU::get_region_name(MMU::MemoryRegion region) const { return MMU::s_region_names.find(region)->second; }
-std::string MMU::get_io_register_name(MMU::IORegister reg) const { return MMU::s_io_register_names.find(reg)->second; }
+std::string MMU::get_register_name(MMU::MemoryRegister reg) const { return MMU::s_register_names.find(reg)->second; }
 
 MMU::~MMU() { delete[] m_memory; }
 }

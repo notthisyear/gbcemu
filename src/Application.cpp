@@ -5,7 +5,8 @@
 
 namespace gbcemu {
 
-Application::Application(std::shared_ptr<CPU> cpu, const WindowProperties &properties) : m_cpu(cpu), m_window_properties(properties) {}
+Application::Application(std::shared_ptr<CPU> cpu, std::shared_ptr<PPU> ppu, std::shared_ptr<Renderer> renderer, const WindowProperties &properties)
+    : m_cpu(cpu), m_ppu(ppu), m_renderer(renderer), m_window_properties(properties) {}
 
 void Application::init() {
 
@@ -33,19 +34,16 @@ void Application::set_cpu_debug_mode(const bool on_or_off) {
 }
 
 void Application::run() {
-
-    float ts;
     while (m_app_should_run) {
-        ts = m_window->calculate_time_delta_since_last_frame();
-
         if (m_cpu_should_run) {
             m_cpu->tick();
             if (m_cpu->breakpoint_hit())
                 m_cpu_should_run = false;
         }
 
-        if (ts > MaxTimePerFrameSec || m_cpu->cycles_per_frame_reached()) {
-            m_cpu->acknowledge_frame();
+        if (m_ppu->cycles_per_frame_reached()) {
+            m_ppu->acknowledge_frame();
+            m_renderer->update_framebuffer_and_draw(m_ppu->get_framebuffer());
             m_window->update();
         }
     }
@@ -96,7 +94,7 @@ void Application::window_closed_event(WindowCloseEvent &e) {
 }
 
 void Application::window_resized_event(WindowResizeEvent &e) {
-    LogUtilities::log_info(std::cout, e.to_string());
+    m_renderer->set_viewport(e.get_width(), e.get_height());
     return;
 }
 

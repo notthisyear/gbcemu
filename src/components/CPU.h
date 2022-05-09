@@ -58,10 +58,6 @@ class CPU {
 
     void tick();
 
-    bool cycles_per_frame_reached() const;
-
-    void acknowledge_frame();
-
     void print_disassembled_instructions(std::ostream &, uint16_t);
 
     void clear_breakpoint();
@@ -268,12 +264,9 @@ class CPU {
     std::shared_ptr<Opcode> m_current_opcode;
 
     CPU::State m_state;
-    bool m_frame_done_flag;
 
     uint16_t m_current_breakpoint;
     bool m_has_breakpoint = false;
-
-    const uint32_t CpuCyclesPerFrame = 70224;
 
     bool m_interrupt_enabled = false;
 

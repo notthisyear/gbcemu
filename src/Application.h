@@ -3,6 +3,7 @@
 #include "components/CPU.h"
 #include "event/ApplicationEvent.h"
 #include "event/Event.h"
+#include "opengl/Renderer.h"
 #include "windows/WindowsWindow.h"
 #include <memory>
 
@@ -10,7 +11,7 @@ namespace gbcemu {
 
 class Application {
   public:
-    Application(std::shared_ptr<CPU>, const WindowProperties &);
+    Application(std::shared_ptr<CPU>, std::shared_ptr<PPU>, std::shared_ptr<Renderer>, const WindowProperties &);
 
     void init();
     void run();
@@ -29,6 +30,9 @@ class Application {
     const float MaxTimePerFrameSec = 0.02;
 
     std::shared_ptr<CPU> m_cpu;
+    std::shared_ptr<PPU> m_ppu;
+    std::shared_ptr<Renderer> m_renderer;
+
     uint32_t m_current_event_id = 0;
     std::unordered_map<EventType, std::vector<std::pair<uint32_t, EventCallbackHandler>>> m_event_callbacks;
 

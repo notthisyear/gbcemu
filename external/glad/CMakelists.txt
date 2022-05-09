@@ -1,0 +1,17 @@
+cmake_minimum_required(VERSION 3.0)
+project(glad)
+
+set(HEADER_FILES 
+		include/glad/glad.h
+	)
+
+set(SOURCE_FILES 
+		src/glad.c
+	)
+
+add_library(glad SHARED
+		${HEADER_FILES}
+		${SOURCE_FILES}
+	)
+
+target_include_directories(glad PUBLIC include)

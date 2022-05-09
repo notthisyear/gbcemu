@@ -1,4 +1,4 @@
-set(EXT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../external)
+set(EXT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../external)
 
 set(HEADER_FILES
 		Application.h
@@ -22,9 +22,9 @@ add_subdirectory(util)
 add_subdirectory(debugger)
 add_subdirectory(common)
 add_subdirectory(event)
+add_subdirectory(components)
 add_subdirectory(opengl)
 add_subdirectory(windows)
-add_subdirectory(components)
 
 # Target
 add_executable(gbcemu_main ${HEADER_FILES} ${SOURCE_FILES})
@@ -37,4 +37,5 @@ target_include_directories(gbcemu_main PUBLIC ${EXT_PATH}/glad/include)
 target_link_libraries(gbcemu_main PRIVATE gbcemu_util)
 target_link_libraries(gbcemu_main PRIVATE gbcemu_debugger)
 target_link_libraries(gbcemu_main PRIVATE gbcemu_components)
+target_link_libraries(gbcemu_main PRIVATE gbcemu_opengl)
 target_link_libraries(gbcemu_main PRIVATE gbcemu_windows)

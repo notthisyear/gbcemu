@@ -4,6 +4,7 @@
 #include "debugger/Debugger.h"
 #include "debugger/DebuggerCommand.cpp"
 #include "debugger/DebuggerCommand.h"
+#include "opengl/Renderer.h"
 #include "util/CommandLineArgument.h"
 #include "util/GeneralUtilities.h"
 #include "util/LogUtilities.h"
@@ -48,8 +49,11 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
+    auto window_properties = gbcemu::WindowProperties();
+
+    auto renderer = std::make_shared<gbcemu::Renderer>(window_properties.width, window_properties.height);
     auto mmu = std::make_shared<gbcemu::MMU>(0xFFFF);
-    auto ppu = std::make_shared<gbcemu::PPU>(mmu);
+    auto ppu = std::make_shared<gbcemu::PPU>(mmu, gbcemu::WindowProperties().width, gbcemu::WindowProperties().height, renderer->BytesPerPixel);
     auto cpu = std::make_shared<gbcemu::CPU>(mmu, ppu);
 
     gbcemu::LogUtilities::log_info(std::cout, "Emulator started!");
@@ -68,12 +72,13 @@ int main(int argc, char **argv) {
     delete boot_rom_argument;
     delete cartridge_argument;
 
-    auto app = std::make_shared<gbcemu::Application>(cpu, gbcemu::WindowProperties());
+    auto app = std::make_shared<gbcemu::Application>(cpu, ppu, renderer, gbcemu::WindowProperties());
 
     auto dbg = attach_debugger ? new gbcemu::Debugger(cpu, mmu, app) : nullptr;
     auto dbg_thread = attach_debugger ? new std::thread(&gbcemu::Debugger::run, dbg, std::ref(std::cout)) : nullptr;
 
     app->init();
+    renderer->init();
     app->run();
 
     if (attach_debugger) {

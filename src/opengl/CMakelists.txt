@@ -1,25 +1,31 @@
 set(SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/..)
-set(EXT_PATH ${SRC_PATH}/../../external)
+set(EXT_PATH ${SRC_PATH}/../external)
 
 set(HEADER_FILES 
 		GraphicsContext.h
+		Renderer.h
+		ShaderProgram.h
+		Shader.h
 	)
 
 set(SOURCE_FILES 
 		GraphicsContext.cpp
+		Renderer.cpp
+		ShaderProgram.cpp
+		Shader.cpp
 		${EXT_PATH}/glad/src/glad.c
 	)
 
 
-add_library(gbcemu_graphics_library
+add_library(gbcemu_opengl
 		${SOURCE_FILES}
 		${HEADER_FILES}
 	)
 
-target_include_directories(gbcemu_graphics_library PUBLIC ${SRC_PATH})
-target_include_directories(gbcemu_graphics_library PUBLIC ${EXT_PATH}/glad/include)
-target_include_directories(gbcemu_graphics_library PUBLIC ${EXT_PATH}/glfw/include)
+target_include_directories(gbcemu_opengl PUBLIC ${SRC_PATH})
+target_include_directories(gbcemu_opengl PUBLIC ${EXT_PATH}/glad/include)
+target_include_directories(gbcemu_opengl PUBLIC ${EXT_PATH}/glfw/include)
 
-target_link_libraries(gbcemu_graphics_library PRIVATE gbcemu_util)
-target_link_libraries(gbcemu_graphics_library PRIVATE glad)
-target_link_libraries(gbcemu_graphics_library PRIVATE glfw)
+target_link_libraries(gbcemu_opengl PRIVATE gbcemu_util)
+target_link_libraries(gbcemu_opengl PRIVATE glad)
+target_link_libraries(gbcemu_opengl PRIVATE glfw)
