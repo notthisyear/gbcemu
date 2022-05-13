@@ -37,8 +37,9 @@ void Application::run() {
     while (m_app_should_run) {
         if (m_cpu_should_run) {
             m_cpu->tick();
-            if (m_cpu->breakpoint_hit())
-                m_cpu_should_run = false;
+            if (m_cpu->breakpoint_hit()) {
+                set_cpu_debug_mode(true);
+            }
         }
 
         if (m_ppu->cycles_per_frame_reached()) {
