@@ -266,10 +266,10 @@ class CPU {
     CPU::State m_state;
 
     uint16_t m_current_breakpoint;
-    bool m_has_breakpoint = false;
+    bool m_has_breakpoint;
 
-    bool m_interrupt_enabled = false;
-
+    bool m_interrupt_enabled;
+    bool m_is_running_boot_rom;
     uint16_t m_reg_af; // Accumulator and flags
     uint16_t m_reg_bc; // BC (can be accessed as two 8-bit registers)
     uint16_t m_reg_de; // DE (can be accessed as two 8-bit registers)
@@ -289,6 +289,8 @@ class CPU {
     uint8_t get_register_lower(const uint16_t *reg) const { return (*reg) & 0x00FF; }
 
     uint8_t get_register_upper(const uint16_t *reg) const { return (*reg) >> 8; }
+
+    void set_initial_values_for_registers(const MMU::BootRomType, bool);
 
     void print_flag_value(std::ostream &, const std::string &, const bool, const bool) const;
 

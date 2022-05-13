@@ -35,12 +35,8 @@ int main(int argc, char **argv) {
     auto cartridge_argument = gbcemu::CommandLineArgument::get_argument(argc, argv, gbcemu::CommandLineArgument::ArgumentType::CartridgePath, &has_cartridge);
     (void)gbcemu::CommandLineArgument::get_argument(argc, argv, gbcemu::CommandLineArgument::ArgumentType::AttachDebugger, &attach_debugger);
 
-    if (has_boot_rom) {
+    if (has_boot_rom)
         boot_rom_argument->fix_path();
-    } else {
-        gbcemu::LogUtilities::log_error(std::cout, "Running without boot ROM is currently not supported");
-        exit(1);
-    }
 
     if (has_cartridge) {
         cartridge_argument->fix_path();
@@ -54,15 +50,16 @@ int main(int argc, char **argv) {
     auto renderer = std::make_shared<gbcemu::Renderer>(window_properties.width, window_properties.height);
     auto mmu = std::make_shared<gbcemu::MMU>(0xFFFF);
     auto ppu = std::make_shared<gbcemu::PPU>(mmu, gbcemu::WindowProperties().width, gbcemu::WindowProperties().height, renderer->BytesPerPixel);
-    auto cpu = std::make_shared<gbcemu::CPU>(mmu, ppu);
 
     gbcemu::LogUtilities::log_info(std::cout, "Emulator started!");
 
-    if (!mmu->try_load_boot_rom(std::cout, boot_rom_argument->value))
+    if (has_boot_rom && !mmu->try_load_boot_rom(std::cout, boot_rom_argument->value))
         exit(1);
 
-    gbcemu::LogUtilities::log_info(std::cout, "Boot ROM loaded");
-    mmu->set_in_boot_mode(true);
+    if (has_boot_rom)
+        gbcemu::LogUtilities::log_info(std::cout, "Boot ROM loaded");
+
+    mmu->set_in_boot_mode(has_boot_rom);
 
     if (!mmu->try_load_cartridge(std::cout, cartridge_argument->value))
         exit(1);
@@ -72,6 +69,7 @@ int main(int argc, char **argv) {
     delete boot_rom_argument;
     delete cartridge_argument;
 
+    auto cpu = std::make_shared<gbcemu::CPU>(mmu, ppu);
     auto app = std::make_shared<gbcemu::Application>(cpu, ppu, renderer, gbcemu::WindowProperties());
 
     auto dbg = attach_debugger ? new gbcemu::Debugger(cpu, mmu, app) : nullptr;

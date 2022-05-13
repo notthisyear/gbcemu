@@ -10,6 +10,11 @@ namespace gbcemu {
 
 class MMU {
   public:
+    enum class BootRomType {
+        None,
+        DMG,
+    };
+
     enum class MemoryRegion {
         CartridgeFixed,
         CartridgeSwitchable,
@@ -83,10 +88,12 @@ class MMU {
 
     bool try_map_data_to_memory(uint8_t *data, uint16_t offset, uint16_t size);
     bool try_read_from_memory(uint8_t *data, uint16_t offset, uint64_t size) const;
-    void set_debug_mode(bool on_or_off);
-    void set_in_boot_mode(bool is_in_boot_mode);
+    void set_debug_mode(bool);
+    void set_in_boot_mode(bool);
+    MMU::BootRomType get_boot_rom_type() const;
     void set_register(const MMU::MemoryRegister, const uint8_t);
     uint8_t get_register(const MMU::MemoryRegister) const;
+    Cartridge *get_cartridge() const;
     void print_memory_at_location(std::ostream &stream, uint16_t start, uint16_t end) const;
     ~MMU();
 
@@ -95,12 +102,14 @@ class MMU {
     uint8_t *m_memory;
     uint8_t *m_boot_rom;
     const uint16_t RegisterOffsetBase = 0xFF00;
+    const uint16_t DmgBootRomSize = 0x0100;
 
-    std::unique_ptr<Cartridge> m_cartridge;
+    Cartridge *m_cartridge;
     MMU::MemoryRegion find_memory_region(uint16_t address) const;
 
     bool m_is_in_boot_mode;
     bool m_loading_cartridge;
+    MMU::BootRomType m_boot_rom_type;
     uint64_t m_boot_rom_size;
 
     void read_from_memory(uint8_t *data, uint16_t offset, uint16_t size) const {

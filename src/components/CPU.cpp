@@ -1,6 +1,7 @@
 #include "CPU.h"
 #include "OpcodeBuilder.h"
 #include "Opcodes.h"
+#include "components/MMU.h"
 #include "util/GeneralUtilities.h"
 #include "util/LogUtilities.h"
 #include <iomanip>
@@ -10,14 +11,26 @@
 
 namespace gbcemu {
 
-CPU::CPU(std::shared_ptr<MMU> mmu, std::shared_ptr<PPU> ppu)
-    : m_mmu(mmu), m_ppu(ppu), m_reg_af(0x0000), m_reg_bc(0x0000), m_reg_de(0x0000), m_reg_hl(0x0000), m_reg_sp(0x0000), m_reg_pc(0x0000),
-      m_state(CPU::State::Idle), m_current_cycle_count(0), m_current_instruction_cycle_count(0), m_is_extended_opcode(false), m_current_opcode(nullptr),
-      m_interleave_execute_and_decode(true), m_at_start_of_instruction(true), m_interrupt_enabled(false) {}
+CPU::CPU(std::shared_ptr<MMU> mmu, std::shared_ptr<PPU> ppu) : m_mmu(mmu), m_ppu(ppu) {
+    m_current_cycle_count = 0;
+    m_current_instruction_cycle_count = 0;
+    m_is_extended_opcode = false;
+    m_current_opcode = nullptr;
+    m_interleave_execute_and_decode = true;
+    m_at_start_of_instruction = true;
+    m_interrupt_enabled = false;
+    m_has_breakpoint = false;
+
+    m_state = CPU::State::Idle;
+    set_initial_values_for_registers(m_mmu->get_boot_rom_type(),
+                                     m_mmu->get_cartridge()->get_single_byte_header_field(Cartridge::HeaderField::HeaderChecksum) == 0x00);
+    m_is_running_boot_rom = m_mmu->get_boot_rom_type() != MMU::BootRomType::None;
+}
 
 void CPU::tick() {
     uint8_t current_byte;
 
+    // std::cout << GeneralUtilities::formatted_string("PC: 0x%04X\n", m_reg_pc);
     switch (m_state) {
 
     case CPU::State::Idle:
@@ -78,7 +91,11 @@ void CPU::tick() {
 
     if (m_ppu->cycles_per_frame_reached())
         m_current_cycle_count = 0;
-    return;
+
+    if (m_is_running_boot_rom && m_reg_pc == 0x0100) {
+        m_is_running_boot_rom = false;
+        m_mmu->set_in_boot_mode(false);
+    }
 }
 
 uint8_t CPU::read_at_pc() {
@@ -189,8 +206,18 @@ bool CPU::carry_occurs_on_add(uint16_t v, const uint16_t value_to_add) const { r
 
 bool CPU::carry_occurs_on_subtract(uint16_t v, const uint16_t value_to_subtract) const { return value_to_subtract > v; };
 
-void CPU::print_state(std::ostream &stream) const {
+void CPU::set_initial_values_for_registers(const MMU::BootRomType bootRomType, bool header_checksum_is_zero) {
+    m_reg_bc = bootRomType == MMU::BootRomType::DMG ? 0x0000 : 0x0013;
+    m_reg_de = bootRomType == MMU::BootRomType::DMG ? 0x0000 : 0x00D8;
+    m_reg_hl = bootRomType == MMU::BootRomType::DMG ? 0x0000 : 0x014D;
+    m_reg_sp = bootRomType == MMU::BootRomType::DMG ? 0x0000 : 0xFFFE;
+    m_reg_pc = bootRomType == MMU::BootRomType::DMG ? 0x0000 : 0x0100;
+    m_reg_af = bootRomType == MMU::BootRomType::DMG ? 0x0000 : header_checksum_is_zero ? 0x01B0 : 0x0180;
 
+    m_reg_wz = 0x0000;
+}
+
+void CPU::print_state(std::ostream &stream) const {
     stream << std::endl;
 
     print_reg(stream, CPU::Register::AF, false);
@@ -240,12 +267,12 @@ void CPU::print_sp_and_pc(std::ostream &stream) const {
 }
 
 void CPU::print_additional_info(std::ostream &stream) const {
-
     auto breakpoint_string = m_has_breakpoint ? GeneralUtilities::formatted_string("0x%04x", m_current_breakpoint) : "none";
 
     stream << "\033[0;32mbreakpoint: "
            << "\033[1;37m" << breakpoint_string << "\033[0;32m\tcurrent_cycles: "
-           << "\033[1;37m" << unsigned(m_current_cycle_count) << "\033[0;m" << std::endl;
+           << "\033[1;37m" << unsigned(m_current_cycle_count) << "\n\033[0;32mrunning boot rom: "
+           << "\033[1;37m" << (m_is_running_boot_rom ? "true" : "false") << "\033[0;m" << std::endl;
 }
 
 CPU::~CPU() {}

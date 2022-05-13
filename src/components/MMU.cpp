@@ -9,9 +9,14 @@
 #include <utility>
 
 namespace gbcemu {
-MMU::MMU(uint16_t memory_size) : m_memory_size(memory_size), m_is_in_boot_mode(false) {
+
+MMU::MMU(uint16_t memory_size) : m_memory_size(memory_size) {
+
     m_memory = new uint8_t[m_memory_size];
     memset(m_memory, (uint8_t)0x00, m_memory_size);
+
+    m_is_in_boot_mode = false;
+    m_boot_rom_type = MMU::BootRomType::None;
 }
 
 bool MMU::try_load_boot_rom(std::ostream &stream, const std::string &path) {
@@ -33,6 +38,8 @@ bool MMU::try_load_boot_rom(std::ostream &stream, const std::string &path) {
         return false;
     }
 
+    if (m_boot_rom_size == DmgBootRomSize)
+        m_boot_rom_type = MMU::BootRomType::DMG;
     return true;
 }
 
@@ -53,7 +60,7 @@ bool MMU::try_load_cartridge(std::ostream &stream, const std::string &path) {
         return false;
     }
 
-    m_cartridge = std::make_unique<Cartridge>(cartridge_data, size);
+    m_cartridge = new Cartridge(cartridge_data, size);
     auto fixed_cartridge_location = s_region_map.find(MMU::MemoryRegion::CartridgeFixed)->second;
 
     m_loading_cartridge = true;
@@ -133,6 +140,11 @@ bool MMU::try_read_from_memory(uint8_t *data, uint16_t offset, uint64_t size) co
             return false;
 
         switch (region) {
+
+        case MMU::MemoryRegion::CartridgeFixed:
+            m_cartridge->read_from_cartridge_switchable(data, offset - region_endpoints.first, size);
+            break;
+
         case MMU::MemoryRegion::CartridgeSwitchable:
             m_cartridge->read_from_cartridge_switchable(data, offset - region_endpoints.first, size);
             break;
@@ -155,7 +167,6 @@ bool MMU::try_read_from_memory(uint8_t *data, uint16_t offset, uint64_t size) co
             read_from_memory(data, offset - 0x2000, size);
             break;
 
-        case MMU::MemoryRegion::CartridgeFixed:
         case MMU::MemoryRegion::WRAMFixed:
         case MMU::MemoryRegion::SpriteAttributeTable:
         case MMU::MemoryRegion::IORegisters:
@@ -185,6 +196,8 @@ uint8_t MMU::get_register(const MMU::MemoryRegister reg) const {
     read_from_memory(&data, RegisterOffsetBase | static_cast<uint16_t>(reg), 1);
     return data;
 }
+
+Cartridge *MMU::get_cartridge() const { return m_cartridge; }
 
 void MMU::print_memory_at_location(std::ostream &stream, uint16_t start, uint16_t end) const {
 
@@ -264,7 +277,7 @@ bool MMU::try_load_from_file(const std::string &path, uint8_t *buffer, const uin
 
 bool MMU::is_boot_rom_range(uint16_t offset, uint64_t size) const {
     // CGB boot ROM is split into two, 0x0000 - 0x00FF and 0x0200 - 0x08FF
-    if (m_boot_rom_size == 0x100)
+    if (m_boot_rom_type == MMU::BootRomType::DMG)
         return (offset + size) <= 0x100;
 
     auto end = offset + size;
@@ -272,7 +285,7 @@ bool MMU::is_boot_rom_range(uint16_t offset, uint64_t size) const {
 }
 
 void MMU::read_from_boot_rom(uint8_t *data, uint16_t offset, uint64_t size) const {
-
+    // CGB boot ROM is split into two, 0x0000 - 0x00FF and 0x0200 - 0x08FF
     if (m_boot_rom_size > 0xFF && offset > 0x01FF)
         offset -= 0x0100;
 
@@ -281,6 +294,8 @@ void MMU::read_from_boot_rom(uint8_t *data, uint16_t offset, uint64_t size) cons
 }
 
 void MMU::set_in_boot_mode(bool is_in_boot_mode) { m_is_in_boot_mode = is_in_boot_mode; }
+
+MMU::BootRomType MMU::get_boot_rom_type() const { return m_boot_rom_type; }
 
 MMU::MemoryRegion MMU::find_memory_region(uint16_t address) const {
     for (auto const &entry : s_region_map) {
@@ -368,5 +383,8 @@ const std::unordered_map<MMU::MemoryRegister, std::string> MMU::s_register_names
 std::string MMU::get_region_name(MMU::MemoryRegion region) const { return MMU::s_region_names.find(region)->second; }
 std::string MMU::get_register_name(MMU::MemoryRegister reg) const { return MMU::s_register_names.find(reg)->second; }
 
-MMU::~MMU() { delete[] m_memory; }
+MMU::~MMU() {
+    delete[] m_memory;
+    delete m_cartridge;
+}
 }

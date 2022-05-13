@@ -7,11 +7,33 @@ namespace gbcemu {
 
 class Cartridge {
   public:
+    enum class HeaderField {
+
+        CGBFlag = 0x0143,
+        NewLicenseeCode = 0x0144,
+        SGBFlag = 0x0146,
+        CartridgeType = 0x0147,
+        ROMSize = 0x0148,
+        RAMSize = 0x0149,
+        DestinationCode = 0x014A,
+        OldLicenseeCode = 0x014B,
+        MaskROMVersionNumber = 0x014C,
+        HeaderChecksum = 0x014D,
+        GlobalChecksum = 0x014E,
+        NewLicenseCodeFlag = 0x33,
+    };
+
     Cartridge(uint8_t *, uint64_t);
 
     void read_from_cartridge_switchable(uint8_t *, uint32_t, uint64_t) const;
     void read_from_cartridge_ram(uint8_t *, uint32_t, uint64_t) const;
     void write_to_cartridge_ram(uint8_t *, uint32_t, uint64_t);
+
+    std::string get_title() const;
+    std::string get_manufacturer_code() const;
+    uint8_t get_single_byte_header_field(const Cartridge::HeaderField) const;
+    uint16_t get_two_byte_header_field(const Cartridge::HeaderField) const;
+
     ~Cartridge();
 
   private:
@@ -19,35 +41,13 @@ class Cartridge {
     uint64_t m_size;
     std::string m_title;
 
-    struct HeaderOffset {
-        const uint32_t TitleStart = 0x0134;
-        const uint32_t TitleEnd = 0x0143;
+    const uint16_t TitleStart = 0x0134;
+    const uint16_t TitleEnd = 0x0143;
 
-        const uint32_t ManufacturerCodeStart = 0x013F;
-        const uint32_t ManufacturerCodeEnd = 0x0142;
+    const uint16_t ManufacturerCodeStart = 0x013F;
+    const uint16_t ManufacturerCodeEnd = 0x0142;
 
-        const uint32_t CGBFlag = 0x0143;
-
-        const uint32_t NewLicenseeCodeStart = 0x0144;
-        const uint32_t NewLicenseeCodeEnd = 0x0145;
-
-        const uint32_t SGBFlag = 0x0146;
-        const uint32_t CartridgeType = 0x0147;
-        const uint32_t ROMSize = 0x0148;
-        const uint32_t RAMSize = 0x0149;
-
-        const uint32_t DestinationCode = 0x014A;
-        const uint32_t OldLicenseeCode = 0x014B;
-        const uint32_t MaskROMVersionNumber = 0x014C;
-        const uint32_t HeaderChecksum = 0x014D;
-
-        const uint32_t GlobalChecksumStart = 0x014E;
-        const uint32_t GlobalChecksumEnd = 0x014F;
-
-        const uint8_t NewLicenseCodeFlag = 0x33;
-    };
-
-    const HeaderOffset m_header_offset;
+    std::string read_string_from_header(uint16_t, uint16_t) const;
 };
 
 // 00	None
