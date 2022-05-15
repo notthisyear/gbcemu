@@ -1,12 +1,31 @@
 #include "Cartridge.h"
+#include "util/LogUtilities.h"
 #include <exception>
+#include <iomanip>
+#include <iostream>
 #include <stdint.h>
 
 namespace gbcemu {
 
-Cartridge::Cartridge(uint8_t *raw_data, uint64_t size) : m_raw_data(raw_data), m_size(size) {}
+Cartridge::Cartridge(uint8_t *raw_data, uint64_t size) : m_raw_data(raw_data), m_size(size) {
+    m_type = static_cast<CartridgeType>(get_single_byte_header_field(Cartridge::HeaderField::CartridgeType));
+    if (m_type != Cartridge::CartridgeType::NO_MBC) {
+        LogUtilities::log_error(std::cout, "MBCs not yet supported");
+        exit(1);
+    }
+}
 
-void Cartridge::read_from_cartridge_switchable(uint8_t *data, uint32_t offset, uint64_t size) const {}
+void Cartridge::read_from_cartridge_switchable(uint8_t *data, uint32_t offset, uint64_t size) const {
+    switch (m_type) {
+    case Cartridge::CartridgeType::NO_MBC:
+        for (auto i = 0; i < size; i++)
+            data[i] = m_raw_data[i + offset];
+        break;
+    default:
+        LogUtilities::log_error(std::cout, "MBCs not yet supported");
+        exit(1);
+    }
+}
 void Cartridge::read_from_cartridge_ram(uint8_t *data, uint32_t offset, uint64_t size) const {}
 void Cartridge::write_to_cartridge_ram(uint8_t *, uint32_t, uint64_t) {}
 
@@ -27,6 +46,19 @@ uint16_t Cartridge::get_two_byte_header_field(const Cartridge::HeaderField field
         return m_raw_data[static_cast<uint16_t>(field)] << 8 | m_raw_data[static_cast<uint16_t>(field) + 1];
 }
 
+void Cartridge::print_info(std::ostream &stream) const {
+    stream << std::endl;
+    stream << std::left << std::setw(25) << std::setfill(' ') << "Title:\t\033[1;37m" << get_title() << "\033[0m" << std::endl;
+    stream << std::left << std::setw(25) << std::setfill(' ') << "Manufacturer code:\t\033[1;37m" << get_manufacturer_code() << "\033[0m" << std::endl;
+    stream << std::left << std::setw(25) << std::setfill(' ') << "Size:\t\033[1;37m" << unsigned(m_size) << " B\033[0m" << std::endl;
+
+    stream << std::endl;
+
+    stream << std::left << std::setw(25) << std::setfill(' ') << "MBC setting:\t\033[1;37m" << s_mbc_names.find(m_type)->second << "\033[0m" << std::endl;
+}
+
+Cartridge::~Cartridge() { delete[] m_raw_data; }
+
 std::string Cartridge::read_string_from_header(uint16_t start_offset, uint16_t end_offset) const {
     auto buffer_size = (end_offset - start_offset) + 1;
     char *buffer = new char[buffer_size];
@@ -39,6 +71,35 @@ std::string Cartridge::read_string_from_header(uint16_t start_offset, uint16_t e
     return result;
 }
 
-Cartridge::~Cartridge() { delete[] m_raw_data; }
+const std::unordered_map<Cartridge::CartridgeType, std::string> Cartridge::s_mbc_names = {
+    { Cartridge::CartridgeType::NO_MBC, "ROM ONLY" },
+    { Cartridge::CartridgeType::MBC1, "MBC1" },
+    { Cartridge::CartridgeType::MBC1_RAM, "MBC1 + RAM" },
+    { Cartridge::CartridgeType::MBC1_RAM_BATTERY, "MBC + RAM + BATTERY" },
+    { Cartridge::CartridgeType::MBC2, "MBC2" },
+    { Cartridge::CartridgeType::MBC2_BATTERY, "MBC2 + BATTERY" },
+    { Cartridge::CartridgeType::ROM_RAM, "ROM + RAM" },
+    { Cartridge::CartridgeType::ROM_RAM_BATTERY, "ROM + RAM + BATTERY" },
+    { Cartridge::CartridgeType::MMM01, "MMM01" },
+    { Cartridge::CartridgeType::MMM01_RAM, "MMM01 + RAM" },
+    { Cartridge::CartridgeType::MMM01_RAM_BATTERY, "MMM01 + RAM + BATTERY" },
+    { Cartridge::CartridgeType::MBC3_TIMER_BATTERY, "MBC3 + TIMER + BATTERY" },
+    { Cartridge::CartridgeType::MBC3_TIMER_RAM_BATTERY, "MBC3 + TIMER + RAM + BATTERY" },
+    { Cartridge::CartridgeType::MBC3, "MBC3" },
+    { Cartridge::CartridgeType::MBC3_RAM, "MBC3 + RAM" },
+    { Cartridge::CartridgeType::MBC3_RAM_BATTERY, "MBC3 + RAM + BATTERY" },
+    { Cartridge::CartridgeType::MBC5, "MBC5" },
+    { Cartridge::CartridgeType::MBC5_RAM, "MBC5 + RAM" },
+    { Cartridge::CartridgeType::MBC5_RAM_BATTERY, "MBC5 + RAM + BATTERY" },
+    { Cartridge::CartridgeType::MBC5_RUMBLE, "MBC5 + RUMBLE" },
+    { Cartridge::CartridgeType::MBC5_RUMBLE_RAM, "MBC5 + RUMBLE + RAM" },
+    { Cartridge::CartridgeType::MBC5_RUMBLE_RAM_BATTERY, "MBC5 + RUMBLE + RAM + BATTERY" },
+    { Cartridge::CartridgeType::MBC6, "MBC6" },
+    { Cartridge::CartridgeType::MBC7_SENSOR_RUMBLE_RAM_BATTERY, "MBC7 + SENSOR + RUMBLE + RAM + BATTERY" },
+    { Cartridge::CartridgeType::POCKET_CAMERA, "POCKET CAMERA" },
+    { Cartridge::CartridgeType::BANDAI_TAMA5, "BANDAI TAMA5" },
+    { Cartridge::CartridgeType::HuC3, "HuC3" },
+    { Cartridge::CartridgeType::HuC1_RAM_BATTERY, "HuC1 + RAM + BATTERY" },
+};
 
 }

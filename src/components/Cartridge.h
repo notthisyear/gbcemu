@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <unordered_map>
 
 namespace gbcemu {
 
@@ -23,6 +24,36 @@ class Cartridge {
         NewLicenseCodeFlag = 0x33,
     };
 
+    enum class CartridgeType {
+        NO_MBC = 0x00,
+        MBC1 = 0x01,
+        MBC1_RAM = 0x02,
+        MBC1_RAM_BATTERY = 0x03,
+        MBC2 = 0x05,
+        MBC2_BATTERY = 0x06,
+        ROM_RAM = 0x08,
+        ROM_RAM_BATTERY = 0x09,
+        MMM01 = 0x0B,
+        MMM01_RAM = 0x0C,
+        MMM01_RAM_BATTERY = 0x0D,
+        MBC3_TIMER_BATTERY = 0x0F,
+        MBC3_TIMER_RAM_BATTERY = 0x10,
+        MBC3 = 0x11,
+        MBC3_RAM = 0x12,
+        MBC3_RAM_BATTERY = 0x13,
+        MBC5 = 0x19,
+        MBC5_RAM = 0x1A,
+        MBC5_RAM_BATTERY = 0x1B,
+        MBC5_RUMBLE = 0x1C,
+        MBC5_RUMBLE_RAM = 0x1D,
+        MBC5_RUMBLE_RAM_BATTERY = 0x1E,
+        MBC6 = 0x20,
+        MBC7_SENSOR_RUMBLE_RAM_BATTERY = 0x22,
+        POCKET_CAMERA = 0xFC,
+        BANDAI_TAMA5 = 0xFD,
+        HuC3 = 0xFE,
+        HuC1_RAM_BATTERY = 0xFF,
+    };
     Cartridge(uint8_t *, uint64_t);
 
     void read_from_cartridge_switchable(uint8_t *, uint32_t, uint64_t) const;
@@ -33,13 +64,13 @@ class Cartridge {
     std::string get_manufacturer_code() const;
     uint8_t get_single_byte_header_field(const Cartridge::HeaderField) const;
     uint16_t get_two_byte_header_field(const Cartridge::HeaderField) const;
-
+    void print_info(std::ostream &stream) const;
     ~Cartridge();
 
   private:
     uint8_t *m_raw_data;
     uint64_t m_size;
-    std::string m_title;
+    CartridgeType m_type;
 
     const uint16_t TitleStart = 0x0134;
     const uint16_t TitleEnd = 0x0143;
@@ -48,6 +79,8 @@ class Cartridge {
     const uint16_t ManufacturerCodeEnd = 0x0142;
 
     std::string read_string_from_header(uint16_t, uint16_t) const;
+
+    static const std::unordered_map<Cartridge::CartridgeType, std::string> s_mbc_names;
 };
 
 // 00	None
@@ -161,5 +194,4 @@ class Cartridge {
 // E8- asmik              E9- natsume            EA- king records
 // EB- atlus              EC- epic/sony records  EE- igs
 // F0- a wave         F3- extreme entertainment  FF- ljn
-
 }
