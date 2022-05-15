@@ -96,6 +96,7 @@ class MMU {
     MMU::BootRomType get_boot_rom_type() const;
     void set_register(const MMU::MemoryRegister, const uint8_t);
     uint8_t get_register(const MMU::MemoryRegister) const;
+    bool has_cartridge() const;
     Cartridge *get_cartridge() const;
     void print_memory_at_location(std::ostream &stream, uint16_t start, uint16_t end) const;
     ~MMU();

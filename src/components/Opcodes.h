@@ -1171,6 +1171,13 @@ struct ExtendedOpcode : public Opcode {
             cpu->set_flag(CPU::Flag::Z, *data == 0x00);
             break;
 
+        case RotationShiftOrSwapType::SwapNibbles: {
+            uint8_t lower_nibble = (*data & 0x0F);
+            *data = (*data >> 4) | (lower_nibble << 4);
+            cpu->set_flag(CPU::Flag::C, false);
+            cpu->set_flag(CPU::Flag::Z, *data == 0);
+        } break;
+
         default:
             NOT_IMPLEMENTED(get_disassembled_instruction(nullptr));
         }

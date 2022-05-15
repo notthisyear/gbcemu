@@ -16,6 +16,7 @@ MMU::MMU(uint16_t memory_size) : m_memory_size(memory_size) {
     memset(m_memory, (uint8_t)0x00, m_memory_size);
     m_boot_rom_type = MMU::BootRomType::None;
 
+    m_cartridge = nullptr;
     set_register(gbcemu::MMU::MemoryRegister::BootRomDisableOffset, 0x01);
 }
 
@@ -198,7 +199,7 @@ uint8_t MMU::get_register(const MMU::MemoryRegister reg) const {
     read_from_memory(&data, RegisterOffsetBase | static_cast<uint16_t>(reg), 1);
     return data;
 }
-
+bool MMU::has_cartridge() const { return m_cartridge != nullptr; }
 Cartridge *MMU::get_cartridge() const { return m_cartridge; }
 
 void MMU::print_memory_at_location(std::ostream &stream, uint16_t start, uint16_t end) const {
@@ -388,6 +389,7 @@ std::string MMU::get_register_name(MMU::MemoryRegister reg) const { return MMU::
 
 MMU::~MMU() {
     delete[] m_memory;
-    delete m_cartridge;
+    if (has_cartridge())
+        delete m_cartridge;
 }
 }

@@ -525,6 +525,34 @@ static void test_set_reset_test_instructions(gbcemu::Opcode *opcode, gbcemu::CPU
     }
 }
 
+static void test_swap_instruction(gbcemu::Opcode *opcode, gbcemu::CPU *cpu, gbcemu::MMU *mmu, gbcemu::CPU::Register target_register) {
+    uint8_t value = static_cast<uint8_t>(std::rand() % 256);
+    uint8_t lower_nibble = value & 0x0F;
+    uint8_t upper_nibble = value & 0xF0;
+
+    uint16_t hl_value = 0xC081;
+
+    if (target_register == gbcemu::CPU::Register::HL) {
+        cpu->set_register(gbcemu::CPU::Register::HL, hl_value);
+        (void)mmu->try_map_data_to_memory(&value, hl_value, 1);
+    } else {
+        cpu->set_register(target_register, value);
+    }
+
+    FlagAction *flags = new FlagAction[4]{ (value == 0x00 ? FlagAction::Set : FlagAction::NotSet), FlagAction::NotSet, FlagAction::NotSet, FlagAction::NotSet };
+    auto tick_ctr = execute_opcode_verify_pc_and_flags(opcode, cpu, mmu, 0, flags);
+
+    assert_equal(target_register == gbcemu::CPU::Register::HL ? 8 : 4, tick_ctr, "cycles");
+
+    uint8_t actual_value;
+    if (target_register == gbcemu::CPU::Register::HL)
+        (void)mmu->try_read_from_memory(&actual_value, hl_value, 1);
+    else
+        actual_value = cpu->get_8_bit_register(target_register);
+
+    assert_equal(lower_nibble << 4 | upper_nibble >> 4, actual_value, "value");
+}
+
 static ExpectedOpcode non_extended_opcodes[] = {
     // clang-format off
     // 0x00 - 0x3F
@@ -1722,14 +1750,30 @@ static ExpectedOpcode extended_opcodes[] = {
     { 0x2E, "SRA (HL)", 1, nullptr, nullptr },
     { 0x2F, "SRA A", 1, nullptr, nullptr },
 
-    { 0x30, "SWAP B", 1, nullptr, nullptr },
-    { 0x31, "SWAP C", 1, nullptr, nullptr },
-    { 0x32, "SWAP D", 1, nullptr, nullptr },
-    { 0x33, "SWAP E", 1, nullptr, nullptr },
-    { 0x34, "SWAP H", 1, nullptr, nullptr },
-    { 0x35, "SWAP L", 1, nullptr, nullptr },
-    { 0x36, "SWAP (HL)", 1, nullptr, nullptr },
-    { 0x37, "SWAP A", 1, nullptr, nullptr },
+    { 0x30, "SWAP B", 1, nullptr, [](gbcemu::Opcode *opcode, gbcemu::CPU *cpu, gbcemu::MMU *mmu, uint8_t*) {
+        test_swap_instruction(opcode, cpu, mmu, gbcemu::CPU::Register::B);
+    }},
+    { 0x31, "SWAP C", 1, nullptr, [](gbcemu::Opcode *opcode, gbcemu::CPU *cpu, gbcemu::MMU *mmu, uint8_t*) {
+        test_swap_instruction(opcode, cpu, mmu, gbcemu::CPU::Register::C);
+    }},
+    { 0x32, "SWAP D", 1, nullptr, [](gbcemu::Opcode *opcode, gbcemu::CPU *cpu, gbcemu::MMU *mmu, uint8_t*) {
+        test_swap_instruction(opcode, cpu, mmu, gbcemu::CPU::Register::D);
+    }},
+    { 0x33, "SWAP E", 1, nullptr, [](gbcemu::Opcode *opcode, gbcemu::CPU *cpu, gbcemu::MMU *mmu, uint8_t*) {
+        test_swap_instruction(opcode, cpu, mmu, gbcemu::CPU::Register::E);
+    }},
+    { 0x34, "SWAP H", 1, nullptr, [](gbcemu::Opcode *opcode, gbcemu::CPU *cpu, gbcemu::MMU *mmu, uint8_t*) {
+        test_swap_instruction(opcode, cpu, mmu, gbcemu::CPU::Register::H);
+    }},
+    { 0x35, "SWAP L", 1, nullptr, [](gbcemu::Opcode *opcode, gbcemu::CPU *cpu, gbcemu::MMU *mmu, uint8_t*) {
+        test_swap_instruction(opcode, cpu, mmu, gbcemu::CPU::Register::L);
+    }},
+    { 0x36, "SWAP (HL)", 1, nullptr, [](gbcemu::Opcode *opcode, gbcemu::CPU *cpu, gbcemu::MMU *mmu, uint8_t*) {
+        test_swap_instruction(opcode, cpu, mmu, gbcemu::CPU::Register::HL);
+    }},
+    { 0x37, "SWAP A", 1, nullptr, [](gbcemu::Opcode *opcode, gbcemu::CPU *cpu, gbcemu::MMU *mmu, uint8_t*) {
+        test_swap_instruction(opcode, cpu, mmu, gbcemu::CPU::Register::A);
+    }},
     { 0x38, "SRL B", 1, nullptr, nullptr },
     { 0x39, "SRL C", 1, nullptr, nullptr },
     { 0x3A, "SRL D", 1, nullptr, nullptr },
@@ -2347,7 +2391,7 @@ void test_opcodes(ExpectedOpcode *expected_opcodes, int size, bool is_extended) 
     std::shared_ptr<gbcemu::Opcode> decoded_opcode;
 
     auto mmu = std::make_shared<gbcemu::MMU>(0xFFFF);
-    auto ppu = std::make_shared<gbcemu::PPU>(mmu);
+    auto ppu = std::make_shared<gbcemu::PPU>(mmu, 160, 144, 4);
     auto cpu = new gbcemu::CPU(mmu, ppu);
 
     for (int i = 0; i < size; i++) {

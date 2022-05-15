@@ -22,15 +22,17 @@ CPU::CPU(std::shared_ptr<MMU> mmu, std::shared_ptr<PPU> ppu) : m_mmu(mmu), m_ppu
     m_has_breakpoint = false;
 
     m_state = CPU::State::Idle;
-    set_initial_values_for_registers(m_mmu->get_boot_rom_type(),
-                                     m_mmu->get_cartridge()->get_single_byte_header_field(Cartridge::HeaderField::HeaderChecksum) == 0x00);
+    if (m_mmu->has_cartridge()) {
+        set_initial_values_for_registers(m_mmu->get_boot_rom_type(),
+                                         m_mmu->get_cartridge()->get_single_byte_header_field(Cartridge::HeaderField::HeaderChecksum) == 0x00);
+    }
+
     m_is_running_boot_rom = m_mmu->get_boot_rom_type() != MMU::BootRomType::None;
 }
 
 void CPU::tick() {
     uint8_t current_byte;
 
-    // std::cout << GeneralUtilities::formatted_string("PC: 0x%04X\n", m_reg_pc);
     switch (m_state) {
 
     case CPU::State::Idle:
