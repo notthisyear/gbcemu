@@ -60,7 +60,7 @@ bool DebuggerCommand::try_parse_as_number(const std::string &s, uint16_t *result
 void DebuggerCommand::print_command_help(std::ostream &stream) const {
     if (command == DebuggerCommand::Command::Show) {
         stream << "available options: ";
-        stream << "[cpu|mem a16|mem a16-a16]" << std::endl;
+        stream << "[cpu|cartridge|mem a16|mem a16-a16]" << std::endl;
     } else {
         stream << m_command_info.description << std::endl;
     }

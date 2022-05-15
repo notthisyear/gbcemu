@@ -69,7 +69,7 @@ class Cartridge {
 
   private:
     uint8_t *m_raw_data;
-    uint64_t m_size;
+    uint64_t m_raw_size;
     CartridgeType m_type;
 
     const uint16_t TitleStart = 0x0134;
@@ -78,9 +78,12 @@ class Cartridge {
     const uint16_t ManufacturerCodeStart = 0x013F;
     const uint16_t ManufacturerCodeEnd = 0x0142;
 
+    const static uint32_t RomBaseSizeBytes = 32 * 0x400;
     std::string read_string_from_header(uint16_t, uint16_t) const;
 
     static const std::unordered_map<Cartridge::CartridgeType, std::string> s_mbc_names;
+    static const std::unordered_map<uint8_t, uint32_t> s_rom_sizes;
+    static const std::unordered_map<uint8_t, uint32_t> s_ram_sizes;
 };
 
 // 00	None

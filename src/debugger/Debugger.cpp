@@ -63,6 +63,12 @@ void Debugger::run(std::ostream &output_stream) {
                 if (result)
                     m_mmu->print_memory_at_location(output_stream, address.first, address.second);
 
+            } else if (cmd_data.compare("cartridge") == 0) {
+                if (m_mmu->has_cartridge())
+                    m_mmu->get_cartridge()->print_info(output_stream);
+                else
+                    output_stream << "No cartridge loaded!" << std::endl;
+
             } else {
                 cmd->print_command_help(output_stream);
             }

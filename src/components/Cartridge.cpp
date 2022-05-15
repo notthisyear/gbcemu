@@ -1,4 +1,5 @@
 #include "Cartridge.h"
+#include "util/GeneralUtilities.h"
 #include "util/LogUtilities.h"
 #include <exception>
 #include <iomanip>
@@ -7,10 +8,10 @@
 
 namespace gbcemu {
 
-Cartridge::Cartridge(uint8_t *raw_data, uint64_t size) : m_raw_data(raw_data), m_size(size) {
+Cartridge::Cartridge(uint8_t *raw_data, uint64_t raw_size) : m_raw_data(raw_data), m_raw_size(raw_size) {
     m_type = static_cast<CartridgeType>(get_single_byte_header_field(Cartridge::HeaderField::CartridgeType));
     if (m_type != Cartridge::CartridgeType::NO_MBC) {
-        LogUtilities::log_error(std::cout, "MBCs not yet supported");
+        LogUtilities::log_error(std::cout, GeneralUtilities::formatted_string("Cartridge MBC flag is '%s' - not supported", s_mbc_names.find(m_type)->second));
         exit(1);
     }
 }
@@ -48,24 +49,33 @@ uint16_t Cartridge::get_two_byte_header_field(const Cartridge::HeaderField field
 
 void Cartridge::print_info(std::ostream &stream) const {
     stream << std::endl;
-    stream << std::left << std::setw(25) << std::setfill(' ') << "Title:\t\033[1;37m" << get_title() << "\033[0m" << std::endl;
-    stream << std::left << std::setw(25) << std::setfill(' ') << "Manufacturer code:\t\033[1;37m" << get_manufacturer_code() << "\033[0m" << std::endl;
-    stream << std::left << std::setw(25) << std::setfill(' ') << "Size:\t\033[1;37m" << unsigned(m_size) << " B\033[0m" << std::endl;
 
-    stream << std::endl;
+    stream << std::left << std::setw(30) << std::setfill(' ') << "\033[0;36mTitle:";
+    stream << "\033[1;37m" << get_title() << std::endl;
 
-    stream << std::left << std::setw(25) << std::setfill(' ') << "MBC setting:\t\033[1;37m" << s_mbc_names.find(m_type)->second << "\033[0m" << std::endl;
+    stream << std::left << std::setw(30) << std::setfill(' ') << "\033[0;36mManufacturer code:";
+    stream << "\033[1;37m" << get_manufacturer_code() << std::endl;
+
+    stream << std::left << std::setw(30) << std::setfill(' ') << "\033[0;36mROM size:";
+    stream << "\033[1;37m" << unsigned(s_rom_sizes.find(get_single_byte_header_field(Cartridge::HeaderField::ROMSize))->second) << " B" << std::endl;
+
+    stream << std::left << std::setw(30) << std::setfill(' ') << "\033[0;36mRAM size:";
+    stream << "\033[1;37m" << unsigned(s_ram_sizes.find(get_single_byte_header_field(Cartridge::HeaderField::RAMSize))->second) << " B" << std::endl;
+
+    stream << std::left << std::setw(30) << std::setfill(' ') << "\033[0;36mMBC setting:";
+    stream << "\033[1;37m" << s_mbc_names.find(m_type)->second << "\033[0m" << std::endl;
 }
 
 Cartridge::~Cartridge() { delete[] m_raw_data; }
 
 std::string Cartridge::read_string_from_header(uint16_t start_offset, uint16_t end_offset) const {
     auto buffer_size = (end_offset - start_offset) + 1;
-    char *buffer = new char[buffer_size];
+    char *buffer = new char[buffer_size + 1];
 
     for (auto i = 0; i < buffer_size; i++)
-        buffer[i] = m_raw_data[TitleStart + i];
+        buffer[i] = m_raw_data[start_offset + i];
 
+    buffer[buffer_size] = '\0';
     auto result = std::string(buffer);
     delete[] buffer;
     return result;
@@ -102,4 +112,12 @@ const std::unordered_map<Cartridge::CartridgeType, std::string> Cartridge::s_mbc
     { Cartridge::CartridgeType::HuC1_RAM_BATTERY, "HuC1 + RAM + BATTERY" },
 };
 
+const std::unordered_map<uint8_t, uint32_t> Cartridge::s_rom_sizes = {
+    { 0x00, RomBaseSizeBytes },      { 0x01, RomBaseSizeBytes << 1 }, { 0x02, RomBaseSizeBytes << 2 },
+    { 0x03, RomBaseSizeBytes << 3 }, { 0x04, RomBaseSizeBytes << 4 }, { 0x05, RomBaseSizeBytes << 5 },
+    { 0x06, RomBaseSizeBytes << 6 }, { 0x07, RomBaseSizeBytes << 7 }, { 0x08, RomBaseSizeBytes << 8 },
+};
+const std::unordered_map<uint8_t, uint32_t> Cartridge::s_ram_sizes = {
+    { 0x00, 0 }, { 0x02, 8 * 0x400 }, { 0x03, 32 * 0x400 }, { 0x04, 128 * 0x400 }, { 0x05, 64 * 0x400 },
+};
 }

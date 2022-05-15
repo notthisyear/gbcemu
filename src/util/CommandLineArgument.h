@@ -125,9 +125,9 @@ class CommandLineArgument {
         { CommandLineArgument::ArgumentType::Help, std::make_pair<std::string, std::string>("(-h)|(--help)", "show this help message and exit") },
         { CommandLineArgument::ArgumentType::AttachDebugger, std::make_pair<std::string, std::string>("(-d)|(--dgb)", "attach the debugger at startup") },
         { CommandLineArgument::ArgumentType::BootRomPath,
-          std::make_pair<std::string, std::string>(R"((--boot-rom) ([\w\\:\.-/\\(\\)\[\]]+))", "path to boot rom") },
+          std::make_pair<std::string, std::string>(R"((--boot-rom) ([\w\\:\.\-/\\(\\)\[\]]+))", "path to boot rom") },
         { CommandLineArgument::ArgumentType::CartridgePath,
-          std::make_pair<std::string, std::string>(R"(((-c)|(--cartridge)) ([\w\\:\.-/\\(\\)\[\]]+))", "path to cartridge") },
+          std::make_pair<std::string, std::string>(R"(((-c)|(--cartridge)) ([\w\\:\.\-/\\(\\)\[\]]+))", "path to cartridge") },
     };
 };
 }
