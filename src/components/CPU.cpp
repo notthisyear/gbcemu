@@ -94,7 +94,6 @@ void CPU::tick() {
 
     if (m_is_running_boot_rom && m_reg_pc == 0x0100) {
         m_is_running_boot_rom = false;
-        m_mmu->set_in_boot_mode(false);
     }
 }
 

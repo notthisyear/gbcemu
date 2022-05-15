@@ -14,9 +14,9 @@ MMU::MMU(uint16_t memory_size) : m_memory_size(memory_size) {
 
     m_memory = new uint8_t[m_memory_size];
     memset(m_memory, (uint8_t)0x00, m_memory_size);
-
-    m_is_in_boot_mode = false;
     m_boot_rom_type = MMU::BootRomType::None;
+
+    set_register(gbcemu::MMU::MemoryRegister::BootRomDisableOffset, 0x01);
 }
 
 bool MMU::try_load_boot_rom(std::ostream &stream, const std::string &path) {
@@ -40,6 +40,8 @@ bool MMU::try_load_boot_rom(std::ostream &stream, const std::string &path) {
 
     if (m_boot_rom_size == DmgBootRomSize)
         m_boot_rom_type = MMU::BootRomType::DMG;
+
+    set_register(gbcemu::MMU::MemoryRegister::BootRomDisableOffset, 0x00);
     return true;
 }
 
@@ -133,7 +135,7 @@ bool MMU::try_read_from_memory(uint8_t *data, uint16_t offset, uint64_t size) co
     auto region_endpoints = s_region_map.find(region)->second;
 
     bool result = true;
-    if (region == MMU::MemoryRegion::CartridgeFixed && m_is_in_boot_mode && is_boot_rom_range(offset, size)) {
+    if (region == MMU::MemoryRegion::CartridgeFixed && get_register(MMU::MemoryRegister::BootRomDisableOffset) == 0 && is_boot_rom_range(offset, size)) {
         read_from_boot_rom(data, offset, size);
     } else {
         if ((offset + size - 1) > region_endpoints.second)
@@ -219,8 +221,11 @@ void MMU::print_memory_at_location(std::ostream &stream, uint16_t start, uint16_
     }
 
     auto region = find_memory_region(start);
+    bool is_boot_rom = region == MMU::MemoryRegion::CartridgeFixed && get_register(MMU::MemoryRegister::BootRomDisableOffset) == 0 &&
+                       is_boot_rom_range(start, (end - start) + 1);
+
     std::cout << "from region "
-              << "\033[1;32m" << get_region_name(region) << "\033[0m\n"
+              << "\033[1;32m" << (is_boot_rom ? "Boot ROM" : get_region_name(region)) << "\033[0m\n"
               << std::endl;
 
     auto number_of_rows = ((end - address_start) / 16) + 1;
@@ -278,7 +283,7 @@ bool MMU::try_load_from_file(const std::string &path, uint8_t *buffer, const uin
 bool MMU::is_boot_rom_range(uint16_t offset, uint64_t size) const {
     // CGB boot ROM is split into two, 0x0000 - 0x00FF and 0x0200 - 0x08FF
     if (m_boot_rom_type == MMU::BootRomType::DMG)
-        return (offset + size) <= 0x100;
+        return (offset + size) <= DmgBootRomSize;
 
     auto end = offset + size;
     return end < 0xFF || (offset > 0x01FF && end < 0x0900);
@@ -292,8 +297,6 @@ void MMU::read_from_boot_rom(uint8_t *data, uint16_t offset, uint64_t size) cons
     for (auto i = 0; i < size; i++)
         data[i] = m_boot_rom[offset + i];
 }
-
-void MMU::set_in_boot_mode(bool is_in_boot_mode) { m_is_in_boot_mode = is_in_boot_mode; }
 
 MMU::BootRomType MMU::get_boot_rom_type() const { return m_boot_rom_type; }
 

@@ -79,6 +79,10 @@ class MMU {
         // Interrupt controller
         IF = 0x0F,
         IE = 0xFF,
+        // CGB (TODO)
+
+        // Other
+        BootRomDisableOffset = 0x50,
     };
 
     MMU(uint16_t memory_size);
@@ -89,7 +93,6 @@ class MMU {
     bool try_map_data_to_memory(uint8_t *data, uint16_t offset, uint16_t size);
     bool try_read_from_memory(uint8_t *data, uint16_t offset, uint64_t size) const;
     void set_debug_mode(bool);
-    void set_in_boot_mode(bool);
     MMU::BootRomType get_boot_rom_type() const;
     void set_register(const MMU::MemoryRegister, const uint8_t);
     uint8_t get_register(const MMU::MemoryRegister) const;
@@ -107,7 +110,6 @@ class MMU {
     Cartridge *m_cartridge;
     MMU::MemoryRegion find_memory_region(uint16_t address) const;
 
-    bool m_is_in_boot_mode;
     bool m_loading_cartridge;
     MMU::BootRomType m_boot_rom_type;
     uint64_t m_boot_rom_size;

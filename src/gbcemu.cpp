@@ -59,8 +59,6 @@ int main(int argc, char **argv) {
     if (has_boot_rom)
         gbcemu::LogUtilities::log_info(std::cout, "Boot ROM loaded");
 
-    mmu->set_in_boot_mode(has_boot_rom);
-
     if (!mmu->try_load_cartridge(std::cout, cartridge_argument->value))
         exit(1);
 
