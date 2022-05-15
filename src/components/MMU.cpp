@@ -101,7 +101,7 @@ bool MMU::try_map_data_to_memory(uint8_t *data, uint16_t offset, uint16_t size) 
         write_to_memory(data, offset, size);
         break;
 
-    case MMU::MemoryRegion::CartridgeRAM:
+    case MMU::MemoryRegion::CartridgeRAMSwitchable:
         m_cartridge->write_to_cartridge_ram(data, offset - region_endpoints.first, size);
         break;
 
@@ -144,15 +144,15 @@ bool MMU::try_read_from_memory(uint8_t *data, uint16_t offset, uint64_t size) co
         switch (region) {
 
         case MMU::MemoryRegion::CartridgeFixed:
-            m_cartridge->read_from_cartridge_switchable(data, offset - region_endpoints.first, size);
+            read_from_memory(data, offset - region_endpoints.first, size);
             break;
 
         case MMU::MemoryRegion::CartridgeSwitchable:
-            m_cartridge->read_from_cartridge_switchable(data, offset - region_endpoints.first, size);
+            m_cartridge->read_from_cartridge_switchable(data, offset, size);
             break;
 
-        case MMU::MemoryRegion::CartridgeRAM:
-            m_cartridge->read_from_cartridge_ram(data, offset - region_endpoints.first, size);
+        case MMU::MemoryRegion::CartridgeRAMSwitchable:
+            m_cartridge->read_from_cartridge_ram(data, offset, size);
             break;
 
         case MMU::MemoryRegion::VRAMSwitchable:
@@ -313,7 +313,7 @@ const std::map<MMU::MemoryRegion, std::pair<uint16_t, uint16_t>> MMU::s_region_m
     { MMU::MemoryRegion::CartridgeFixed, MMU::make_address_pair(0x0000, 0x3FFF) },
     { MMU::MemoryRegion::CartridgeSwitchable, MMU::make_address_pair(0x4000, 0x7FFF) },
     { MMU::MemoryRegion::VRAMSwitchable, MMU::make_address_pair(0x8000, 0x9FFF) },
-    { MMU::MemoryRegion::CartridgeRAM, MMU::make_address_pair(0xA000, 0xBFFF) },
+    { MMU::MemoryRegion::CartridgeRAMSwitchable, MMU::make_address_pair(0xA000, 0xBFFF) },
     { MMU::MemoryRegion::WRAMFixed, MMU::make_address_pair(0xC000, 0xCFFF) },
     { MMU::MemoryRegion::WRAMSwitchable, MMU::make_address_pair(0xD000, 0xDFFF) },
     { MMU::MemoryRegion::EchoRAM, MMU::make_address_pair(0xE000, 0xFDFF) },
@@ -328,7 +328,7 @@ const std::unordered_map<MMU::MemoryRegion, std::string> MMU::s_region_names = {
     { MMU::MemoryRegion::CartridgeFixed, "CartridgeFixed" },
     { MMU::MemoryRegion::CartridgeSwitchable, "CartridgeSwitchable" },
     { MMU::MemoryRegion::VRAMSwitchable, "VRAMSwitchable" },
-    { MMU::MemoryRegion::CartridgeRAM, "CartridgeRAM" },
+    { MMU::MemoryRegion::CartridgeRAMSwitchable, "CartridgeRAMSwitchable" },
     { MMU::MemoryRegion::WRAMFixed, "WRAMFixed" },
     { MMU::MemoryRegion::WRAMSwitchable, "WRAMSwitchable" },
     { MMU::MemoryRegion::EchoRAM, "EchoRAM" },

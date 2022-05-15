@@ -19,7 +19,7 @@ class MMU {
         CartridgeFixed,
         CartridgeSwitchable,
         VRAMSwitchable,
-        CartridgeRAM,
+        CartridgeRAMSwitchable,
         WRAMFixed,
         WRAMSwitchable,
         SpriteAttributeTable,
