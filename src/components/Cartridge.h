@@ -58,7 +58,8 @@ class Cartridge {
 
     void read_from_cartridge_switchable(uint8_t *, uint32_t, uint64_t) const;
     void read_from_cartridge_ram(uint8_t *, uint32_t, uint64_t) const;
-    void write_to_cartridge_ram(uint8_t *, uint32_t, uint64_t);
+    void write_to_cartridge_registers(uint8_t *, uint16_t, uint16_t);
+    void write_to_cartridge_ram(uint8_t *, uint16_t, uint16_t);
 
     std::string get_title() const;
     std::string get_manufacturer_code() const;
@@ -71,6 +72,7 @@ class Cartridge {
     uint8_t *m_raw_data;
     uint64_t m_raw_size;
     CartridgeType m_type;
+    uint8_t m_current_bank_number;
 
     const uint16_t TitleStart = 0x0134;
     const uint16_t TitleEnd = 0x0143;

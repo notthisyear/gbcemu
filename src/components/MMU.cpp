@@ -87,11 +87,15 @@ bool MMU::try_map_data_to_memory(uint8_t *data, uint16_t offset, uint16_t size) 
     // ROM
     case MMU::MemoryRegion::CartridgeFixed:
     case MMU::MemoryRegion::CartridgeSwitchable:
-        if (!m_loading_cartridge)
-            result = false;
-        else
+        if (!m_loading_cartridge) {
+            if (has_cartridge())
+                m_cartridge->write_to_cartridge_registers(data, offset, size);
+            else
+                result = false;
+        } else {
             write_to_memory(data, offset, size);
-
+        }
+        break;
     case MMU::MemoryRegion::VRAMSwitchable:
         // TODO: Implement VRAM banks (only on CGB)
         write_to_memory(data, offset, size);
@@ -103,7 +107,7 @@ bool MMU::try_map_data_to_memory(uint8_t *data, uint16_t offset, uint16_t size) 
         break;
 
     case MMU::MemoryRegion::CartridgeRAMSwitchable:
-        m_cartridge->write_to_cartridge_ram(data, offset - region_endpoints.first, size);
+        m_cartridge->write_to_cartridge_ram(data, offset, size);
         break;
 
     case MMU::MemoryRegion::EchoRAM:
@@ -145,7 +149,7 @@ bool MMU::try_read_from_memory(uint8_t *data, uint16_t offset, uint64_t size) co
         switch (region) {
 
         case MMU::MemoryRegion::CartridgeFixed:
-            read_from_memory(data, offset - region_endpoints.first, size);
+            read_from_memory(data, offset, size);
             break;
 
         case MMU::MemoryRegion::CartridgeSwitchable:
@@ -200,6 +204,7 @@ uint8_t MMU::get_register(const MMU::MemoryRegister reg) const {
     return data;
 }
 bool MMU::has_cartridge() const { return m_cartridge != nullptr; }
+
 Cartridge *MMU::get_cartridge() const { return m_cartridge; }
 
 void MMU::print_memory_at_location(std::ostream &stream, uint16_t start, uint16_t end) const {

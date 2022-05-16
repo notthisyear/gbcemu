@@ -10,9 +10,20 @@ namespace gbcemu {
 
 Cartridge::Cartridge(uint8_t *raw_data, uint64_t raw_size) : m_raw_data(raw_data), m_raw_size(raw_size) {
     m_type = static_cast<CartridgeType>(get_single_byte_header_field(Cartridge::HeaderField::CartridgeType));
-    if (m_type != Cartridge::CartridgeType::NO_MBC) {
+    if (m_type != Cartridge::CartridgeType::NO_MBC && m_type != Cartridge::CartridgeType::MBC1) {
         LogUtilities::log_error(std::cout, GeneralUtilities::formatted_string("Cartridge MBC flag is '%s' - not supported", s_mbc_names.find(m_type)->second));
         exit(1);
+    }
+
+    switch (m_type) {
+    case Cartridge::CartridgeType::NO_MBC:
+        m_current_bank_number = 0;
+        break;
+    case Cartridge::CartridgeType::MBC1:
+        m_current_bank_number = 1;
+        break;
+    default:
+        __builtin_unreachable();
     }
 }
 
@@ -22,13 +33,30 @@ void Cartridge::read_from_cartridge_switchable(uint8_t *data, uint32_t offset, u
         for (auto i = 0; i < size; i++)
             data[i] = m_raw_data[i + offset];
         break;
+    case Cartridge::CartridgeType::MBC1:
+        for (auto i = 0; i < size; i++)
+            data[i] = m_raw_data[i + offset + ((m_current_bank_number - 1) * 0x4000)];
+        break;
     default:
         LogUtilities::log_error(std::cout, "MBCs not yet supported");
         exit(1);
     }
 }
-void Cartridge::read_from_cartridge_ram(uint8_t *data, uint32_t offset, uint64_t size) const {}
-void Cartridge::write_to_cartridge_ram(uint8_t *, uint32_t, uint64_t) {}
+
+void Cartridge::read_from_cartridge_ram(uint8_t *data, uint32_t offset, uint64_t size) const {
+    LogUtilities::log_error(std::cout, GeneralUtilities::formatted_string("Reading from cartridge RAM not yet supported (tried to read from 0x%04X)", offset));
+    exit(1);
+}
+
+void Cartridge::write_to_cartridge_registers(uint8_t *data, uint16_t offset, uint16_t size) {
+    if (offset >= 0x2000 && offset <= 0x3FFF && size == 0x01)
+        m_current_bank_number = ((data[0] & 0x1F) == 0x00) ? 0x01 : data[0] & 0x1F;
+}
+
+void Cartridge::write_to_cartridge_ram(uint8_t *, uint16_t offset, uint16_t) {
+    LogUtilities::log_error(std::cout, GeneralUtilities::formatted_string("Writing to cartridge RAM not yet supported (tried to write to 0x%04X)", offset));
+    exit(1);
+}
 
 std::string Cartridge::get_title() const { return read_string_from_header(TitleStart, TitleEnd); }
 std::string Cartridge::get_manufacturer_code() const { return read_string_from_header(ManufacturerCodeStart, ManufacturerCodeEnd); }
@@ -56,14 +84,20 @@ void Cartridge::print_info(std::ostream &stream) const {
     stream << std::left << std::setw(30) << std::setfill(' ') << "\033[0;36mManufacturer code:";
     stream << "\033[1;37m" << get_manufacturer_code() << std::endl;
 
+    auto rom_size = s_rom_sizes.find(get_single_byte_header_field(Cartridge::HeaderField::ROMSize))->second;
     stream << std::left << std::setw(30) << std::setfill(' ') << "\033[0;36mROM size:";
-    stream << "\033[1;37m" << unsigned(s_rom_sizes.find(get_single_byte_header_field(Cartridge::HeaderField::ROMSize))->second) << " B" << std::endl;
+    stream << "\033[1;37m" << unsigned(rom_size) << " B (" << unsigned(rom_size >> 14) << " banks)" << std::endl;
 
     stream << std::left << std::setw(30) << std::setfill(' ') << "\033[0;36mRAM size:";
     stream << "\033[1;37m" << unsigned(s_ram_sizes.find(get_single_byte_header_field(Cartridge::HeaderField::RAMSize))->second) << " B" << std::endl;
 
     stream << std::left << std::setw(30) << std::setfill(' ') << "\033[0;36mMBC setting:";
     stream << "\033[1;37m" << s_mbc_names.find(m_type)->second << "\033[0m" << std::endl;
+
+    if (m_type != Cartridge::CartridgeType::NO_MBC) {
+        stream << std::left << std::setw(30) << std::setfill(' ') << "\033[0;36mCurrent ROM bank:";
+        stream << "\033[1;37m" << unsigned(m_current_bank_number) << "\033[0m" << std::endl;
+    }
 }
 
 Cartridge::~Cartridge() { delete[] m_raw_data; }
