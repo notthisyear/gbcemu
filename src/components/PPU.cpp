@@ -1,4 +1,5 @@
 #include "PPU.h"
+#include "CPU.h"
 #include "util/GeneralUtilities.h"
 #include <cstring>
 #include <iostream>
@@ -95,10 +96,13 @@ void PPU::tick() {
             m_current_scanline++;
             m_dots_on_current_line = 0;
 
-            if (m_current_scanline == VBlankStartScanline)
+            if (m_current_scanline == VBlankStartScanline) {
+                m_mmu->set_register(MMU::MemoryRegister::IF,
+                                    m_mmu->get_register(MMU::MemoryRegister::IF) | (0x01 << static_cast<uint8_t>(CPU::InterruptSource::VBlank)));
                 m_mode = PPU::Mode::VBlank;
-            else
+            } else {
                 m_mode = PPU::Mode::OAMSearch;
+            }
         }
 
         break;
