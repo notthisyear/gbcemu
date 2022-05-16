@@ -39,6 +39,14 @@ class CPU {
         H, // Carry flag
     };
 
+    enum class InterruptSource {
+        VBlank = 0x00,
+        LCDStat = 0x01,
+        Timer = 0x02,
+        Serial = 0x03,
+        Joypad = 0x04,
+    };
+
     static inline CPU::Register register_map[] = { CPU::Register::B, CPU::Register::C, CPU::Register::D,  CPU::Register::E,
                                                    CPU::Register::H, CPU::Register::L, CPU::Register::HL, CPU::Register::A };
 
@@ -95,7 +103,7 @@ class CPU {
         case CPU::Register::Z:
             return get_register_lower(&m_reg_wz);
         default:
-            std::abort();
+            exit(1);
         }
     }
 
@@ -116,7 +124,7 @@ class CPU {
         case CPU::Register::WZ:
             return m_reg_wz;
         default:
-            std::abort();
+            exit(1);
         }
     }
 
@@ -150,7 +158,7 @@ class CPU {
             set_register_lower(&m_reg_wz, value);
             break;
         default:
-            std::abort();
+            exit(1);
         }
     }
 
@@ -178,7 +186,7 @@ class CPU {
             set_register(&m_reg_wz, value);
             break;
         default:
-            std::abort();
+            exit(1);
         }
     }
 
@@ -251,7 +259,7 @@ class CPU {
     ~CPU();
 
   private:
-    enum class State { Idle, Wait, Execute };
+    enum class State { Idle, Wait, Execute, InterruptTransition, InterruptPushPC, InterruptSetPC };
     std::shared_ptr<MMU> m_mmu;
     std::shared_ptr<PPU> m_ppu;
 
@@ -269,6 +277,7 @@ class CPU {
     bool m_has_breakpoint;
 
     bool m_interrupt_enabled;
+    CPU::InterruptSource m_current_interrupt;
     bool m_is_running_boot_rom;
     uint16_t m_reg_af; // Accumulator and flags
     uint16_t m_reg_bc; // BC (can be accessed as two 8-bit registers)
@@ -299,5 +308,7 @@ class CPU {
     void print_sp_and_pc(std::ostream &stream) const;
 
     void print_additional_info(std::ostream &stream) const;
+
+    static const std::unordered_map<CPU::InterruptSource, uint16_t> s_interrupt_vector;
 };
 }

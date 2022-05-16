@@ -37,6 +37,27 @@ void CPU::tick() {
 
     case CPU::State::Idle:
         m_current_instruction_cycle_count = 0;
+        if (m_interrupt_enabled) {
+            auto interrupt_enable = m_mmu->get_register(MMU::MemoryRegister::IE);
+            auto interrupt_flag = m_mmu->get_register(MMU::MemoryRegister::IF);
+            bool interrupt_pending = (interrupt_enable & interrupt_flag) > 0x00;
+
+            if (interrupt_pending) {
+                m_interrupt_enabled = false;
+                auto last_interrupt = static_cast<int>(CPU::InterruptSource::Joypad);
+                for (int i = 0; i < last_interrupt - 1; i++) {
+                    if (((interrupt_flag >> i) & 0x01) == 0x01) {
+                        m_mmu->set_register(MMU::MemoryRegister::IF, interrupt_flag & (0xFE << i));
+                        m_current_interrupt = static_cast<CPU::InterruptSource>(i);
+                        break;
+                    }
+                }
+
+                m_state = CPU::State::InterruptTransition;
+                break;
+            }
+        }
+
         current_byte = read_at_pc();
         if (is_extended_opcode(current_byte))
             m_is_extended_opcode = true;
@@ -69,6 +90,31 @@ void CPU::tick() {
             m_current_instruction_cycle_count = 0;
         else
             m_current_instruction_cycle_count++;
+        break;
+
+    case CPU::State::InterruptTransition:
+        m_current_instruction_cycle_count++;
+        if (m_current_instruction_cycle_count == 2) {
+            m_state = CPU::State::InterruptPushPC;
+            m_current_instruction_cycle_count = 0;
+        }
+        break;
+
+    case CPU::State::InterruptPushPC:
+        m_current_instruction_cycle_count++;
+        if (m_current_instruction_cycle_count == 2) {
+
+            uint16_t sp = get_16_bit_register(CPU::Register::SP);
+            (void)m_mmu->try_map_data_to_memory((uint8_t *)&m_reg_pc, sp - 2, 2);
+            set_register(CPU::Register::SP, static_cast<uint16_t>(sp - 2));
+
+            m_state = CPU::State::InterruptSetPC;
+            m_current_instruction_cycle_count = 0;
+        }
+        break;
+    case CPU::State::InterruptSetPC:
+        set_register(CPU::Register::PC, s_interrupt_vector.find(m_current_interrupt)->second);
+        m_state = CPU::State::Idle;
         break;
     }
 
@@ -277,4 +323,9 @@ void CPU::print_additional_info(std::ostream &stream) const {
 }
 
 CPU::~CPU() {}
+
+const std::unordered_map<CPU::InterruptSource, uint16_t> CPU::s_interrupt_vector = {
+    { CPU::InterruptSource::VBlank, 0x40 }, { CPU::InterruptSource::LCDStat, 0x48 }, { CPU::InterruptSource::Timer, 0x50 },
+    { CPU::InterruptSource::Serial, 0x58 }, { CPU::InterruptSource::Joypad, 0x60 },
+};
 }
