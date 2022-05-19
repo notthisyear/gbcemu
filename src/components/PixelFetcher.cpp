@@ -10,7 +10,7 @@ PixelFetcher::PixelFetcher(std::shared_ptr<MMU> mmu, PPU *ppu) : m_mmu(mmu), m_p
 void PixelFetcher::start_fetcher(uint8_t current_scanline, bool is_window, bool trace) {
     m_current_tick = 0;
 
-    m_tile_line = current_scanline + m_mmu->get_register(MMU::MemoryRegister::SCY);
+    m_tile_line = (current_scanline + m_mmu->get_register(MMU::MemoryRegister::SCY)) & 0x00FF;
     m_tile_index = m_mmu->get_register(MMU::MemoryRegister::SCX) >> 3;
 
     auto tile_map_area_switch = is_window ? m_ppu->get_lcd_control_bit(PPU::LCDControlRegisterBit::WindowTileMapArea)
