@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
     auto cpu = std::make_shared<gbcemu::CPU>(mmu, ppu);
     auto app = std::make_shared<gbcemu::Application>(cpu, ppu, renderer, gbcemu::WindowProperties());
 
-    auto dbg = attach_debugger ? new gbcemu::Debugger(cpu, mmu, app) : nullptr;
+    auto dbg = attach_debugger ? new gbcemu::Debugger(cpu, mmu, ppu, app) : nullptr;
     auto dbg_thread = attach_debugger ? new std::thread(&gbcemu::Debugger::run, dbg, std::ref(std::cout)) : nullptr;
 
     app->init();

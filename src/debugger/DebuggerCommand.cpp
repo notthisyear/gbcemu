@@ -61,6 +61,9 @@ void DebuggerCommand::print_command_help(std::ostream &stream) const {
     if (command == DebuggerCommand::Command::Show) {
         stream << "available options: ";
         stream << "[cpu|cartridge|mem a16|mem a16-a16]" << std::endl;
+    } else if (command == DebuggerCommand::Command::Trace) {
+        stream << "available options: ";
+        stream << "[frame]" << std::endl;
     } else {
         stream << m_command_info.description << std::endl;
     }

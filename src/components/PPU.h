@@ -32,6 +32,7 @@ class PPU {
 
     PPU(std::shared_ptr<MMU>, uint16_t, uint16_t, uint8_t);
 
+    void request_frame_trace();
     bool cycles_per_frame_reached() const;
     void acknowledge_frame();
     uint8_t *get_framebuffer() const;
@@ -82,6 +83,8 @@ class PPU {
 
     bool m_frame_done_flag;
     bool m_screen_enabled;
+    bool m_trace_next_frame;
+    bool m_tracing_frame;
 
     uint8_t *m_framebuffer;
     uint32_t m_framebuffer_idx;

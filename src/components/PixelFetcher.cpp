@@ -7,7 +7,7 @@ namespace gbcemu {
 
 PixelFetcher::PixelFetcher(std::shared_ptr<MMU> mmu, PPU *ppu) : m_mmu(mmu), m_ppu(ppu) {}
 
-void PixelFetcher::start_fetcher(uint8_t current_scanline, bool is_window) {
+void PixelFetcher::start_fetcher(uint8_t current_scanline, bool is_window, bool trace) {
     m_current_tick = 0;
 
     m_tile_line = current_scanline + m_mmu->get_register(MMU::MemoryRegister::SCY);
@@ -20,6 +20,12 @@ void PixelFetcher::start_fetcher(uint8_t current_scanline, bool is_window) {
 
     m_pixel_fifo = {};
     m_mode = PixelFetcher::Mode::ReadTileId;
+    m_output_trace = trace;
+
+    if (m_output_trace) {
+        std::cout << GeneralUtilities::formatted_string("\n\n\n\033[1;37mLine %d (SCY: %d, SCX %d)\033[0m\n", current_scanline,
+                                                        m_mmu->get_register(MMU::MemoryRegister::SCY), m_mmu->get_register(MMU::MemoryRegister::SCX));
+    }
 }
 
 void PixelFetcher::tick() {
@@ -33,6 +39,11 @@ void PixelFetcher::tick() {
     switch (m_mode) {
     case PixelFetcher::Mode::ReadTileId:
         (void)m_mmu->try_read_from_memory(&m_current_tile_id, m_tile_id_row_start_address + m_tile_index, 1);
+
+        if (m_output_trace) {
+            std::cout << GeneralUtilities::formatted_string("\033[0;36mTile ID (0x%04X): \033[1;37m0x%02X\033[0m, ", m_tile_id_row_start_address + m_tile_index,
+                                                            m_current_tile_id);
+        }
         m_mode = PixelFetcher::Mode::ReadTileData0;
         break;
 
@@ -51,6 +62,10 @@ void PixelFetcher::tick() {
 
         m_tile_data_address = tile_address + ((m_tile_line & 0x07) << 1);
         (void)m_mmu->try_read_from_memory(&m_first_data_byte, m_tile_data_address, 1);
+
+        if (m_output_trace) {
+            std::cout << GeneralUtilities::formatted_string("\033[0;32mlow data (0x%04X): \033[1;37m0x%02X\033[0m, ", m_tile_data_address, m_first_data_byte);
+        }
         m_mode = PixelFetcher::Mode::ReadTileData1;
     }
 
@@ -58,6 +73,11 @@ void PixelFetcher::tick() {
 
     case PixelFetcher::Mode::ReadTileData1:
         (void)m_mmu->try_read_from_memory(&m_second_data_byte, m_tile_data_address + 1, 1);
+
+        if (m_output_trace) {
+            std::cout << GeneralUtilities::formatted_string("\033[0;32mhigh tile (0x%04X): \033[1;37m0x%02X\033[0m\n", m_tile_data_address + 1,
+                                                            m_second_data_byte);
+        }
         m_mode = PixelFetcher::Mode::Idle;
         break;
 

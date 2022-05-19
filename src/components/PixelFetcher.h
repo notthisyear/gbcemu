@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MMU.h"
+#include <cstddef>
 #include <memory>
 #include <queue>
 #include <stdint.h>
@@ -17,7 +18,7 @@ struct Pixel {
 class PixelFetcher {
   public:
     PixelFetcher(std::shared_ptr<MMU>, PPU *);
-    void start_fetcher(uint8_t, bool);
+    void start_fetcher(uint8_t, bool, bool);
     void tick();
 
     bool can_pop_pixel() const;
@@ -40,7 +41,6 @@ class PixelFetcher {
     std::shared_ptr<MMU> m_mmu;
     PPU *m_ppu;
     std::queue<Pixel> m_pixel_fifo;
-
     uint8_t m_current_tick;
 
     uint16_t m_tile_index;
@@ -48,6 +48,7 @@ class PixelFetcher {
     uint16_t m_tile_data_address;
     uint16_t m_tile_id_row_start_address;
 
+    uint16_t m_output_trace;
     uint8_t m_current_tile_id;
     uint8_t m_first_data_byte;
     uint8_t m_second_data_byte;

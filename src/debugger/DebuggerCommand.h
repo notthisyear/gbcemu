@@ -30,6 +30,7 @@ class DebuggerCommand {
         Step,
         Run,
         Break,
+        Trace,
         None,
     };
 
@@ -93,6 +94,7 @@ class DebuggerCommand {
         { "((st)|(step))", "[st|step]", "step execution one tick", false, true },
         { "(^((r)|(run))$)", "[r|run]", "let execution run until a breakpoint is hit or break is called", false, true },
         { "((br)|(break))", "[br|break]", "halt execution", false, true },
+        { "((tr)|(trace))", "[tr|trace]", "generate traces, type 'trace help' to see options", true, true },
         { "\\.*", "invalid", "used as catchall", false, false },
     };
 };

@@ -203,6 +203,7 @@ uint8_t MMU::get_register(const MMU::MemoryRegister reg) const {
     read_from_memory(&data, RegisterOffsetBase | static_cast<uint16_t>(reg), 1);
     return data;
 }
+
 bool MMU::has_cartridge() const { return m_cartridge != nullptr; }
 
 Cartridge *MMU::get_cartridge() const { return m_cartridge; }
@@ -390,6 +391,7 @@ const std::unordered_map<MMU::MemoryRegister, std::string> MMU::s_register_names
 };
 
 std::string MMU::get_region_name(MMU::MemoryRegion region) const { return MMU::s_region_names.find(region)->second; }
+
 std::string MMU::get_register_name(MMU::MemoryRegister reg) const { return MMU::s_register_names.find(reg)->second; }
 
 MMU::~MMU() {

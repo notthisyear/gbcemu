@@ -2,6 +2,7 @@
 #include "CPU.h"
 #include "util/GeneralUtilities.h"
 #include <cstring>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <stdint.h>
@@ -45,7 +46,7 @@ void PPU::tick() {
         if (m_dots_on_current_line == PPU::DotsInOAMSearch) {
             m_mode = PPU::Mode::DataTransfer;
             m_pixels_pushed_on_current_line = 0;
-            m_pixel_fetcher->start_fetcher(m_current_scanline, false);
+            m_pixel_fetcher->start_fetcher(m_current_scanline, false, m_tracing_frame);
         }
         break;
 
@@ -88,6 +89,14 @@ void PPU::tick() {
             m_mode = PPU::Mode::OAMSearch;
             m_current_scanline = 0;
             m_framebuffer_idx = 0;
+
+            if (m_trace_next_frame) {
+                m_tracing_frame = true;
+                m_trace_next_frame = false;
+
+            } else {
+                m_tracing_frame = false;
+            }
         }
         break;
 
@@ -130,6 +139,8 @@ void PPU::tick() {
     set_lcd_status_bit(PPU::LCDStatusRegisterBit::LYCEqualsLY, m_mmu->get_register(MMU::MemoryRegister::LY) == m_mmu->get_register(MMU::MemoryRegister::LYC));
 }
 
+void PPU::request_frame_trace() { m_trace_next_frame = true; }
+
 bool PPU::cycles_per_frame_reached() const { return m_frame_done_flag; }
 
 void PPU::acknowledge_frame() { m_frame_done_flag = false; }
@@ -156,6 +167,9 @@ void PPU::reset_ppu_state() {
     m_frame_done_flag = false;
     m_screen_enabled = false;
     m_mode = PPU::Mode::OAMSearch;
+
+    m_trace_next_frame = false;
+    m_tracing_frame = false;
 
     m_last_mode = m_mode;
     m_mmu->set_register(MMU::MemoryRegister::LY, m_current_scanline);
