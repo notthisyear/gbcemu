@@ -261,6 +261,50 @@ void CPU::set_initial_values_for_registers(const MMU::BootRomType bootRomType, b
     m_reg_pc = bootRomType == MMU::BootRomType::DMG ? 0x0000 : 0x0100;
     m_reg_af = bootRomType == MMU::BootRomType::DMG ? 0x0000 : header_checksum_is_zero ? 0x01B0 : 0x0180;
 
+    m_mmu->set_register(MMU::MemoryRegister::JOYP, 0xCF);
+    m_mmu->set_register(MMU::MemoryRegister::SB, 0x00);
+    m_mmu->set_register(MMU::MemoryRegister::SC, 0x7E);
+    m_mmu->set_register(MMU::MemoryRegister::DIV, 0xAB);
+    m_mmu->set_register(MMU::MemoryRegister::TIMA, 0x00);
+    m_mmu->set_register(MMU::MemoryRegister::TMA, 0x00);
+    m_mmu->set_register(MMU::MemoryRegister::TAC, 0xF8);
+    m_mmu->set_register(MMU::MemoryRegister::IF, 0xE1);
+
+    m_mmu->set_register(MMU::MemoryRegister::NR10, 0x80);
+    m_mmu->set_register(MMU::MemoryRegister::NR11, 0xBF);
+    m_mmu->set_register(MMU::MemoryRegister::NR12, 0xF3);
+    m_mmu->set_register(MMU::MemoryRegister::NR13, 0xFF);
+    m_mmu->set_register(MMU::MemoryRegister::NR14, 0xBF);
+    m_mmu->set_register(MMU::MemoryRegister::NR21, 0x3F);
+    m_mmu->set_register(MMU::MemoryRegister::NR22, 0x00);
+    m_mmu->set_register(MMU::MemoryRegister::NR23, 0xFF);
+    m_mmu->set_register(MMU::MemoryRegister::NR24, 0xBF);
+    m_mmu->set_register(MMU::MemoryRegister::NR30, 0x7F);
+    m_mmu->set_register(MMU::MemoryRegister::NR31, 0xFF);
+    m_mmu->set_register(MMU::MemoryRegister::NR32, 0x9F);
+    m_mmu->set_register(MMU::MemoryRegister::NR33, 0xFF);
+    m_mmu->set_register(MMU::MemoryRegister::NR34, 0xBF);
+    m_mmu->set_register(MMU::MemoryRegister::NR41, 0xFF);
+    m_mmu->set_register(MMU::MemoryRegister::NR42, 0x00);
+    m_mmu->set_register(MMU::MemoryRegister::NR43, 0x00);
+    m_mmu->set_register(MMU::MemoryRegister::NR44, 0xBF);
+    m_mmu->set_register(MMU::MemoryRegister::NR50, 0x77);
+    m_mmu->set_register(MMU::MemoryRegister::NR51, 0xF3);
+    m_mmu->set_register(MMU::MemoryRegister::NR52, 0xF1);
+
+    m_mmu->set_register(MMU::MemoryRegister::LCDC, 0x91);
+    m_mmu->set_register(MMU::MemoryRegister::STAT, 0x85);
+    m_mmu->set_register(MMU::MemoryRegister::SCY, 0x00);
+    m_mmu->set_register(MMU::MemoryRegister::SCX, 0x00);
+    m_mmu->set_register(MMU::MemoryRegister::LY, 0x00);
+    m_mmu->set_register(MMU::MemoryRegister::LYC, 0x00);
+    m_mmu->set_register(MMU::MemoryRegister::DMA, 0xFF);
+    m_mmu->set_register(MMU::MemoryRegister::BGP, 0xFC);
+    m_mmu->set_register(MMU::MemoryRegister::WY, 0x00);
+    m_mmu->set_register(MMU::MemoryRegister::WX, 0x00);
+
+    m_mmu->set_register(MMU::MemoryRegister::IE, 0x00);
+
     m_reg_wz = 0x0000;
 }
 
