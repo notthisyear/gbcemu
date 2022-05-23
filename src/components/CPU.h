@@ -165,7 +165,7 @@ class CPU {
     void set_register(const CPU::Register reg, const uint16_t value) {
         switch (reg) {
         case CPU::Register::AF:
-            set_register(&m_reg_af, value);
+            set_register(&m_reg_af, value & 0xFFF0); // The lower four bits should never be set
             break;
         case CPU::Register::BC:
             set_register(&m_reg_bc, value);
