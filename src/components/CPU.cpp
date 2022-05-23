@@ -12,7 +12,6 @@
 namespace gbcemu {
 
 CPU::CPU(std::shared_ptr<MMU> mmu, std::shared_ptr<PPU> ppu) : m_mmu(mmu), m_ppu(ppu) {
-    m_current_cycle_count = 0;
     m_current_instruction_cycle_count = 0;
     m_is_extended_opcode = false;
     m_current_opcode = nullptr;
@@ -134,11 +133,6 @@ void CPU::tick() {
     }
 
     m_ppu->tick();
-
-    m_current_cycle_count++;
-
-    if (m_ppu->cycles_per_frame_reached())
-        m_current_cycle_count = 0;
 
     if (m_is_running_boot_rom && m_reg_pc == 0x0100) {
         m_is_running_boot_rom = false;
@@ -361,8 +355,8 @@ void CPU::print_additional_info(std::ostream &stream) const {
     auto breakpoint_string = m_has_breakpoint ? GeneralUtilities::formatted_string("0x%04x", m_current_breakpoint) : "none";
 
     stream << "\033[0;32mbreakpoint: "
-           << "\033[1;37m" << breakpoint_string << "\033[0;32m\tcurrent_cycles: "
-           << "\033[1;37m" << unsigned(m_current_cycle_count) << "\n\033[0;32mrunning boot rom: "
+           << "\033[1;37m" << breakpoint_string << "\033[0;32m\tcpu state: "
+           << "\033[1;37m" << s_cpu_state_name.find(m_state)->second << "\n\033[0;32mrunning boot rom: "
            << "\033[1;37m" << (m_is_running_boot_rom ? "true" : "false") << "\033[0;m" << std::endl;
 }
 

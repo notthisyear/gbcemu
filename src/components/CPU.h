@@ -268,7 +268,6 @@ class CPU {
     bool m_interleave_execute_and_decode;
     bool m_at_start_of_instruction;
     uint8_t m_current_instruction_cycle_count;
-    uint32_t m_current_cycle_count;
     std::shared_ptr<Opcode> m_current_opcode;
 
     CPU::State m_state;
@@ -279,6 +278,7 @@ class CPU {
     bool m_interrupt_enabled;
     CPU::InterruptSource m_current_interrupt;
     bool m_is_running_boot_rom;
+
     uint16_t m_reg_af; // Accumulator and flags
     uint16_t m_reg_bc; // BC (can be accessed as two 8-bit registers)
     uint16_t m_reg_de; // DE (can be accessed as two 8-bit registers)
@@ -308,6 +308,15 @@ class CPU {
     void print_sp_and_pc(std::ostream &stream) const;
 
     void print_additional_info(std::ostream &stream) const;
+
+    static inline std::unordered_map<CPU::State, std::string> s_cpu_state_name = {
+        { CPU::State::Idle, "Idle" },
+        { CPU::State::Execute, "Execute" },
+        { CPU::State::Wait, "Wait" },
+        { CPU::State::InterruptPushPC, "InterruptPushPC" },
+        { CPU::State::InterruptSetPC, "InterruptSetPC" },
+        { CPU::State::InterruptTransition, "InterruptTransition" },
+    };
 
     static const std::unordered_map<CPU::InterruptSource, uint16_t> s_interrupt_vector;
 };
