@@ -126,7 +126,7 @@ void CPU::tick() {
             if (m_current_opcode->is_done()) {
                 m_state = CPU::State::Idle;
                 m_at_start_of_instruction = true;
-                if (m_interleave_execute_and_decode)
+                if (m_interleave_execute_and_decode && !m_has_breakpoint)
                     tick(); // Overlapped execution/fetching
                 return;
             }
@@ -229,7 +229,7 @@ void CPU::enable_breakpoint_at(uint16_t pc) {
     m_has_breakpoint = true;
 }
 
-bool CPU::breakpoint_hit() const { return m_has_breakpoint && m_current_breakpoint == m_reg_pc; }
+bool CPU::breakpoint_hit() const { return m_has_breakpoint && m_current_breakpoint == m_reg_pc && at_start_of_instruction(); }
 
 void CPU::clear_breakpoint() { m_has_breakpoint = false; }
 
