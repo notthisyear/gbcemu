@@ -13,11 +13,6 @@ static void glfw_error_callback(int error, const char *description) {
 }
 
 WindowsWindow::WindowsWindow(const WindowProperties &properties) : m_properties(properties) {
-    if (is_initialized) {
-        LogUtilities::log_error(std::cout, "Window is already initialized");
-        return;
-    }
-
     if (!glfwInit()) {
         LogUtilities::log_error(std::cout, "GLFW initialization failed");
         return;

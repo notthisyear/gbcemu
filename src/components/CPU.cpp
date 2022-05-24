@@ -253,7 +253,7 @@ void CPU::set_initial_values_for_registers(const MMU::BootRomType bootRomType, b
     m_reg_hl = bootRomType == MMU::BootRomType::DMG ? 0x0000 : 0x014D;
     m_reg_sp = bootRomType == MMU::BootRomType::DMG ? 0x0000 : 0xFFFE;
     m_reg_pc = bootRomType == MMU::BootRomType::DMG ? 0x0000 : 0x0100;
-    m_reg_af = bootRomType == MMU::BootRomType::DMG ? 0x0000 : header_checksum_is_zero ? 0x01B0 : 0x0180;
+    m_reg_af = bootRomType == MMU::BootRomType::DMG ? 0x0000 : header_checksum_is_zero ? 0x0180 : 0x01B0;
 
     m_mmu->set_register(MMU::MemoryRegister::JOYP, 0xCF);
     m_mmu->set_register(MMU::MemoryRegister::SB, 0x00);
