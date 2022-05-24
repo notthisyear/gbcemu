@@ -934,10 +934,8 @@ struct SetSPOrHLToSPAndOffset final : public Opcode {
             cpu->set_register(m_target, static_cast<uint16_t>(result));
             cpu->set_flag(CPU::Flag::Z, 0);
             cpu->set_flag(CPU::Flag::N, 0);
-            cpu->set_flag(CPU::Flag::H, offset < 0 ? cpu->half_carry_occurs_on_subtract(sp & 0x00FF, -offset)
-                                                   : cpu->half_carry_occurs_on_add(static_cast<uint8_t>(sp & 0x00FF), offset));
-            cpu->set_flag(CPU::Flag::C, offset < 0 ? cpu->carry_occurs_on_subtract(sp & 0x00FF, -offset)
-                                                   : cpu->carry_occurs_on_add(static_cast<uint8_t>(sp & 0x00FF), offset));
+            cpu->set_flag(CPU::Flag::H, cpu->half_carry_occurs_on_add(static_cast<uint8_t>(sp & 0x00FF), data));
+            cpu->set_flag(CPU::Flag::C, cpu->carry_occurs_on_add(static_cast<uint8_t>(sp & 0x00FF), data));
         });
 
         if (m_target == CPU::Register::SP)
