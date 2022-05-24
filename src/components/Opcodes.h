@@ -117,7 +117,30 @@ struct Halt final : public Opcode {
 struct DecimalAdjustAccumulator final : public Opcode {
   public:
     DecimalAdjustAccumulator() : Opcode(1) {
-        m_operations.push_back([](CPU *, MMU *) { NOT_IMPLEMENTED("DAA"); });
+        m_operations.push_back([](CPU *cpu, MMU *) {
+            auto last_operation_was_addition = !cpu->flag_is_set(CPU::Flag::N);
+            auto acc = cpu->get_8_bit_register(CPU::Register::A);
+            if (last_operation_was_addition) {
+                if (cpu->flag_is_set(CPU::Flag::C) || acc > 0x99) {
+                    acc += 0x60;
+                    cpu->set_flag(CPU::Flag::C, true);
+                }
+
+                if (cpu->flag_is_set(CPU::Flag::H) || ((acc & 0x0F) > 0x09))
+                    acc += 0x06;
+
+            } else {
+                if (cpu->flag_is_set(CPU::Flag::C))
+                    acc -= 0x60;
+
+                if (cpu->flag_is_set(CPU::Flag::H))
+                    acc -= 0x06;
+            }
+
+            cpu->set_register(CPU::Register::A, acc);
+            cpu->set_flag(CPU::Flag::Z, acc == 0x00);
+            cpu->set_flag(CPU::Flag::H, false);
+        });
     }
     std::string get_disassembled_instruction(uint8_t *instruction_data) const override { return "DAA"; }
 };
