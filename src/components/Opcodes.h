@@ -1191,7 +1191,7 @@ struct ExtendedOpcode : public Opcode {
 
         // C <- [7 <- 0] <- [7]
         case RotationShiftOrSwapType::RotateLeft: {
-            bool last_bit_set = (*data >> 8) == 0x01;
+            bool last_bit_set = (*data >> 7) == 0x01;
             *data = (*data << 1) | (last_bit_set ? 0x01 : 0x00);
             cpu->set_flag(CPU::Flag::Z, *data == 0);
             cpu->set_flag(CPU::Flag::C, last_bit_set);
@@ -1199,7 +1199,7 @@ struct ExtendedOpcode : public Opcode {
 
         // C <- [7 <- 0] <- C
         case RotationShiftOrSwapType::RotateLeftThroughCarry:
-            cpu->set_flag(CPU::Flag::C, ((*data >> 8) & 0x01) == 0x01);
+            cpu->set_flag(CPU::Flag::C, ((*data >> 7) & 0x01) == 0x01);
             *data = (*data << 1) | carry_flag;
             cpu->set_flag(CPU::Flag::Z, *data == 0x00);
             break;
