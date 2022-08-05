@@ -673,10 +673,9 @@ struct RegisterOperationBase : public Opcode {
             break;
 
         case RegisterOperationBase::Operation::AddToAccumulatorWithCarry:
-            *operand += cpu->flag_is_set(CPU::Flag::C) ? 1 : 0;
-            result = accumulator_value + *operand;
-            flag_pattern = new bool[]{ result == 0x00, false, cpu->half_carry_occurs_on_add(accumulator_value, *operand),
-                                       cpu->carry_occurs_on_add(accumulator_value, *operand) };
+            result = accumulator_value + *operand + cpu->flag_is_set(CPU::Flag::C);
+            flag_pattern = new bool[]{ result == 0x00, false, cpu->half_carry_occurs_on_add(accumulator_value, *operand, true),
+                                       cpu->carry_occurs_on_add(accumulator_value, *operand, true) };
             break;
 
         case RegisterOperationBase::Operation::And:

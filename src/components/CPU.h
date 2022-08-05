@@ -240,17 +240,17 @@ class CPU {
 
     bool at_start_of_instruction() const;
 
-    bool half_carry_occurs_on_add(uint8_t v, const uint8_t value_to_add) const;
+    bool half_carry_occurs_on_add(uint8_t v, const uint8_t value_to_add, const bool include_carry = false) const;
 
-    bool half_carry_occurs_on_add(uint16_t v, const uint16_t value_to_add) const;
+    bool half_carry_occurs_on_add(uint16_t v, const uint16_t value_to_add, const bool include_carry = false) const;
 
     bool half_carry_occurs_on_subtract(uint8_t v, const uint8_t value_to_subtract) const;
 
     bool half_carry_occurs_on_subtract_with_carry(uint8_t v, const uint8_t value_to_subtract) const;
 
-    bool carry_occurs_on_add(uint8_t v, const uint8_t value_to_add) const;
+    bool carry_occurs_on_add(uint8_t v, const uint8_t value_to_add, const bool include_carry = false) const;
 
-    bool carry_occurs_on_add(uint16_t v, const uint16_t value_to_add) const;
+    bool carry_occurs_on_add(uint16_t v, const uint16_t value_to_add, const bool include_carry = false) const;
 
     bool carry_occurs_on_subtract(uint16_t v, const uint16_t value_to_subtract) const;
 

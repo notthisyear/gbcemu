@@ -237,13 +237,21 @@ bool CPU::half_carry_occurs_on_subtract_with_carry(uint8_t v, const uint8_t valu
     return ((v & 0x0F) - (value_to_subtract & 0x0F) - (flag_is_set(CPU::Flag::C) ? 1 : 0)) & 0x10;
 }
 
-bool CPU::half_carry_occurs_on_add(uint8_t v, const uint8_t value_to_add) const { return ((v & 0x0F) + (value_to_add & 0x0F)) > 0x0F; }
+bool CPU::half_carry_occurs_on_add(uint8_t v, const uint8_t value_to_add, const bool include_carry) const {
+    return ((v & 0x0F) + (value_to_add & 0x0F) + (flag_is_set(CPU::Flag::C) & include_carry)) > 0x0F;
+}
 
-bool CPU::half_carry_occurs_on_add(uint16_t v, const uint16_t value_to_add) const { return ((v & 0x0FFF) + (value_to_add & 0x0FFF)) > 0x0FFF; }
+bool CPU::half_carry_occurs_on_add(uint16_t v, const uint16_t value_to_add, const bool include_carry) const {
+    return ((v & 0x0FFF) + (value_to_add & 0x0FFF) + (flag_is_set(CPU::Flag::C) & include_carry)) > 0x0FFF;
+}
 
-bool CPU::carry_occurs_on_add(uint8_t v, const uint8_t value_to_add) const { return ((uint16_t)v + (uint16_t)(value_to_add)) > 0xFF; }
+bool CPU::carry_occurs_on_add(uint8_t v, const uint8_t value_to_add, const bool include_carry) const {
+    return ((uint16_t)v + (uint16_t)(value_to_add) + (flag_is_set(CPU::Flag::C) & include_carry)) > 0xFF;
+}
 
-bool CPU::carry_occurs_on_add(uint16_t v, const uint16_t value_to_add) const { return ((uint32_t)v + (uint32_t)value_to_add) > 0xFFFF; }
+bool CPU::carry_occurs_on_add(uint16_t v, const uint16_t value_to_add, const bool include_carry) const {
+    return ((uint32_t)v + (uint32_t)value_to_add + (flag_is_set(CPU::Flag::C) & include_carry)) > 0xFFFF;
+}
 
 bool CPU::carry_occurs_on_subtract(uint16_t v, const uint16_t value_to_subtract) const { return value_to_subtract > v; };
 
