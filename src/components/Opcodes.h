@@ -1093,7 +1093,7 @@ struct ExtendedOpcode : public Opcode {
                 break;
 
             case ExtendedOpcode::ExtendedOpcodeType::Reset:
-                current_register_value &= (0xFE << m_bit);
+                current_register_value &= ~(0x01 << m_bit);
                 if (m_target == CPU::Register::HL)
                     (void)mmu->try_map_data_to_memory(&current_register_value, cpu->get_16_bit_register(CPU::Register::HL), 1);
                 else
