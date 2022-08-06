@@ -3,6 +3,7 @@
 #include "CPU.h"
 #include "MMU.h"
 #include "components/Opcodes.h"
+#include "util/BitUtilities.h"
 #include "util/GeneralUtilities.h"
 #include "util/LogUtilities.h"
 #include <exception>
@@ -1089,13 +1090,13 @@ struct ExtendedOpcode : public Opcode {
                 break;
 
             case ExtendedOpcode::ExtendedOpcodeType::Test:
-                cpu->set_flag(CPU::Flag::Z, !bit_is_set(current_register_value, m_bit));
+                cpu->set_flag(CPU::Flag::Z, !BitUtilities::bit_is_set(current_register_value, m_bit));
                 cpu->set_flag(CPU::Flag::N, false);
                 cpu->set_flag(CPU::Flag::H, true);
                 break;
 
             case ExtendedOpcode::ExtendedOpcodeType::Reset:
-                current_register_value &= ~(0x01 << m_bit);
+                BitUtilities::reset_bit_in_byte(current_register_value, m_bit);
                 if (m_target == CPU::Register::HL)
                     (void)mmu->try_map_data_to_memory(&current_register_value, cpu->get_16_bit_register(CPU::Register::HL), 1);
                 else
@@ -1103,7 +1104,7 @@ struct ExtendedOpcode : public Opcode {
                 break;
 
             case ExtendedOpcode::ExtendedOpcodeType::Set:
-                current_register_value |= (0x01 << m_bit);
+                BitUtilities::set_bit_in_byte(current_register_value, m_bit);
                 if (m_target == CPU::Register::HL)
                     (void)mmu->try_map_data_to_memory(&current_register_value, cpu->get_16_bit_register(CPU::Register::HL), 1);
                 else
@@ -1255,9 +1256,8 @@ struct ExtendedOpcode : public Opcode {
         cpu->set_flag(CPU::Flag::H, false);
     }
 
-    bool bit_is_set(const uint8_t &data, int bit_to_test) const { return ((data >> bit_to_test) & 0x01) == 1; }
-    bool first_bit_set(const uint8_t &data) const { return bit_is_set(data, 0); }
-    bool last_bit_set(const uint8_t &data) const { return bit_is_set(data, 7); }
+    bool first_bit_set(const uint8_t &data) const { return BitUtilities::bit_is_set(data, 0); }
+    bool last_bit_set(const uint8_t &data) const { return BitUtilities::bit_is_set(data, 7); }
 };
 
 // Rotate accumulator

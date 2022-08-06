@@ -2,6 +2,7 @@ set(HEADER_FILES
 		LogUtilities.h
 		GeneralUtilities.h
 		CommandLineArgument.h
+		BitUtilities.h
 	)
 
 set(SOURCE_FILES 
