@@ -17,6 +17,7 @@ class CommandLineArgument {
         AttachDebugger = 1,
         BootRomPath = 2,
         CartridgePath = 3,
+        OutputTrace = 4,
     };
 
     ArgumentType argument_type;
@@ -128,6 +129,8 @@ class CommandLineArgument {
           std::make_pair<std::string, std::string>(R"((--boot-rom) ([\w\\:\.\-/\\(\\)\[\]]+))", "path to boot rom") },
         { CommandLineArgument::ArgumentType::CartridgePath,
           std::make_pair<std::string, std::string>(R"(((-c)|(--cartridge)) ([\w\\:\.\-/\\(\\)\[\]]+))", "path to cartridge") },
+        { CommandLineArgument::ArgumentType::OutputTrace,
+          std::make_pair<std::string, std::string>("(-t)|(--trace)", "output cpu trace to file for each cycle") },
     };
 };
 }

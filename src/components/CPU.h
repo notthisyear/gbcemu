@@ -2,6 +2,7 @@
 
 #include "MMU.h"
 #include "PPU.h"
+#include <fstream>
 #include <memory>
 #include <stdint.h>
 #include <string>
@@ -62,7 +63,7 @@ class CPU {
         { CPU::Register::HL, "HL" }, { CPU::Register::SP, "SP" }, { CPU::Register::PC, "PC" },
     };
 
-    CPU(std::shared_ptr<MMU>, std::shared_ptr<PPU>);
+    CPU(std::shared_ptr<MMU>, std::shared_ptr<PPU>, bool output_trace = false);
 
     void tick();
 
@@ -259,6 +260,9 @@ class CPU {
     ~CPU();
 
   private:
+    const std::string TraceFileName = "trace.log";
+    const int MaxPathLength = 255;
+
     enum class State { Idle, Wait, Execute, InterruptTransition, InterruptPushPC, InterruptSetPC };
     std::shared_ptr<MMU> m_mmu;
     std::shared_ptr<PPU> m_ppu;
@@ -267,6 +271,8 @@ class CPU {
     bool m_is_extended_opcode;
     bool m_interleave_execute_and_decode;
     bool m_at_start_of_instruction;
+    bool m_output_trace;
+    std::ofstream m_trace_stream;
     uint8_t m_current_instruction_cycle_count;
     std::shared_ptr<Opcode> m_current_opcode;
 
@@ -308,6 +314,8 @@ class CPU {
     void print_sp_and_pc(std::ostream &stream) const;
 
     void print_additional_info(std::ostream &stream) const;
+
+    void print_trace_line();
 
     static inline std::unordered_map<CPU::State, std::string> s_cpu_state_name = {
         { CPU::State::Idle, "Idle" },

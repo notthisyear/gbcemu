@@ -4,14 +4,17 @@
 #include "components/MMU.h"
 #include "util/GeneralUtilities.h"
 #include "util/LogUtilities.h"
+#include <fstream>
 #include <iomanip>
 #include <iterator>
 #include <memory>
 #include <stdexcept>
+// Windows-specific
+#include <libloaderapi.h>
 
 namespace gbcemu {
 
-CPU::CPU(std::shared_ptr<MMU> mmu, std::shared_ptr<PPU> ppu) : m_mmu(mmu), m_ppu(ppu) {
+CPU::CPU(std::shared_ptr<MMU> mmu, std::shared_ptr<PPU> ppu, bool output_trace) : m_mmu(mmu), m_ppu(ppu), m_output_trace(output_trace) {
     m_current_instruction_cycle_count = 0;
     m_is_extended_opcode = false;
     m_current_opcode = nullptr;
@@ -27,6 +30,19 @@ CPU::CPU(std::shared_ptr<MMU> mmu, std::shared_ptr<PPU> ppu) : m_mmu(mmu), m_ppu
     }
 
     m_is_running_boot_rom = m_mmu->get_boot_rom_type() != MMU::BootRomType::None;
+
+    if (m_output_trace) {
+        auto full_path = new char[CPU::MaxPathLength];
+        auto size = GetModuleFileNameA(NULL, full_path, CPU::MaxPathLength);
+        if (size < CPU::MaxPathLength) {
+            auto s = GeneralUtilities::formatted_string("%s\\%s", GeneralUtilities::get_folder_name_from_full_path(full_path), CPU::TraceFileName);
+            m_trace_stream = std::ofstream(s);
+        } else {
+            LogUtilities::log_error(std::cout,
+                                    GeneralUtilities::formatted_string("Path to executable cannot be longer than %d characters", CPU::MaxPathLength));
+            std::exit(1);
+        }
+    }
 }
 
 void CPU::tick() {
@@ -56,6 +72,9 @@ void CPU::tick() {
                 break;
             }
         }
+
+        if (m_output_trace)
+            print_trace_line();
 
         current_byte = read_at_pc();
         if (is_extended_opcode(current_byte))
@@ -125,9 +144,10 @@ void CPU::tick() {
             if (m_current_opcode->is_done()) {
                 m_state = CPU::State::Idle;
                 m_at_start_of_instruction = true;
-                if (m_interleave_execute_and_decode && !m_has_breakpoint)
+                if (m_interleave_execute_and_decode && !m_has_breakpoint && !m_output_trace) {
                     tick(); // Overlapped execution/fetching
-                return;
+                    return;
+                }
             }
         }
     }
@@ -372,7 +392,20 @@ void CPU::print_additional_info(std::ostream &stream) const {
            << "\033[1;37m" << (m_is_running_boot_rom ? "true" : "false") << "\033[0;m" << std::endl;
 }
 
-CPU::~CPU() {}
+void CPU::print_trace_line() {
+    uint8_t instruction_length = 0;
+    m_trace_stream << GeneralUtilities::formatted_string(
+                          "A: 0x%02X F: %c%c%c%c BC: 0x%04X DE: 0x%04X HL: 0x%04X SP: 0x%04X PC: 0x%04X | ", get_8_bit_register(CPU::Register::A),
+                          flag_is_set(CPU::Flag::Z) ? 'Z' : '-', flag_is_set(CPU::Flag::N) ? 'N' : '-', flag_is_set(CPU::Flag::H) ? 'H' : '-',
+                          flag_is_set(CPU::Flag::C) ? 'C' : '-', get_16_bit_register(CPU::Register::BC), get_16_bit_register(CPU::Register::DE),
+                          get_16_bit_register(CPU::Register::HL), get_16_bit_register(CPU::Register::SP), get_16_bit_register(CPU::Register::PC))
+                   << disassemble_instruction_at(m_reg_pc, instruction_length) << std::endl;
+}
+
+CPU::~CPU() {
+    if (m_output_trace)
+        m_trace_stream.close();
+}
 
 const std::unordered_map<CPU::InterruptSource, uint16_t> CPU::s_interrupt_vector = {
     { CPU::InterruptSource::VBlank, 0x40 }, { CPU::InterruptSource::LCDStat, 0x48 }, { CPU::InterruptSource::Timer, 0x50 },

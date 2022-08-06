@@ -12,6 +12,12 @@
 #include <memory>
 #include <thread>
 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32)
+static const bool is_windows = true;
+#else
+static const bool is_windows = false;
+#endif
+
 void print_help() {
     std::cout << "gbcemu v 0.1\n";
     std::cout << "A GB/GBC/SGB emulator (at some point).\n\n";
@@ -30,10 +36,17 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    bool has_boot_rom, has_cartridge, attach_debugger;
+    if (!is_windows) {
+        std::cout << "No other platform than Windows is currently supported. How did you even compile?";
+        return 1;
+    }
+
+    bool has_boot_rom, has_cartridge, attach_debugger, output_trace;
     auto boot_rom_argument = gbcemu::CommandLineArgument::get_argument(argc, argv, gbcemu::CommandLineArgument::ArgumentType::BootRomPath, &has_boot_rom);
     auto cartridge_argument = gbcemu::CommandLineArgument::get_argument(argc, argv, gbcemu::CommandLineArgument::ArgumentType::CartridgePath, &has_cartridge);
+
     (void)gbcemu::CommandLineArgument::get_argument(argc, argv, gbcemu::CommandLineArgument::ArgumentType::AttachDebugger, &attach_debugger);
+    (void)gbcemu::CommandLineArgument::get_argument(argc, argv, gbcemu::CommandLineArgument::ArgumentType::OutputTrace, &output_trace);
 
     if (has_boot_rom)
         boot_rom_argument->fix_path();
@@ -67,7 +80,7 @@ int main(int argc, char **argv) {
     delete boot_rom_argument;
     delete cartridge_argument;
 
-    auto cpu = std::make_shared<gbcemu::CPU>(mmu, ppu);
+    auto cpu = std::make_shared<gbcemu::CPU>(mmu, ppu, output_trace);
     auto app = std::make_shared<gbcemu::Application>(cpu, ppu, renderer, gbcemu::WindowProperties());
 
     auto dbg = attach_debugger ? new gbcemu::Debugger(cpu, mmu, ppu, app) : nullptr;
