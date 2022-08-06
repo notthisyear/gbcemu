@@ -1049,11 +1049,12 @@ struct Pop16bitRegister final : public Opcode {
 // Extended opcodes, rotations, shifts, swap, bit tests, set and reset
 struct ExtendedOpcode : public Opcode {
   public:
-    ExtendedOpcode(uint8_t opcode, bool force_unset_zero_flag = false) : Opcode(1) {
+    ExtendedOpcode(uint8_t opcode, bool is_accumulator_shorthand = false) : Opcode(1) {
         uint8_t extended_op_code_type_idx = (opcode >> 6) & 0x03;
         uint8_t bit_or_rotation_idx = (opcode >> 3) & 0x07;
         uint8_t target_idx = opcode & 0x07;
 
+        m_is_accumulator_shorthand = is_accumulator_shorthand;
         m_target = CPU::register_map[target_idx];
         m_type = s_extended_opcode_type_map[extended_op_code_type_idx];
 
@@ -1083,7 +1084,7 @@ struct ExtendedOpcode : public Opcode {
                 else
                     cpu->set_register(m_target, current_register_value);
 
-                if (force_unset_zero_flag)
+                if (m_is_accumulator_shorthand)
                     cpu->set_flag(CPU::Flag::Z, false);
                 break;
 
@@ -1184,6 +1185,7 @@ struct ExtendedOpcode : public Opcode {
     ExtendedOpcode::RotationShiftOrSwapType m_rot_type;
     CPU::Register m_target;
     uint8_t m_bit;
+    bool m_is_accumulator_shorthand;
 
     void perform_rotation_shift_or_swap(CPU *cpu, uint8_t *data) {
         uint8_t carry_flag = cpu->flag_is_set(CPU::Flag::C) ? 0x01 : 0x00;
