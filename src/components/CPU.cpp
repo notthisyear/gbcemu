@@ -255,13 +255,13 @@ bool CPU::carry_occurs_on_add(uint16_t v, const uint16_t value_to_add, const boo
 
 bool CPU::carry_occurs_on_subtract(uint16_t v, const uint16_t value_to_subtract) const { return value_to_subtract > v; };
 
-void CPU::set_initial_values_for_registers(const MMU::BootRomType bootRomType, bool header_checksum_is_zero) {
-    m_reg_bc = bootRomType == MMU::BootRomType::DMG ? 0x0000 : 0x0013;
-    m_reg_de = bootRomType == MMU::BootRomType::DMG ? 0x0000 : 0x00D8;
-    m_reg_hl = bootRomType == MMU::BootRomType::DMG ? 0x0000 : 0x014D;
-    m_reg_sp = bootRomType == MMU::BootRomType::DMG ? 0x0000 : 0xFFFE;
-    m_reg_pc = bootRomType == MMU::BootRomType::DMG ? 0x0000 : 0x0100;
-    m_reg_af = bootRomType == MMU::BootRomType::DMG ? 0x0000 : header_checksum_is_zero ? 0x0180 : 0x01B0;
+void CPU::set_initial_values_for_registers(const MMU::BootRomType boot_rom_type, bool header_checksum_is_zero) {
+    m_reg_bc = boot_rom_type == MMU::BootRomType::DMG ? 0x0000 : 0x0013;
+    m_reg_de = boot_rom_type == MMU::BootRomType::DMG ? 0x0000 : 0x00D8;
+    m_reg_hl = boot_rom_type == MMU::BootRomType::DMG ? 0x0000 : 0x014D;
+    m_reg_sp = boot_rom_type == MMU::BootRomType::DMG ? 0x0000 : 0xFFFE;
+    m_reg_pc = boot_rom_type == MMU::BootRomType::DMG ? 0x0000 : 0x0100;
+    m_reg_af = boot_rom_type == MMU::BootRomType::DMG ? 0x0000 : header_checksum_is_zero ? 0x0180 : 0x01B0;
 
     m_mmu->set_register(MMU::MemoryRegister::JOYP, 0xCF);
     m_mmu->set_register(MMU::MemoryRegister::SB, 0x00);
