@@ -287,7 +287,7 @@ class CPU {
     uint16_t m_reg_pc; // Program counter
     uint16_t m_reg_wz; // Internal temporary register
 
-    std::string disassemble_next_instruction();
+    std::string disassemble_instruction_at(const uint16_t, uint8_t &) const;
 
     void set_register(uint16_t *reg, const uint16_t value) { (*reg) = value; }
 

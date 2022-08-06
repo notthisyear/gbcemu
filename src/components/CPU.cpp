@@ -179,39 +179,43 @@ void CPU::load_register_into_intermediate(const CPU::Register reg) {
     }
 }
 
-std::string CPU::disassemble_next_instruction() {
+std::string CPU::disassemble_instruction_at(uint16_t current_pc, uint8_t &instruction_length) const {
     uint8_t current_instruction;
-    m_mmu->try_read_from_memory(&current_instruction, m_reg_pc, 1);
-    m_reg_pc++;
+    auto pc_at_start = current_pc;
+    m_mmu->try_read_from_memory(&current_instruction, current_pc, 1);
+    current_pc++;
 
     auto is_extended = is_extended_opcode(current_instruction);
     if (is_extended) {
-        m_mmu->try_read_from_memory(&current_instruction, m_reg_pc, 1);
-        m_reg_pc++;
+        m_mmu->try_read_from_memory(&current_instruction, current_pc, 1);
+        current_pc++;
     }
 
     std::shared_ptr<Opcode> opcode = decode_opcode(current_instruction, is_extended);
+    std::string disassembled_instruction;
     if (opcode->size > 1) {
         uint8_t *instruction_data = new uint8_t[opcode->size - 1];
-        m_mmu->try_read_from_memory(instruction_data, m_reg_pc, opcode->size - 1);
-        m_reg_pc += opcode->size - 1;
-        auto disassembled_instruction = opcode->get_disassembled_instruction(instruction_data);
+        m_mmu->try_read_from_memory(instruction_data, current_pc, opcode->size - 1);
+        disassembled_instruction = opcode->get_disassembled_instruction(instruction_data);
+        current_pc += opcode->size - 1;
         delete[] instruction_data;
-        return disassembled_instruction;
+    } else {
+        disassembled_instruction = opcode->get_disassembled_instruction(nullptr);
     }
 
-    return opcode->get_disassembled_instruction(nullptr);
+    instruction_length = current_pc - pc_at_start;
+    return disassembled_instruction;
 }
 
 void CPU::print_disassembled_instructions(std::ostream &stream, uint16_t number_of_instructions) {
-    auto pc_at_start = m_reg_pc;
+    auto current_pc = m_reg_pc;
+    uint8_t last_instruction_length = 0;
     for (auto i = 0; i < number_of_instructions; i++) {
         stream << "\033[1;37m" << std::left << std::setw(10) << std::setfill(' ') << GeneralUtilities::formatted_string("0x%04X", m_reg_pc);
         stream << "\033[0;m";
-        stream << disassemble_next_instruction() << std::endl;
+        stream << disassemble_instruction_at(current_pc, last_instruction_length) << std::endl;
+        current_pc += last_instruction_length;
     }
-
-    m_reg_pc = pc_at_start;
 }
 
 void CPU::set_interrupt_enable(bool on_or_off) { m_interrupt_enabled = on_or_off; }
