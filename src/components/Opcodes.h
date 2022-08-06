@@ -1077,6 +1077,7 @@ struct ExtendedOpcode : public Opcode {
 
             case ExtendedOpcode::ExtendedOpcodeType::RotationShiftOrSwap:
                 perform_rotation_shift_or_swap(cpu, &current_register_value);
+
                 if (m_target == CPU::Register::HL)
                     (void)mmu->try_map_data_to_memory(&current_register_value, cpu->get_16_bit_register(CPU::Register::HL), 1);
                 else
@@ -1190,52 +1191,49 @@ struct ExtendedOpcode : public Opcode {
 
         // C <- [7 <- 0] <- [7]
         case RotationShiftOrSwapType::RotateLeft: {
-            bool last_bit_set = (*data >> 7) == 0x01;
-            *data = (*data << 1) | (last_bit_set ? 0x01 : 0x00);
+            cpu->set_flag(CPU::Flag::C, last_bit_set(*data));
+            *data = (*data << 1) | (last_bit_set(*data) ? 0x01 : 0x00);
             cpu->set_flag(CPU::Flag::Z, *data == 0);
-            cpu->set_flag(CPU::Flag::C, last_bit_set);
         } break;
 
         // C <- [7 <- 0] <- C
-        case RotationShiftOrSwapType::RotateLeftThroughCarry:
-            cpu->set_flag(CPU::Flag::C, ((*data >> 7) & 0x01) == 0x01);
+        case RotationShiftOrSwapType::RotateLeftThroughCarry: {
+            cpu->set_flag(CPU::Flag::C, last_bit_set(*data));
             *data = (*data << 1) | carry_flag;
             cpu->set_flag(CPU::Flag::Z, *data == 0x00);
-            break;
+        } break;
 
         // C <- [7 <- 0] <- 0
         case RotationShiftOrSwapType::ShiftLeftArithmetic:
-            cpu->set_flag(CPU::Flag::C, ((*data >> 7) & 0x01) == 0x01);
+            cpu->set_flag(CPU::Flag::C, last_bit_set(*data));
             *data <<= 1;
             cpu->set_flag(CPU::Flag::Z, *data == 0x00);
             break;
 
         // [0] -> [7 -> 0] -> C
         case RotationShiftOrSwapType::RotateRight: {
-            bool first_bit_set = (*data & 0x01) == 0x01;
-            *data = (first_bit_set ? 0x80 : 0x00) | (*data >> 1);
+            cpu->set_flag(CPU::Flag::C, first_bit_set(*data));
+            *data = (first_bit_set(*data) ? 0x80 : 0x00) | (*data >> 1);
             cpu->set_flag(CPU::Flag::Z, *data == 0x00);
-            cpu->set_flag(CPU::Flag::C, first_bit_set);
         } break;
 
         // C -> [7 -> 0] -> C
         case RotationShiftOrSwapType::RotateRightThroughCarry:
-            cpu->set_flag(CPU::Flag::C, (*data & 0x01) == 0x01);
+            cpu->set_flag(CPU::Flag::C, first_bit_set(*data));
             *data = (carry_flag == 0x01 ? 0x80 : 0x00) | (*data >> 1);
             cpu->set_flag(CPU::Flag::Z, *data == 0x00);
             break;
 
         // [7] -> [7 -> 0] -> C
         case RotationShiftOrSwapType::ShiftRightArithmetic: {
-            bool last_bit_set = (*data & 0xEF) > 0;
-            cpu->set_flag(CPU::Flag::C, (*data & 0x01) == 0x01);
-            *data = (last_bit_set ? 0x80 : 0x00) | *data >> 1;
+            cpu->set_flag(CPU::Flag::C, first_bit_set(*data));
+            *data = (last_bit_set(*data) ? 0x80 : 0x00) | (*data >> 1);
             cpu->set_flag(CPU::Flag::Z, *data == 0x00);
         } break;
 
         // 0 -> [7 -> 0] -> C
         case RotationShiftOrSwapType::ShiftRightLogic:
-            cpu->set_flag(CPU::Flag::C, (*data & 0x01) == 0x01);
+            cpu->set_flag(CPU::Flag::C, first_bit_set(*data));
             *data >>= 1;
             cpu->set_flag(CPU::Flag::Z, *data == 0x00);
             break;
@@ -1255,7 +1253,9 @@ struct ExtendedOpcode : public Opcode {
         cpu->set_flag(CPU::Flag::H, false);
     }
 
-    bool bit_is_set(const uint8_t &data, int bit_to_test) { return ((data >> bit_to_test) & 0x01) == 1; }
+    bool bit_is_set(const uint8_t &data, int bit_to_test) const { return ((data >> bit_to_test) & 0x01) == 1; }
+    bool first_bit_set(const uint8_t &data) const { return bit_is_set(data, 0); }
+    bool last_bit_set(const uint8_t &data) const { return bit_is_set(data, 7); }
 };
 
 // Rotate accumulator
