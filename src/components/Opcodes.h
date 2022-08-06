@@ -164,7 +164,7 @@ struct InvertAccumulator final : public Opcode {
   public:
     InvertAccumulator() : Opcode(1) {
         m_operations.push_back([](CPU *cpu, MMU *) {
-            cpu->set_register(CPU::Register::A, static_cast<uint8_t>(!cpu->get_8_bit_register(CPU::Register::A)));
+            cpu->set_register(CPU::Register::A, static_cast<uint8_t>(~cpu->get_8_bit_register(CPU::Register::A)));
             cpu->set_flag(CPU::Flag::N, true);
             cpu->set_flag(CPU::Flag::H, true);
         });
