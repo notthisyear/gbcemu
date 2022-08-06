@@ -10,7 +10,7 @@
 #include <memory>
 #include <stdexcept>
 // Windows-specific
-#include <libloaderapi.h>
+#include <windows.h>
 
 namespace gbcemu {
 
