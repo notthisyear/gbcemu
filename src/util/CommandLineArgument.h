@@ -29,7 +29,7 @@ class CommandLineArgument {
             value = v.substr(ws + 1, v.length() - ws - 1);
         }
     }
-
+    static std::string get_arguments_from_raw_command_line_content(char *, int);
     static CommandLineArgument *get_argument(int argc, char **argv, CommandLineArgument::ArgumentType type, bool *did_match);
     static CommandLineArgument *get_argument(const std::string &input, CommandLineArgument::ArgumentType type, bool *did_match);
 
@@ -123,14 +123,15 @@ class CommandLineArgument {
     }
 
     static inline const std::map<CommandLineArgument::ArgumentType, std::pair<std::string, std::string>> s_argument_regexp_and_help = {
-        { CommandLineArgument::ArgumentType::Help, std::make_pair<std::string, std::string>("(-h)|(--help)", "show this help message and exit") },
-        { CommandLineArgument::ArgumentType::AttachDebugger, std::make_pair<std::string, std::string>("(-d)|(--dgb)", "attach the debugger at startup") },
+        { CommandLineArgument::ArgumentType::Help, std::make_pair<std::string, std::string>(" (-h)|(--help) *", "show this help message and exit") },
+        { CommandLineArgument::ArgumentType::AttachDebugger, std::make_pair<std::string, std::string>(" (-d)|(--dgb) *", "attach the debugger at startup") },
         { CommandLineArgument::ArgumentType::BootRomPath,
-          std::make_pair<std::string, std::string>(R"((--boot-rom) ([\w\\:\.\-/\\(\\)\[\]]+))", "path to boot rom") },
+          std::make_pair<std::string, std::string>(R"(boot-rom (\"*[\w\\:\.\-/\\(\\)\[\] \,]+\"*))", "path to boot rom") },
         { CommandLineArgument::ArgumentType::CartridgePath,
-          std::make_pair<std::string, std::string>(R"(((-c)|(--cartridge)) ([\w\\:\.\-/\\(\\)\[\]]+))", "path to cartridge") },
+          std::make_pair<std::string, std::string>(R"((-c|--cartridge) (\"*[\w\\:\.\-/\\(\\)\[\] \,]+\"*))", "path to cartridge") },
+
         { CommandLineArgument::ArgumentType::OutputTrace,
-          std::make_pair<std::string, std::string>("(-t)|(--trace)", "output cpu trace to file for each cycle") },
+          std::make_pair<std::string, std::string>(" (-t)|(--trace) *", "output cpu trace to file for each cycle") },
     };
 };
 }

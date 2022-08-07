@@ -14,6 +14,7 @@
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32)
 static const bool is_windows = true;
+#include <windows.h>
 #else
 static const bool is_windows = false;
 #endif
@@ -41,12 +42,15 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    auto command_line_content = gbcemu::CommandLineArgument::get_arguments_from_raw_command_line_content(GetCommandLineA(), argc);
     bool has_boot_rom, has_cartridge, attach_debugger, output_trace;
-    auto boot_rom_argument = gbcemu::CommandLineArgument::get_argument(argc, argv, gbcemu::CommandLineArgument::ArgumentType::BootRomPath, &has_boot_rom);
-    auto cartridge_argument = gbcemu::CommandLineArgument::get_argument(argc, argv, gbcemu::CommandLineArgument::ArgumentType::CartridgePath, &has_cartridge);
+    auto boot_rom_argument =
+        gbcemu::CommandLineArgument::get_argument(command_line_content, gbcemu::CommandLineArgument::ArgumentType::BootRomPath, &has_boot_rom);
+    auto cartridge_argument =
+        gbcemu::CommandLineArgument::get_argument(command_line_content, gbcemu::CommandLineArgument::ArgumentType::CartridgePath, &has_cartridge);
 
-    (void)gbcemu::CommandLineArgument::get_argument(argc, argv, gbcemu::CommandLineArgument::ArgumentType::AttachDebugger, &attach_debugger);
-    (void)gbcemu::CommandLineArgument::get_argument(argc, argv, gbcemu::CommandLineArgument::ArgumentType::OutputTrace, &output_trace);
+    (void)gbcemu::CommandLineArgument::get_argument(command_line_content, gbcemu::CommandLineArgument::ArgumentType::AttachDebugger, &attach_debugger);
+    (void)gbcemu::CommandLineArgument::get_argument(command_line_content, gbcemu::CommandLineArgument::ArgumentType::OutputTrace, &output_trace);
 
     if (has_boot_rom)
         boot_rom_argument->fix_path();

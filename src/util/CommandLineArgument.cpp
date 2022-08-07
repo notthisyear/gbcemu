@@ -1,8 +1,41 @@
 #include "CommandLineArgument.h"
+#include <iostream>
 #include <regex>
 #include <string>
 
 namespace gbcemu {
+
+std::string CommandLineArgument::get_arguments_from_raw_command_line_content(char *raw_input, int argc) {
+    if (argc == 1)
+        return std::string();
+
+    auto total_length = std::strlen(raw_input);
+    bool found_break = false;
+    int idx = 0;
+    char *arguments;
+
+    for (auto i = 0; i < total_length; i++) {
+        if (found_break) {
+            arguments[i - idx - 1] = raw_input[i];
+            continue;
+        }
+
+        if (raw_input[i] == ' ') {
+            idx = i;
+            found_break = true;
+            arguments = new char[total_length - idx];
+        }
+    }
+
+    if (!found_break)
+        return std::string();
+
+    arguments[total_length - idx - 1] = '\0';
+    auto result = std::string(arguments);
+    delete[] arguments;
+
+    return result;
+}
 
 CommandLineArgument *CommandLineArgument::get_argument(int argc, char **argv, CommandLineArgument::ArgumentType type, bool *did_match) {
     auto total_length = 0;
@@ -21,6 +54,7 @@ CommandLineArgument *CommandLineArgument::get_argument(int argc, char **argv, Co
     return get_argument(result, type, did_match);
 }
 
+// TODO: Rework this so that only the thing after the argument named is parsed
 CommandLineArgument *CommandLineArgument::get_argument(const std::string &input, CommandLineArgument::ArgumentType type, bool *did_match) {
     auto regexp = get_regexp(type);
 
@@ -32,9 +66,9 @@ CommandLineArgument *CommandLineArgument::get_argument(const std::string &input,
 
 void CommandLineArgument::fix_path() {
     bool remove_quotes = value[0] == '"' && value[value.length() - 1] == '"';
-    auto number_of_backspaces = std::count(value.begin(), value.end(), '\\');
+    auto number_of_backslashes = std::count(value.begin(), value.end(), '\\');
 
-    auto new_length = value.length() + number_of_backspaces + (remove_quotes ? -2 : 0);
+    auto new_length = value.length() + number_of_backslashes + (remove_quotes ? -2 : 0);
     auto new_path_string = new char[new_length + 1];
 
     auto i = 0;
@@ -42,19 +76,19 @@ void CommandLineArgument::fix_path() {
 
     while (true) {
         if (i == 0 && remove_quotes) {
-            ;
-        }
-        if (i == value.length() - 1 && remove_quotes) {
+            j--;
+        } else if (i == value.length() - 1 && remove_quotes) {
             break;
         } else if (i == value.length()) {
             break;
         } else {
             new_path_string[j] = value[i];
-            if (number_of_backspaces > 0) {
+            if (number_of_backslashes > 0) {
                 if (value[i] == '\\')
                     new_path_string[++j] = '\\';
             }
         }
+
         i++;
         j++;
     }
