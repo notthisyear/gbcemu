@@ -30,7 +30,7 @@ class MMU {
         Restricted,
     };
 
-    enum class MemoryRegister {
+    enum class IORegister {
         // Joypad input
         JOYP = 0x00,
         // Serial data transfer
@@ -88,17 +88,27 @@ class MMU {
     MMU(uint16_t memory_size);
 
     bool try_load_boot_rom(std::ostream &stream, const std::string &);
+
     bool try_load_cartridge(std::ostream &stream, const std::string &);
 
     bool try_map_data_to_memory(uint8_t *data, uint16_t offset, uint16_t size);
+
     bool try_read_from_memory(uint8_t *data, uint16_t offset, uint64_t size) const;
+
     void set_debug_mode(bool);
+
     MMU::BootRomType get_boot_rom_type() const;
-    void set_register(const MMU::MemoryRegister, const uint8_t);
-    uint8_t get_register(const MMU::MemoryRegister) const;
+
+    void set_io_register(const MMU::IORegister, const uint8_t);
+
+    uint8_t get_io_register(const MMU::IORegister) const;
+
     bool has_cartridge() const;
+
     Cartridge *get_cartridge() const;
+
     void print_memory_at_location(std::ostream &stream, uint16_t start, uint16_t end) const;
+
     ~MMU();
 
   private:
@@ -109,7 +119,7 @@ class MMU {
     const uint16_t DmgBootRomSize = 0x0100;
 
     Cartridge *m_cartridge;
-    MMU::MemoryRegion find_memory_region(uint16_t address) const;
+    MMU::MemoryRegion find_memory_region(uint16_t) const;
 
     bool m_loading_cartridge;
     MMU::BootRomType m_boot_rom_type;
@@ -125,18 +135,18 @@ class MMU {
             m_memory[offset + i] = data[i];
     }
 
-    bool is_boot_rom_range(uint16_t offset, uint64_t size) const;
+    bool is_boot_rom_range(uint16_t, uint64_t) const;
     void read_from_boot_rom(uint8_t *, uint16_t, uint64_t) const;
     bool try_load_from_file(const std::string &, uint8_t *, const uint64_t) const;
 
     std::string get_region_name(MMU::MemoryRegion) const;
-    std::string get_register_name(MMU::MemoryRegister reg) const;
+    std::string get_register_name(MMU::IORegister) const;
 
     bool get_file_size(const std::string &, uint64_t *) const;
 
     static const std::map<MMU::MemoryRegion, std::pair<uint16_t, uint16_t>> s_region_map;
     static const std::unordered_map<MMU::MemoryRegion, std::string> s_region_names;
-    static const std::unordered_map<MMU::MemoryRegister, std::string> s_register_names;
+    static const std::unordered_map<MMU::IORegister, std::string> s_register_names;
 
     static std::pair<uint8_t, uint8_t> make_offset_and_size_pair(uint8_t offset, uint8_t size) { return std::make_pair(offset, size); }
     static std::pair<uint16_t, uint16_t> make_address_pair(uint16_t lower, uint16_t upper) { return std::make_pair(lower, upper); }

@@ -62,8 +62,8 @@ class PPU {
     void set_lcd_control_bit(const PPU::LCDControlRegisterBit, const bool);
     void set_lcd_status_bit(const PPU::LCDStatusRegisterBit, const bool);
 
-    void set_bit_in_ppu_register(const MMU::MemoryRegister, const uint8_t, const bool);
-    bool get_bit_in_ppu_register(const MMU::MemoryRegister, const uint8_t);
+    void set_bit_in_ppu_register(const MMU::IORegister, const uint8_t, const bool);
+    bool get_bit_in_ppu_register(const MMU::IORegister, const uint8_t);
 
     void write_current_mode_to_status_register();
 

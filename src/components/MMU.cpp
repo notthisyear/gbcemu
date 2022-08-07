@@ -17,7 +17,7 @@ MMU::MMU(uint16_t memory_size) : m_memory_size(memory_size) {
     m_boot_rom_type = MMU::BootRomType::None;
 
     m_cartridge = nullptr;
-    set_register(gbcemu::MMU::MemoryRegister::BootRomDisableOffset, 0x01);
+    set_io_register(gbcemu::MMU::IORegister::BootRomDisableOffset, 0x01);
 }
 
 bool MMU::try_load_boot_rom(std::ostream &stream, const std::string &path) {
@@ -42,7 +42,7 @@ bool MMU::try_load_boot_rom(std::ostream &stream, const std::string &path) {
     if (m_boot_rom_size == DmgBootRomSize)
         m_boot_rom_type = MMU::BootRomType::DMG;
 
-    set_register(gbcemu::MMU::MemoryRegister::BootRomDisableOffset, 0x00);
+    set_io_register(gbcemu::MMU::IORegister::BootRomDisableOffset, 0x00);
     return true;
 }
 
@@ -140,7 +140,7 @@ bool MMU::try_read_from_memory(uint8_t *data, uint16_t offset, uint64_t size) co
     auto region_endpoints = s_region_map.find(region)->second;
 
     bool result = true;
-    if (region == MMU::MemoryRegion::CartridgeFixed && get_register(MMU::MemoryRegister::BootRomDisableOffset) == 0 && is_boot_rom_range(offset, size)) {
+    if (region == MMU::MemoryRegion::CartridgeFixed && get_io_register(MMU::IORegister::BootRomDisableOffset) == 0 && is_boot_rom_range(offset, size)) {
         read_from_boot_rom(data, offset, size);
     } else {
         if ((offset + size - 1) > region_endpoints.second)
@@ -196,9 +196,9 @@ bool MMU::try_read_from_memory(uint8_t *data, uint16_t offset, uint64_t size) co
     return result;
 }
 
-void MMU::set_register(const MMU::MemoryRegister reg, uint8_t value) { write_to_memory(&value, RegisterOffsetBase | static_cast<uint16_t>(reg), 1); }
+void MMU::set_io_register(const MMU::IORegister reg, uint8_t value) { write_to_memory(&value, RegisterOffsetBase | static_cast<uint16_t>(reg), 1); }
 
-uint8_t MMU::get_register(const MMU::MemoryRegister reg) const {
+uint8_t MMU::get_io_register(const MMU::IORegister reg) const {
     uint8_t data;
     read_from_memory(&data, RegisterOffsetBase | static_cast<uint16_t>(reg), 1);
     return data;
@@ -228,7 +228,7 @@ void MMU::print_memory_at_location(std::ostream &stream, uint16_t start, uint16_
     }
 
     auto region = find_memory_region(start);
-    bool is_boot_rom = region == MMU::MemoryRegion::CartridgeFixed && get_register(MMU::MemoryRegister::BootRomDisableOffset) == 0 &&
+    bool is_boot_rom = region == MMU::MemoryRegion::CartridgeFixed && get_io_register(MMU::IORegister::BootRomDisableOffset) == 0 &&
                        is_boot_rom_range(start, (end - start) + 1);
 
     std::cout << "from region "
@@ -346,53 +346,53 @@ const std::unordered_map<MMU::MemoryRegion, std::string> MMU::s_region_names = {
     { MMU::MemoryRegion::IERegister, "IERegister" },
 };
 
-const std::unordered_map<MMU::MemoryRegister, std::string> MMU::s_register_names = {
+const std::unordered_map<MMU::IORegister, std::string> MMU::s_register_names = {
 
-    { MMU::MemoryRegister::JOYP, "Joypad" },
-    { MMU::MemoryRegister::SB, "SerialTransferData" },
-    { MMU::MemoryRegister::SC, "SerialTransferControl" },
-    { MMU::MemoryRegister::DIV, "DividerRegister" },
-    { MMU::MemoryRegister::TIMA, "TimerCounter" },
-    { MMU::MemoryRegister::TMA, "TimerModulo" },
-    { MMU::MemoryRegister::TAC, "TimerControl" },
-    { MMU::MemoryRegister::NR10, "SoundChannel1SweepRegister" },
-    { MMU::MemoryRegister::NR11, "SoundChannel1SoundLengthAndWavePattern" },
-    { MMU::MemoryRegister::NR12, "SoundChannel1VolumeEnvelope" },
-    { MMU::MemoryRegister::NR13, "SoundChannel1LowFrequency" },
-    { MMU::MemoryRegister::NR14, "SoundChannel1HighFrequency" },
-    { MMU::MemoryRegister::NR21, "SoundChannel2SoundLengthAndWavePattern" },
-    { MMU::MemoryRegister::NR22, "SoundChannel2VolumeEnvelope" },
-    { MMU::MemoryRegister::NR23, "SoundChannel2LowFrequency" },
-    { MMU::MemoryRegister::NR24, "SoundChannel2HighFrequency" },
-    { MMU::MemoryRegister::NR30, "SoundChannel3Enable" },
-    { MMU::MemoryRegister::NR31, "SoundChannel3SoundlLength" },
-    { MMU::MemoryRegister::NR32, "SoundChannel3OutputLevel" },
-    { MMU::MemoryRegister::NR33, "SoundChannel3LowFrequency" },
-    { MMU::MemoryRegister::NR34, "SoundChannel3HighFrequency" },
-    { MMU::MemoryRegister::NR41, "SoundChannel4SoundLength" },
-    { MMU::MemoryRegister::NR42, "SoundChannel4VolumeEnvelope" },
-    { MMU::MemoryRegister::NR43, "SoundChannel4PolynomialCounter" },
-    { MMU::MemoryRegister::NR44, "SoundChannel4CounterConsecutive" },
-    { MMU::MemoryRegister::NR50, "SoundChannelControl" },
-    { MMU::MemoryRegister::NR51, "SoundSelectOutputTerminal" },
-    { MMU::MemoryRegister::NR52, "SoundEnable" },
-    { MMU::MemoryRegister::LCDC, "LCDControl" },
-    { MMU::MemoryRegister::STAT, "LCDStatus" },
-    { MMU::MemoryRegister::SCY, "LCDScrollY" },
-    { MMU::MemoryRegister::SCX, "LCDScrollX" },
-    { MMU::MemoryRegister::LY, "LCDYCoordinate" },
-    { MMU::MemoryRegister::LYC, "LCDYCompare" },
-    { MMU::MemoryRegister::DMA, "DMATransferAndStart" },
-    { MMU::MemoryRegister::BGP, "BGPaletteData" },
-    { MMU::MemoryRegister::OBP0, "OBJPalette0Data" },
-    { MMU::MemoryRegister::OBP1, "OBJPalette1Data" },
-    { MMU::MemoryRegister::WY, "WindowYPosition" },
-    { MMU::MemoryRegister::WX, "WindowXPositionMinus7" },
+    { MMU::IORegister::JOYP, "Joypad" },
+    { MMU::IORegister::SB, "SerialTransferData" },
+    { MMU::IORegister::SC, "SerialTransferControl" },
+    { MMU::IORegister::DIV, "DividerRegister" },
+    { MMU::IORegister::TIMA, "TimerCounter" },
+    { MMU::IORegister::TMA, "TimerModulo" },
+    { MMU::IORegister::TAC, "TimerControl" },
+    { MMU::IORegister::NR10, "SoundChannel1SweepRegister" },
+    { MMU::IORegister::NR11, "SoundChannel1SoundLengthAndWavePattern" },
+    { MMU::IORegister::NR12, "SoundChannel1VolumeEnvelope" },
+    { MMU::IORegister::NR13, "SoundChannel1LowFrequency" },
+    { MMU::IORegister::NR14, "SoundChannel1HighFrequency" },
+    { MMU::IORegister::NR21, "SoundChannel2SoundLengthAndWavePattern" },
+    { MMU::IORegister::NR22, "SoundChannel2VolumeEnvelope" },
+    { MMU::IORegister::NR23, "SoundChannel2LowFrequency" },
+    { MMU::IORegister::NR24, "SoundChannel2HighFrequency" },
+    { MMU::IORegister::NR30, "SoundChannel3Enable" },
+    { MMU::IORegister::NR31, "SoundChannel3SoundlLength" },
+    { MMU::IORegister::NR32, "SoundChannel3OutputLevel" },
+    { MMU::IORegister::NR33, "SoundChannel3LowFrequency" },
+    { MMU::IORegister::NR34, "SoundChannel3HighFrequency" },
+    { MMU::IORegister::NR41, "SoundChannel4SoundLength" },
+    { MMU::IORegister::NR42, "SoundChannel4VolumeEnvelope" },
+    { MMU::IORegister::NR43, "SoundChannel4PolynomialCounter" },
+    { MMU::IORegister::NR44, "SoundChannel4CounterConsecutive" },
+    { MMU::IORegister::NR50, "SoundChannelControl" },
+    { MMU::IORegister::NR51, "SoundSelectOutputTerminal" },
+    { MMU::IORegister::NR52, "SoundEnable" },
+    { MMU::IORegister::LCDC, "LCDControl" },
+    { MMU::IORegister::STAT, "LCDStatus" },
+    { MMU::IORegister::SCY, "LCDScrollY" },
+    { MMU::IORegister::SCX, "LCDScrollX" },
+    { MMU::IORegister::LY, "LCDYCoordinate" },
+    { MMU::IORegister::LYC, "LCDYCompare" },
+    { MMU::IORegister::DMA, "DMATransferAndStart" },
+    { MMU::IORegister::BGP, "BGPaletteData" },
+    { MMU::IORegister::OBP0, "OBJPalette0Data" },
+    { MMU::IORegister::OBP1, "OBJPalette1Data" },
+    { MMU::IORegister::WY, "WindowYPosition" },
+    { MMU::IORegister::WX, "WindowXPositionMinus7" },
 };
 
 std::string MMU::get_region_name(MMU::MemoryRegion region) const { return MMU::s_region_names.find(region)->second; }
 
-std::string MMU::get_register_name(MMU::MemoryRegister reg) const { return MMU::s_register_names.find(reg)->second; }
+std::string MMU::get_register_name(MMU::IORegister reg) const { return MMU::s_register_names.find(reg)->second; }
 
 MMU::~MMU() {
     delete[] m_memory;
