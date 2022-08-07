@@ -2,6 +2,7 @@
 
 #include "MMU.h"
 #include "PPU.h"
+#include "util/BitUtilities.h"
 #include <fstream>
 #include <memory>
 #include <stdint.h>
@@ -86,25 +87,25 @@ class CPU {
     uint8_t get_8_bit_register(const CPU::Register reg) const {
         switch (reg) {
         case CPU::Register::B:
-            return get_register_upper(&m_reg_bc);
+            return get_register_upper(m_reg_bc);
         case CPU::Register::C:
-            return get_register_lower(&m_reg_bc);
+            return get_register_lower(m_reg_bc);
         case CPU::Register::D:
-            return get_register_upper(&m_reg_de);
+            return get_register_upper(m_reg_de);
         case CPU::Register::E:
-            return get_register_lower(&m_reg_de);
+            return get_register_lower(m_reg_de);
         case CPU::Register::H:
-            return get_register_upper(&m_reg_hl);
+            return get_register_upper(m_reg_hl);
         case CPU::Register::L:
-            return get_register_lower(&m_reg_hl);
+            return get_register_lower(m_reg_hl);
         case CPU::Register::A:
-            return get_register_upper(&m_reg_af);
+            return get_register_upper(m_reg_af);
         case CPU::Register::W:
-            return get_register_upper(&m_reg_wz);
+            return get_register_upper(m_reg_wz);
         case CPU::Register::Z:
-            return get_register_lower(&m_reg_wz);
+            return get_register_lower(m_reg_wz);
         default:
-            exit(1);
+            __builtin_unreachable();
         }
     }
 
@@ -125,69 +126,69 @@ class CPU {
         case CPU::Register::WZ:
             return m_reg_wz;
         default:
-            exit(1);
+            __builtin_unreachable();
         }
     }
 
     void set_register(const CPU::Register reg, const uint8_t value) {
         switch (reg) {
         case CPU::Register::B:
-            set_register_upper(&m_reg_bc, value);
+            set_register_upper(m_reg_bc, value);
             break;
         case CPU::Register::C:
-            set_register_lower(&m_reg_bc, value);
+            set_register_lower(m_reg_bc, value);
             break;
         case CPU::Register::D:
-            set_register_upper(&m_reg_de, value);
+            set_register_upper(m_reg_de, value);
             break;
         case CPU::Register::E:
-            set_register_lower(&m_reg_de, value);
+            set_register_lower(m_reg_de, value);
             break;
         case CPU::Register::H:
-            set_register_upper(&m_reg_hl, value);
+            set_register_upper(m_reg_hl, value);
             break;
         case CPU::Register::L:
-            set_register_lower(&m_reg_hl, value);
+            set_register_lower(m_reg_hl, value);
             break;
         case CPU::Register::A:
-            set_register_upper(&m_reg_af, value);
+            set_register_upper(m_reg_af, value);
             break;
         case CPU::Register::W:
-            set_register_upper(&m_reg_wz, value);
+            set_register_upper(m_reg_wz, value);
             break;
         case CPU::Register::Z:
-            set_register_lower(&m_reg_wz, value);
+            set_register_lower(m_reg_wz, value);
             break;
         default:
-            exit(1);
+            __builtin_unreachable();
         }
     }
 
     void set_register(const CPU::Register reg, const uint16_t value) {
         switch (reg) {
         case CPU::Register::AF:
-            set_register(&m_reg_af, value & 0xFFF0); // The lower four bits should never be set
+            set_register(m_reg_af, value & 0xFFF0); // The lower four bits should never be set
             break;
         case CPU::Register::BC:
-            set_register(&m_reg_bc, value);
+            set_register(m_reg_bc, value);
             break;
         case CPU::Register::DE:
-            set_register(&m_reg_de, value);
+            set_register(m_reg_de, value);
             break;
         case CPU::Register::HL:
-            set_register(&m_reg_hl, value);
+            set_register(m_reg_hl, value);
             break;
         case CPU::Register::SP:
-            set_register(&m_reg_sp, value);
+            set_register(m_reg_sp, value);
             break;
         case CPU::Register::PC:
-            set_register(&m_reg_pc, value);
+            set_register(m_reg_pc, value);
             break;
         case CPU::Register::WZ:
-            set_register(&m_reg_wz, value);
+            set_register(m_reg_wz, value);
             break;
         default:
-            exit(1);
+            __builtin_unreachable();
         }
     }
 
@@ -204,35 +205,41 @@ class CPU {
     bool flag_is_set(CPU::Flag flag) const {
         switch (flag) {
         case CPU::Flag::Z:
-            return ((m_reg_af >> 7) & 0x01) == 1;
+            return BitUtilities::bit_is_set(m_reg_af, 7);
         case CPU::Flag::N:
-            return ((m_reg_af >> 6) & 0x01) == 1;
+            return BitUtilities::bit_is_set(m_reg_af, 6);
         case CPU::Flag::H:
-            return ((m_reg_af >> 5) & 0x01) == 1;
+            return BitUtilities::bit_is_set(m_reg_af, 5);
         case CPU::Flag::C:
-            return ((m_reg_af >> 4) & 0x01) == 1;
+            return BitUtilities::bit_is_set(m_reg_af, 4);
         default:
             __builtin_unreachable();
         }
     }
 
     void set_flag(CPU::Flag flag, const bool value) {
+        uint8_t bit_to_set;
         switch (flag) {
         case CPU::Flag::Z:
-            m_reg_af = value ? (m_reg_af | 0x0080) : (m_reg_af & 0xFF7F);
+            bit_to_set = 7;
             break;
         case CPU::Flag::N:
-            m_reg_af = value ? (m_reg_af | 0x0040) : (m_reg_af & 0xFFBF);
+            bit_to_set = 6;
             break;
         case CPU::Flag::H:
-            m_reg_af = value ? (m_reg_af | 0x0020) : (m_reg_af & 0xFFDF);
+            bit_to_set = 5;
             break;
         case CPU::Flag::C:
-            m_reg_af = value ? (m_reg_af | 0x0010) : (m_reg_af & 0xFFEF);
+            bit_to_set = 4;
             break;
         default:
             __builtin_unreachable();
         }
+
+        if (value)
+            BitUtilities::set_bit_in_word(m_reg_af, bit_to_set);
+        else
+            BitUtilities::reset_bit_in_word(m_reg_af, bit_to_set);
     }
 
     bool breakpoint_hit() const;
@@ -295,15 +302,15 @@ class CPU {
 
     std::string disassemble_instruction_at(const uint16_t, uint8_t &) const;
 
-    void set_register(uint16_t *reg, const uint16_t value) { (*reg) = value; }
+    void set_register(uint16_t &reg, const uint16_t value) { reg = value; }
 
-    void set_register_lower(uint16_t *reg, const uint8_t value) { (*reg) = ((*reg) & 0xFF00) | value; }
+    void set_register_lower(uint16_t &reg, const uint8_t value) { reg = (reg & 0xFF00) | value; }
 
-    void set_register_upper(uint16_t *reg, const uint8_t value) { (*reg) = ((*reg) & 0x00FF) | (value << 8); }
+    void set_register_upper(uint16_t &reg, const uint8_t value) { reg = (reg & 0x00FF) | (value << 8); }
 
-    uint8_t get_register_lower(const uint16_t *reg) const { return (*reg) & 0x00FF; }
+    uint8_t get_register_lower(const uint16_t &reg) const { return reg & 0x00FF; }
 
-    uint8_t get_register_upper(const uint16_t *reg) const { return (*reg) >> 8; }
+    uint8_t get_register_upper(const uint16_t &reg) const { return reg >> 8; }
 
     void set_initial_values_for_registers(const MMU::BootRomType, bool);
 

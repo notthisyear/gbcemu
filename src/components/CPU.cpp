@@ -2,6 +2,7 @@
 #include "OpcodeBuilder.h"
 #include "Opcodes.h"
 #include "components/MMU.h"
+#include "util/BitUtilities.h"
 #include "util/GeneralUtilities.h"
 #include "util/LogUtilities.h"
 #include <fstream>
@@ -9,7 +10,7 @@
 #include <iterator>
 #include <memory>
 #include <stdexcept>
-// Windows-specific
+// Windows-specific (TODO: define some is_windows constant in a shared options header)
 #include <windows.h>
 
 namespace gbcemu {
@@ -61,8 +62,9 @@ void CPU::tick() {
                 m_interrupt_enabled = false;
                 auto last_interrupt = static_cast<int>(CPU::InterruptSource::Joypad);
                 for (int i = 0; i < last_interrupt - 1; i++) {
-                    if (((interrupt_flag >> i) & 0x01) == 0x01) {
-                        m_mmu->set_io_register(MMU::IORegister::IF, interrupt_flag & (0xFE << i));
+                    if (BitUtilities::bit_is_set(interrupt_flag, i)) {
+                        BitUtilities::reset_bit_in_byte(interrupt_flag, i);
+                        m_mmu->set_io_register(MMU::IORegister::IF, interrupt_flag);
                         m_current_interrupt = static_cast<CPU::InterruptSource>(i);
                         break;
                     }

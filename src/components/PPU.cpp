@@ -1,5 +1,6 @@
 #include "PPU.h"
 #include "CPU.h"
+#include "util/BitUtilities.h"
 #include "util/GeneralUtilities.h"
 #include <cstring>
 #include <fstream>
@@ -23,7 +24,7 @@ PPU::PPU(std::shared_ptr<MMU> mmu, uint16_t framebuffer_width, uint16_t framebuf
 void PPU::tick() {
 
     if (!m_screen_enabled) {
-        if (get_lcd_control_bit(PPU::LCDControlRegisterBit::LCDAndPPUEnable)) {
+        if (lcd_control_bit_is_set(PPU::LCDControlRegisterBit::LCDAndPPUEnable)) {
             reset_ppu_state();
             write_current_mode_to_status_register();
             m_screen_enabled = true;
@@ -31,7 +32,7 @@ void PPU::tick() {
             return;
         }
     } else {
-        if (!get_lcd_control_bit(PPU::LCDControlRegisterBit::LCDAndPPUEnable)) {
+        if (!lcd_control_bit_is_set(PPU::LCDControlRegisterBit::LCDAndPPUEnable)) {
             m_screen_enabled = false;
             return;
         }
@@ -106,8 +107,9 @@ void PPU::tick() {
             m_dots_on_current_line = 0;
 
             if (m_current_scanline == VBlankStartScanline) {
-                m_mmu->set_io_register(MMU::IORegister::IF,
-                                       m_mmu->get_io_register(MMU::IORegister::IF) | (0x01 << static_cast<uint8_t>(CPU::InterruptSource::VBlank)));
+                auto if_register = m_mmu->get_io_register(MMU::IORegister::IF);
+                BitUtilities::set_bit_in_byte(if_register, static_cast<uint8_t>(CPU::InterruptSource::VBlank));
+                m_mmu->set_io_register(MMU::IORegister::IF, if_register);
                 m_mode = PPU::Mode::VBlank;
             } else {
                 m_mode = PPU::Mode::OAMSearch;
@@ -136,7 +138,8 @@ void PPU::tick() {
         m_total_frame_dots = 0;
     }
 
-    set_lcd_status_bit(PPU::LCDStatusRegisterBit::LYCEqualsLY, m_mmu->get_io_register(MMU::IORegister::LY) == m_mmu->get_io_register(MMU::IORegister::LYC));
+    set_bit_in_ppu_register_to_value(MMU::IORegister::STAT, static_cast<uint8_t>(PPU::LCDStatusRegisterBit::LYCEqualsLY),
+                                     m_mmu->get_io_register(MMU::IORegister::LY) == m_mmu->get_io_register(MMU::IORegister::LYC));
 }
 
 void PPU::request_frame_trace() { m_trace_next_frame = true; }
@@ -147,12 +150,12 @@ void PPU::acknowledge_frame() { m_frame_done_flag = false; }
 
 uint8_t *PPU::get_framebuffer() const { return m_framebuffer; }
 
-bool PPU::get_lcd_control_bit(const PPU::LCDControlRegisterBit bit_to_get) {
-    return get_bit_in_ppu_register(MMU::IORegister::LCDC, static_cast<uint8_t>(bit_to_get));
+bool PPU::lcd_control_bit_is_set(const PPU::LCDControlRegisterBit bit_to_get) {
+    return BitUtilities::bit_is_set(m_mmu->get_io_register(MMU::IORegister::LCDC), static_cast<uint8_t>(bit_to_get));
 }
 
-bool PPU::get_lcd_status_bit(const PPU::LCDStatusRegisterBit bit_to_get) {
-    return get_bit_in_ppu_register(MMU::IORegister::STAT, static_cast<uint8_t>(bit_to_get));
+bool PPU::lcd_status_bit_is_set(const PPU::LCDStatusRegisterBit bit_to_get) {
+    return BitUtilities::bit_is_set(m_mmu->get_io_register(MMU::IORegister::STAT), static_cast<uint8_t>(bit_to_get));
 }
 
 PPU::~PPU() { delete[] m_framebuffer; }
@@ -175,24 +178,13 @@ void PPU::reset_ppu_state() {
     m_mmu->set_io_register(MMU::IORegister::LY, m_current_scanline);
 }
 
-void PPU::set_lcd_control_bit(const PPU::LCDControlRegisterBit bit_to_set, const bool on_or_off) {
-    set_bit_in_ppu_register(MMU::IORegister::LCDC, static_cast<uint8_t>(bit_to_set), on_or_off);
-}
-
-void PPU::set_lcd_status_bit(const PPU::LCDStatusRegisterBit bit_to_set, const bool on_or_off) {
-    set_bit_in_ppu_register(MMU::IORegister::STAT, static_cast<uint8_t>(bit_to_set), on_or_off);
-}
-
-void PPU::set_bit_in_ppu_register(const MMU::IORegister reg, const uint8_t bit_to_set, const bool on_or_off) {
+void PPU::set_bit_in_ppu_register_to_value(const MMU::IORegister reg, const uint8_t bit_to_set, const bool value) {
     auto current = m_mmu->get_io_register(reg);
-    uint8_t mask = 0xFE << bit_to_set;
-    uint8_t value = (on_or_off ? 0x01 : 0x00) << bit_to_set;
-    m_mmu->set_io_register(reg, (current & mask) | value);
-}
-
-bool PPU::get_bit_in_ppu_register(const MMU::IORegister reg, const uint8_t bit_to_get) {
-    auto current = m_mmu->get_io_register(reg);
-    return (current & (0x01 << bit_to_get)) > 0;
+    if (value)
+        BitUtilities::set_bit_in_byte(current, bit_to_set);
+    else
+        BitUtilities::reset_bit_in_byte(current, bit_to_set);
+    m_mmu->set_io_register(reg, current);
 }
 
 void PPU::write_current_mode_to_status_register() {

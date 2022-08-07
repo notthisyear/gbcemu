@@ -11,6 +11,10 @@ class BitUtilities {
 
     static void set_bit_in_byte(uint8_t &byte, const uint8_t bit_to_set) { byte |= (0x01 << bit_to_set); }
 
+    static void set_bit_in_word(uint16_t &word, const uint8_t bit_to_set) { word |= (0x01 << bit_to_set); }
+
     static void reset_bit_in_byte(uint8_t &byte, const uint8_t bit_to_clear) { byte &= ~(0x01 << bit_to_clear); }
+
+    static void reset_bit_in_word(uint16_t &word, const uint8_t bit_to_clear) { word &= ~(0x01 << bit_to_clear); }
 };
 }

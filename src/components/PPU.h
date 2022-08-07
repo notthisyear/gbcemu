@@ -36,8 +36,8 @@ class PPU {
     bool cycles_per_frame_reached() const;
     void acknowledge_frame();
     uint8_t *get_framebuffer() const;
-    bool get_lcd_control_bit(const PPU::LCDControlRegisterBit);
-    bool get_lcd_status_bit(const PPU::LCDStatusRegisterBit);
+    bool lcd_control_bit_is_set(const PPU::LCDControlRegisterBit);
+    bool lcd_status_bit_is_set(const PPU::LCDStatusRegisterBit);
 
     ~PPU();
 
@@ -59,12 +59,7 @@ class PPU {
     };
 
     void reset_ppu_state();
-    void set_lcd_control_bit(const PPU::LCDControlRegisterBit, const bool);
-    void set_lcd_status_bit(const PPU::LCDStatusRegisterBit, const bool);
-
-    void set_bit_in_ppu_register(const MMU::IORegister, const uint8_t, const bool);
-    bool get_bit_in_ppu_register(const MMU::IORegister, const uint8_t);
-
+    void set_bit_in_ppu_register_to_value(const MMU::IORegister, const uint8_t, const bool);
     void write_current_mode_to_status_register();
 
     std::shared_ptr<MMU> m_mmu;

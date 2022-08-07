@@ -13,8 +13,8 @@ void PixelFetcher::start_fetcher(uint8_t current_scanline, bool is_window, bool 
     m_tile_line = (current_scanline + m_mmu->get_io_register(MMU::IORegister::SCY)) & 0x00FF;
     m_tile_index = m_mmu->get_io_register(MMU::IORegister::SCX) >> 3;
 
-    auto tile_map_area_switch = is_window ? m_ppu->get_lcd_control_bit(PPU::LCDControlRegisterBit::WindowTileMapArea)
-                                          : m_ppu->get_lcd_control_bit(PPU::LCDControlRegisterBit::BGTileMapArea);
+    auto tile_map_area_switch = is_window ? m_ppu->lcd_control_bit_is_set(PPU::LCDControlRegisterBit::WindowTileMapArea)
+                                          : m_ppu->lcd_control_bit_is_set(PPU::LCDControlRegisterBit::BGTileMapArea);
 
     m_tile_id_row_start_address = (tile_map_area_switch ? VRAMTileMap2Start : VRAMTileMap1Start) + ((m_tile_line >> 3) << 5);
 
@@ -48,7 +48,7 @@ void PixelFetcher::tick() {
         break;
 
     case PixelFetcher::Mode::ReadTileData0: {
-        bool use_signed_addressing_mode = !m_ppu->get_lcd_control_bit(PPU::LCDControlRegisterBit::BGAndWindowTileDataArea);
+        bool use_signed_addressing_mode = !m_ppu->lcd_control_bit_is_set(PPU::LCDControlRegisterBit::BGAndWindowTileDataArea);
         auto tile_data_start_address = use_signed_addressing_mode ? VRAMTileData2Start : VRAMTileData1Start;
 
         uint16_t tile_address;
