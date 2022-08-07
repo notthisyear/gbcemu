@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <string>
 #include <unordered_map>
+
 namespace gbcemu {
 
 class MMU {
@@ -125,28 +126,23 @@ class MMU {
     MMU::BootRomType m_boot_rom_type;
     uint64_t m_boot_rom_size;
 
-    void read_from_memory(uint8_t *data, uint16_t offset, uint16_t size) const {
-        for (auto i = 0; i < size; i++)
-            data[i] = m_memory[offset + i];
-    }
+    void read_from_memory(uint8_t *, uint16_t, uint16_t) const;
 
-    void write_to_memory(uint8_t *data, uint16_t offset, uint16_t size) {
-        for (auto i = 0; i < size; i++)
-            m_memory[offset + i] = data[i];
-    }
+    void write_to_memory(uint8_t *, uint16_t, uint16_t);
 
     bool is_boot_rom_range(uint16_t, uint64_t) const;
     void read_from_boot_rom(uint8_t *, uint16_t, uint64_t) const;
     bool try_load_from_file(const std::string &, uint8_t *, const uint64_t) const;
 
     std::string get_region_name(MMU::MemoryRegion) const;
-    std::string get_register_name(MMU::IORegister) const;
+    std::string get_io_register_name(MMU::IORegister) const;
+    void pre_process_io_register_access(uint8_t, uint8_t &) const;
 
     bool get_file_size(const std::string &, uint64_t *) const;
 
     static const std::map<MMU::MemoryRegion, std::pair<uint16_t, uint16_t>> s_region_map;
     static const std::unordered_map<MMU::MemoryRegion, std::string> s_region_names;
-    static const std::unordered_map<MMU::IORegister, std::string> s_register_names;
+    static const std::unordered_map<MMU::IORegister, std::string> s_io_register_names;
 
     static std::pair<uint8_t, uint8_t> make_offset_and_size_pair(uint8_t offset, uint8_t size) { return std::make_pair(offset, size); }
     static std::pair<uint16_t, uint16_t> make_address_pair(uint16_t lower, uint16_t upper) { return std::make_pair(lower, upper); }

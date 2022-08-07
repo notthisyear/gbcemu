@@ -113,10 +113,11 @@ bool MMU::try_map_data_to_memory(uint8_t *data, uint16_t offset, uint16_t size) 
     case MMU::MemoryRegion::EchoRAM:
         write_to_memory(data, offset - 0x2000, size);
         break;
-
+    case MMU::MemoryRegion::IORegisters:
+        if (size == 1)
+            pre_process_io_register_access(offset - 0xFF00, data[0]);
     case MMU::MemoryRegion::WRAMFixed:
     case MMU::MemoryRegion::SpriteAttributeTable:
-    case MMU::MemoryRegion::IORegisters:
     case MMU::MemoryRegion::HRAM:
     case MMU::MemoryRegion::IERegister:
         write_to_memory(data, offset, size);
@@ -202,6 +203,16 @@ uint8_t MMU::get_io_register(const MMU::IORegister reg) const {
     uint8_t data;
     read_from_memory(&data, RegisterOffsetBase | static_cast<uint16_t>(reg), 1);
     return data;
+}
+
+void MMU::read_from_memory(uint8_t *data, uint16_t offset, uint16_t size) const {
+    for (auto i = 0; i < size; i++)
+        data[i] = m_memory[offset + i];
+}
+
+void MMU::write_to_memory(uint8_t *data, uint16_t offset, uint16_t size) {
+    for (auto i = 0; i < size; i++)
+        m_memory[offset + i] = data[i];
 }
 
 bool MMU::has_cartridge() const { return m_cartridge != nullptr; }
@@ -346,7 +357,7 @@ const std::unordered_map<MMU::MemoryRegion, std::string> MMU::s_region_names = {
     { MMU::MemoryRegion::IERegister, "IERegister" },
 };
 
-const std::unordered_map<MMU::IORegister, std::string> MMU::s_register_names = {
+const std::unordered_map<MMU::IORegister, std::string> MMU::s_io_register_names = {
 
     { MMU::IORegister::JOYP, "Joypad" },
     { MMU::IORegister::SB, "SerialTransferData" },
@@ -392,7 +403,35 @@ const std::unordered_map<MMU::IORegister, std::string> MMU::s_register_names = {
 
 std::string MMU::get_region_name(MMU::MemoryRegion region) const { return MMU::s_region_names.find(region)->second; }
 
-std::string MMU::get_register_name(MMU::IORegister reg) const { return MMU::s_register_names.find(reg)->second; }
+std::string MMU::get_io_register_name(MMU::IORegister reg) const { return MMU::s_io_register_names.find(reg)->second; }
+
+void MMU::pre_process_io_register_access(uint8_t offset, uint8_t &data) const {
+    switch (offset) {
+
+    case static_cast<uint8_t>(MMU::IORegister::JOYP):
+        data = (data & 0xF0) | (get_io_register(MMU::IORegister::JOYP) & 0x0F); // Bits 0-3 are readonly
+        break;
+
+    case static_cast<uint8_t>(MMU::IORegister::DIV):
+        data = 0x00; // All writes to DIV causes it to be reset
+        break;
+
+    case static_cast<uint8_t>(MMU::IORegister::NR52):
+        data = (data & 0xF0) | (get_io_register(MMU::IORegister::NR52) & 0x0F); // Bits 0-3 are readonly
+        break;
+
+    case static_cast<uint8_t>(MMU::IORegister::STAT):
+        data = (data & 0xF8) | (get_io_register(MMU::IORegister::STAT) & 0x07); // Bits 0-2 are readonly
+        break;
+
+    case static_cast<uint8_t>(MMU::IORegister::LY):
+        data = get_io_register(MMU::IORegister::LY); // LY is read-only
+        break;
+
+    default:
+        break; // Do nothing
+    }
+}
 
 MMU::~MMU() {
     delete[] m_memory;
