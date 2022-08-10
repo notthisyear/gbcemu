@@ -1,12 +1,14 @@
 set(HEADER_FILES 
 		LogUtilities.h
 		GeneralUtilities.h
+		CommandLineParser.h
 		CommandLineArgument.h
 		BitUtilities.h
 	)
 
 set(SOURCE_FILES 
 		LogUtilities.cpp
+		CommandLineParser.cpp
 		CommandLineArgument.cpp
 		)
 
