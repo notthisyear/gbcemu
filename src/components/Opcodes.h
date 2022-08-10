@@ -37,6 +37,7 @@ struct Opcode {
         }
 
         m_operations.at(m_operation_step++)(cpu, mmu);
+
         if (m_operation_step == m_operations.size())
             m_is_done = true;
     }
@@ -54,7 +55,6 @@ struct Opcode {
 
   protected:
     bool m_is_done = false;
-
     std::vector<std::function<void(CPU *, MMU *)>> m_operations;
 
     Opcode(uint8_t opcode_number_of_bytes) : size(opcode_number_of_bytes) {}
@@ -99,7 +99,7 @@ struct StoreStackpointer final : public Opcode {
 struct Stop final : public Opcode {
   public:
     Stop() : Opcode(2) {
-        m_operations.push_back([](CPU *, MMU *) { NOT_IMPLEMENTED("STOP 0"); });
+        m_operations.push_back([](CPU *, MMU *) { ; });
     }
     std::string get_disassembled_instruction(uint8_t *instruction_data) const override { return "STOP 0"; }
 };
@@ -108,8 +108,9 @@ struct Stop final : public Opcode {
 struct Halt final : public Opcode {
   public:
     static const uint8_t opcode = 0x76;
+
     Halt() : Opcode(1) {
-        m_operations.push_back([](CPU *, MMU *) { NOT_IMPLEMENTED("HALT"); });
+        m_operations.push_back([&](CPU *cpu, MMU *) { cpu->set_cpu_to_halt(); });
     }
     std::string get_disassembled_instruction(uint8_t *instruction_data) const override { return "HALT"; }
 };

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Cartridge.h"
+#include "TimerController.h"
 #include <map>
 #include <memory>
 #include <stdint.h>
@@ -86,7 +87,7 @@ class MMU {
         BootRomDisableOffset = 0x50,
     };
 
-    MMU(uint16_t memory_size);
+    MMU(uint16_t);
 
     bool try_load_boot_rom(std::ostream &stream, const std::string &);
 
@@ -110,12 +111,17 @@ class MMU {
 
     void print_memory_at_location(std::ostream &stream, uint16_t start, uint16_t end) const;
 
+    void tick_timer_controller();
+
     ~MMU();
 
   private:
     uint16_t m_memory_size;
     uint8_t *m_memory;
     uint8_t *m_boot_rom;
+
+    std::unique_ptr<TimerController> m_timer_controller;
+
     const uint16_t RegisterOffsetBase = 0xFF00;
     const uint16_t DmgBootRomSize = 0x0100;
 

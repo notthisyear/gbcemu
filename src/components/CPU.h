@@ -2,6 +2,7 @@
 
 #include "MMU.h"
 #include "PPU.h"
+#include "components/TimerController.h"
 #include "util/BitUtilities.h"
 #include <fstream>
 #include <memory>
@@ -264,6 +265,8 @@ class CPU {
 
     void print_state(std::ostream &) const;
 
+    void set_cpu_to_halt();
+
     ~CPU();
 
   private:
@@ -275,10 +278,14 @@ class CPU {
     std::shared_ptr<PPU> m_ppu;
 
     const uint8_t ExecutionTicksPerOperationStep = 4;
+
     bool m_is_extended_opcode;
     bool m_interleave_execute_and_decode;
     bool m_at_start_of_instruction;
     bool m_output_trace;
+    bool m_is_halted;
+    bool m_halt_bug_active;
+
     std::ofstream m_trace_stream;
     uint8_t m_current_instruction_cycle_count;
     std::shared_ptr<Opcode> m_current_opcode;

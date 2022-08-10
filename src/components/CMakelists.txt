@@ -6,6 +6,7 @@ set(HEADER_FILES
         Cartridge.h
 		PPU.h
 		PixelFetcher.h
+		TimerController.h
 	)
 
 set(SOURCE_FILES 
@@ -14,6 +15,7 @@ set(SOURCE_FILES
 		Cartridge.cpp
 		PPU.cpp
 		PixelFetcher.cpp
+		TimerController.cpp
 	)
 
 set(SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/..)

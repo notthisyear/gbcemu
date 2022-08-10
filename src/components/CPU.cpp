@@ -2,6 +2,7 @@
 #include "OpcodeBuilder.h"
 #include "Opcodes.h"
 #include "components/MMU.h"
+#include "components/TimerController.h"
 #include "util/BitUtilities.h"
 #include "util/GeneralUtilities.h"
 #include "util/LogUtilities.h"
@@ -23,6 +24,8 @@ CPU::CPU(std::shared_ptr<MMU> mmu, std::shared_ptr<PPU> ppu, bool output_trace) 
     m_at_start_of_instruction = true;
     m_interrupt_enabled = false;
     m_has_breakpoint = false;
+    m_is_halted = false;
+    m_halt_bug_active = false;
 
     m_state = CPU::State::Idle;
     if (m_mmu->has_cartridge()) {
@@ -51,14 +54,18 @@ void CPU::tick() {
 
     switch (m_state) {
 
-    case CPU::State::Idle:
-        m_current_instruction_cycle_count = 0;
-        if (m_interrupt_enabled) {
-            auto interrupt_enable = m_mmu->get_io_register(MMU::IORegister::IE);
-            auto interrupt_flag = m_mmu->get_io_register(MMU::IORegister::IF);
-            bool interrupt_pending = (interrupt_enable & interrupt_flag) > 0x00;
+    case CPU::State::Idle: {
 
-            if (interrupt_pending) {
+        m_current_instruction_cycle_count = 0;
+
+        auto interrupt_enable = m_mmu->get_io_register(MMU::IORegister::IE);
+        auto interrupt_flag = m_mmu->get_io_register(MMU::IORegister::IF);
+        bool interrupt_pending = (interrupt_enable & interrupt_flag) > 0x00;
+
+        if (interrupt_pending) {
+            // Clear the corresponding interrupt flag if IME is set (regardless of halt state)
+            auto IME_was_set = m_interrupt_enabled;
+            if (m_interrupt_enabled) {
                 m_interrupt_enabled = false;
                 auto last_interrupt = static_cast<int>(CPU::InterruptSource::Joypad);
                 for (int i = 0; i < last_interrupt - 1; i++) {
@@ -69,16 +76,32 @@ void CPU::tick() {
                         break;
                     }
                 }
+            }
 
+            if (m_is_halted) {
+                m_is_halted = false;
+                m_halt_bug_active = !IME_was_set;
+            }
+
+            if (IME_was_set) {
                 m_state = CPU::State::InterruptTransition;
                 break;
             }
         }
 
+        if (m_is_halted)
+            break;
+
         if (m_output_trace)
             print_trace_line();
 
         current_byte = read_at_pc();
+
+        if (m_halt_bug_active) {
+            m_reg_pc--;
+            m_halt_bug_active = false;
+        }
+
         if (is_extended_opcode(current_byte))
             m_is_extended_opcode = true;
         else
@@ -87,8 +110,7 @@ void CPU::tick() {
         m_state = CPU::State::Wait;
         m_at_start_of_instruction = false;
         m_current_instruction_cycle_count++;
-        break;
-
+    } break;
     case CPU::State::Wait:
         if (m_current_instruction_cycle_count == ExecutionTicksPerOperationStep) {
             if (m_is_extended_opcode) {
@@ -123,7 +145,6 @@ void CPU::tick() {
     case CPU::State::InterruptPushPC:
         m_current_instruction_cycle_count++;
         if (m_current_instruction_cycle_count == 2) {
-
             uint16_t sp = get_16_bit_register(CPU::Register::SP);
             (void)m_mmu->try_map_data_to_memory((uint8_t *)&m_reg_pc, sp - 2, 2);
             set_register(CPU::Register::SP, static_cast<uint16_t>(sp - 2));
@@ -135,6 +156,7 @@ void CPU::tick() {
     case CPU::State::InterruptSetPC:
         set_register(CPU::Register::PC, s_interrupt_vector.find(m_current_interrupt)->second);
         m_state = CPU::State::Idle;
+
         break;
     }
 
@@ -154,6 +176,7 @@ void CPU::tick() {
         }
     }
 
+    m_mmu->tick_timer_controller();
     m_ppu->tick();
 
     if (m_is_running_boot_rom && m_reg_pc == 0x0100) {
@@ -248,6 +271,8 @@ void CPU::enable_breakpoint_at(uint16_t pc) {
     m_current_breakpoint = pc;
     m_has_breakpoint = true;
 }
+
+void CPU::set_cpu_to_halt() { m_is_halted = true; }
 
 bool CPU::breakpoint_hit() const { return m_has_breakpoint && m_current_breakpoint == m_reg_pc && at_start_of_instruction(); }
 

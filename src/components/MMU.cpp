@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <utility>
 
@@ -18,6 +19,8 @@ MMU::MMU(uint16_t memory_size) : m_memory_size(memory_size) {
 
     m_cartridge = nullptr;
     set_io_register(gbcemu::MMU::IORegister::BootRomDisableOffset, 0x01);
+
+    m_timer_controller = std::make_unique<TimerController>(this);
 }
 
 bool MMU::try_load_boot_rom(std::ostream &stream, const std::string &path) {
@@ -204,6 +207,8 @@ uint8_t MMU::get_io_register(const MMU::IORegister reg) const {
     read_from_memory(&data, RegisterOffsetBase | static_cast<uint16_t>(reg), 1);
     return data;
 }
+
+void MMU::tick_timer_controller() { m_timer_controller->tick(); }
 
 void MMU::read_from_memory(uint8_t *data, uint16_t offset, uint16_t size) const {
     for (auto i = 0; i < size; i++)
@@ -399,6 +404,10 @@ const std::unordered_map<MMU::IORegister, std::string> MMU::s_io_register_names 
     { MMU::IORegister::OBP1, "OBJPalette1Data" },
     { MMU::IORegister::WY, "WindowYPosition" },
     { MMU::IORegister::WX, "WindowXPositionMinus7" },
+    { MMU::IORegister::IF, "InterruptFlags" },
+    { MMU::IORegister::IE, "InterruptEnable" },
+    { MMU::IORegister::BootRomDisableOffset, "BootRomDisable" },
+
 };
 
 std::string MMU::get_region_name(MMU::MemoryRegion region) const { return MMU::s_region_names.find(region)->second; }
@@ -414,6 +423,7 @@ void MMU::pre_process_io_register_access(uint8_t offset, uint8_t &data) const {
 
     case static_cast<uint8_t>(MMU::IORegister::DIV):
         data = 0x00; // All writes to DIV causes it to be reset
+        m_timer_controller->reset_divider();
         break;
 
     case static_cast<uint8_t>(MMU::IORegister::NR52):
