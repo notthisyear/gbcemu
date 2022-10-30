@@ -290,6 +290,8 @@ class CPU {
     const uint8_t ExecutionTicksPerOperationStep = 4;
 
     uint8_t m_current_cpu_phase_tick_count;
+    uint8_t m_current_interrupt_phase_counter;
+    int8_t m_cycles_until_interrupts_enabled;
 
     bool m_next_instruction_preloaded;
     bool m_is_extended_opcode;

@@ -1071,6 +1071,9 @@ struct ExtendedOpcode : public Opcode {
                 (void)mmu->try_read_from_memory(&data, cpu->get_16_bit_register(CPU::Register::HL), 1);
                 cpu->set_register(CPU::Register::Z, data);
             });
+
+            if (m_type != ExtendedOpcodeType::Test)
+                m_operations.push_back([&](CPU *cpu, MMU *mmu) {});
         }
 
         m_operations.push_back([&](CPU *cpu, MMU *mmu) {
