@@ -6,3 +6,4 @@ resources/*.bin
 .vscode/
 .clang-format
 test/build/*
+test/external/*
