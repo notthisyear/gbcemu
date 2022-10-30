@@ -28,10 +28,7 @@ void Application::init() {
     m_app_should_run = true;
 }
 
-void Application::set_cpu_debug_mode(const bool on_or_off) {
-    m_cpu_should_run = !on_or_off;
-    m_cpu->interleave_execute_and_decode(!on_or_off);
-}
+void Application::set_cpu_debug_mode(const bool on_or_off) { m_cpu_should_run = !on_or_off; }
 
 void Application::run() {
     while (m_app_should_run) {

@@ -17,24 +17,24 @@
 namespace gbcemu {
 
 CPU::CPU(std::shared_ptr<MMU> mmu, std::shared_ptr<PPU> ppu, bool output_trace) : m_mmu(mmu), m_ppu(ppu), m_output_trace(output_trace) {
-    m_current_instruction_cycle_count = 0;
+    m_current_cpu_phase_tick_count = 0;
+    m_next_instruction_preloaded = false;
     m_is_extended_opcode = false;
+    m_interrupt_to_be_serviced = false;
     m_current_opcode = nullptr;
-    m_interleave_execute_and_decode = true;
-    m_at_start_of_instruction = true;
+
     m_interrupt_enabled = false;
     m_has_breakpoint = false;
     m_is_halted = false;
     m_halt_bug_active = false;
 
-    m_state = CPU::State::Idle;
+    m_state = CPU::State::FetchAndDecode;
     if (m_mmu->has_cartridge()) {
         set_initial_values_for_registers(m_mmu->get_boot_rom_type(),
                                          m_mmu->get_cartridge()->get_single_byte_header_field(Cartridge::HeaderField::HeaderChecksum) == 0x00);
     }
 
     m_is_running_boot_rom = m_mmu->get_boot_rom_type() != MMU::BootRomType::None;
-
     if (m_output_trace) {
         auto full_path = new char[CPU::MaxPathLength];
         auto size = GetModuleFileNameA(NULL, full_path, CPU::MaxPathLength);
@@ -50,137 +50,162 @@ CPU::CPU(std::shared_ptr<MMU> mmu, std::shared_ptr<PPU> ppu, bool output_trace) 
 }
 
 void CPU::tick() {
-    uint8_t current_byte;
-
     switch (m_state) {
 
-    case CPU::State::Idle: {
+    case CPU::State::FetchAndDecode:
+        if (m_current_cpu_phase_tick_count == 0) {
 
-        m_current_instruction_cycle_count = 0;
+            // If an interrupt happens here and the next instruction
+            // is already loaded (which is normally the case), then
+            // we should decrement the PC before storing it on the
+            // stack. Effectivly, the saved M-cycle due to the
+            // fetch-execute overlap is lost when an interrupt happens
+            m_interrupt_to_be_serviced = check_for_interrupts();
 
-        auto interrupt_enable = m_mmu->get_io_register(MMU::IORegister::IE);
-        auto interrupt_flag = m_mmu->get_io_register(MMU::IORegister::IF);
-        bool interrupt_pending = (interrupt_enable & interrupt_flag) > 0x00;
-
-        if (interrupt_pending) {
-            // Clear the corresponding interrupt flag if IME is set (regardless of halt state)
-            auto IME_was_set = m_interrupt_enabled;
-            if (m_interrupt_enabled) {
-                m_interrupt_enabled = false;
-                auto last_interrupt = static_cast<int>(CPU::InterruptSource::Joypad);
-                for (int i = 0; i < last_interrupt - 1; i++) {
-                    if (BitUtilities::bit_is_set(interrupt_flag, i)) {
-                        BitUtilities::reset_bit_in_byte(interrupt_flag, i);
-                        m_mmu->set_io_register(MMU::IORegister::IF, interrupt_flag);
-                        m_current_interrupt = static_cast<CPU::InterruptSource>(i);
-                        break;
-                    }
-                }
-            }
-
-            if (m_is_halted) {
-                m_is_halted = false;
-                m_halt_bug_active = !IME_was_set;
-            }
-
-            if (IME_was_set) {
-                m_state = CPU::State::InterruptTransition;
+            if (m_is_halted)
                 break;
-            }
-        }
 
-        if (m_is_halted)
-            break;
-
-        if (m_output_trace)
-            print_trace_line();
-
-        current_byte = read_at_pc();
-
-        if (m_halt_bug_active) {
-            m_reg_pc--;
-            m_halt_bug_active = false;
-        }
-
-        if (is_extended_opcode(current_byte))
-            m_is_extended_opcode = true;
-        else
-            m_current_opcode = decode_opcode(current_byte, false);
-
-        m_state = CPU::State::Wait;
-        m_at_start_of_instruction = false;
-        m_current_instruction_cycle_count++;
-    } break;
-    case CPU::State::Wait:
-        if (m_current_instruction_cycle_count == ExecutionTicksPerOperationStep) {
-            if (m_is_extended_opcode) {
-                current_byte = read_at_pc();
-                m_current_opcode = decode_opcode(current_byte, true);
-                m_current_instruction_cycle_count = 0;
-                m_is_extended_opcode = false;
+            if (!m_interrupt_to_be_serviced && !m_next_instruction_preloaded) {
+                fetch_and_decode();
             } else {
-                m_state = CPU::State::Execute;
-                m_current_instruction_cycle_count = 0;
+                m_next_instruction_preloaded = false;
+                if (m_interrupt_to_be_serviced)
+                    m_reg_pc--;
             }
-        } else {
-            m_current_instruction_cycle_count++;
+        }
+
+        m_current_cpu_phase_tick_count++;
+
+        if (m_current_cpu_phase_tick_count == 4) {
+            if (m_is_extended_opcode)
+                m_state = CPU::State::FetchAndDecodeExtended;
+            else if (m_interrupt_to_be_serviced)
+                m_state = CPU::State::InterruptTransition;
+            else
+                m_state = CPU::State::Execute;
+            m_current_cpu_phase_tick_count = 0;
+        }
+        break;
+
+    case CPU::State::FetchAndDecodeExtended:
+        if (m_current_cpu_phase_tick_count == 0)
+            fetch_and_decode();
+        m_current_cpu_phase_tick_count++;
+
+        if (m_current_cpu_phase_tick_count == 4) {
+            m_current_cpu_phase_tick_count = 0;
+            m_state = CPU::State::Execute;
         }
         break;
 
     case CPU::State::Execute:
-        if (m_current_instruction_cycle_count == ExecutionTicksPerOperationStep)
-            m_current_instruction_cycle_count = 0;
-        else
-            m_current_instruction_cycle_count++;
+        m_current_cpu_phase_tick_count++;
+        if (m_current_cpu_phase_tick_count == 4) {
+            m_current_opcode->tick_execution(this, m_mmu.get());
+            if (m_current_opcode->is_done()) {
+                // Overlap fetch-and-decode
+                m_state = CPU::State::FetchAndDecode;
+                fetch_and_decode();
+                m_next_instruction_preloaded = true;
+            }
+            m_current_cpu_phase_tick_count = 0;
+        }
         break;
 
+    // see https://gbdev.io/pandocs/Interrupts.html
     case CPU::State::InterruptTransition:
-        m_current_instruction_cycle_count++;
-        if (m_current_instruction_cycle_count == 2) {
+        m_current_cpu_phase_tick_count++;
+        if (m_current_cpu_phase_tick_count == 8) {
             m_state = CPU::State::InterruptPushPC;
-            m_current_instruction_cycle_count = 0;
+            m_current_cpu_phase_tick_count = 0;
         }
         break;
 
     case CPU::State::InterruptPushPC:
-        m_current_instruction_cycle_count++;
-        if (m_current_instruction_cycle_count == 2) {
+        m_current_cpu_phase_tick_count++;
+        if (m_current_cpu_phase_tick_count == 8) {
             uint16_t sp = get_16_bit_register(CPU::Register::SP);
             (void)m_mmu->try_map_data_to_memory((uint8_t *)&m_reg_pc, sp - 2, 2);
             set_register(CPU::Register::SP, static_cast<uint16_t>(sp - 2));
-
             m_state = CPU::State::InterruptSetPC;
-            m_current_instruction_cycle_count = 0;
+            m_current_cpu_phase_tick_count = 0;
         }
         break;
+
     case CPU::State::InterruptSetPC:
-        set_register(CPU::Register::PC, s_interrupt_vector.find(m_current_interrupt)->second);
-        m_state = CPU::State::Idle;
-
-        break;
-    }
-
-    if (m_state == CPU::State::Execute) {
-        if (m_current_instruction_cycle_count == 0) {
-            m_current_instruction_cycle_count++;
-            m_current_opcode->tick_execution(this, m_mmu.get());
-
-            if (m_current_opcode->is_done()) {
-                m_state = CPU::State::Idle;
-                m_at_start_of_instruction = true;
-                if (m_interleave_execute_and_decode && !m_has_breakpoint && !m_output_trace) {
-                    tick(); // Overlapped execution/fetching
-                    return;
-                }
-            }
+        m_current_cpu_phase_tick_count++;
+        if (m_current_cpu_phase_tick_count == 4) {
+            set_register(CPU::Register::PC, s_interrupt_vector.find(m_current_interrupt)->second);
+            m_state = CPU::State::FetchAndDecode;
+            m_current_cpu_phase_tick_count = 0;
         }
+        break;
     }
 
     m_mmu->tick_timer_controller();
     m_ppu->tick();
 
-    if (m_is_running_boot_rom && m_reg_pc == 0x0100) {
-        m_is_running_boot_rom = false;
+    // if (m_is_running_boot_rom && m_reg_pc == 0x0100) {
+    //     m_is_running_boot_rom = false;
+    // }
+}
+
+bool CPU::at_start_of_instruction() const { return m_state == State::FetchAndDecode && m_current_cpu_phase_tick_count == 0; }
+
+bool CPU::check_for_interrupts() {
+    auto interrupt_enable = m_mmu->get_io_register(MMU::IORegister::IE);
+    auto interrupt_flag = m_mmu->get_io_register(MMU::IORegister::IF);
+    bool interrupt_pending = (interrupt_enable & interrupt_flag) > 0x00;
+    auto IME_was_set = m_interrupt_enabled;
+
+    if (interrupt_pending) {
+        // Clear the corresponding interrupt flag if IME is set (regardless of halt state)
+        if (m_interrupt_enabled) {
+            m_interrupt_enabled = false;
+            auto last_interrupt = static_cast<int>(CPU::InterruptSource::Joypad);
+            for (int i = 0; i < last_interrupt - 1; i++) {
+                if (BitUtilities::bit_is_set(interrupt_flag, i)) {
+                    BitUtilities::reset_bit_in_byte(interrupt_flag, i);
+                    m_mmu->set_io_register(MMU::IORegister::IF, interrupt_flag);
+                    m_current_interrupt = static_cast<CPU::InterruptSource>(i);
+                    break;
+                }
+            }
+        }
+
+        // A pending interrupt always causes HALT to return
+        // However, if IME is not set, the "halt bug" can
+        // potentially be triggered.
+        if (m_is_halted) {
+            m_is_halted = false;
+            // halt bug is active if interrupt is pending and IME was not set
+            m_halt_bug_active = !IME_was_set;
+            if (m_next_instruction_preloaded) {
+                m_next_instruction_preloaded = false;
+                m_reg_pc--;
+            }
+        }
+    }
+
+    return IME_was_set && interrupt_pending;
+}
+
+void CPU::fetch_and_decode() {
+    if (m_output_trace && m_state == State::FetchAndDecode)
+        print_trace_line();
+
+    auto current_byte = read_at_pc();
+    if (m_halt_bug_active) {
+        m_reg_pc--;
+        m_halt_bug_active = false;
+    }
+
+    if (m_state == State::FetchAndDecode) {
+        m_is_extended_opcode = is_extended_opcode(current_byte);
+        if (!m_is_extended_opcode)
+            m_current_opcode = decode_opcode(current_byte, false);
+    } else if (m_state == State::FetchAndDecodeExtended) {
+        m_current_opcode = decode_opcode(current_byte, true);
     }
 }
 
@@ -254,6 +279,9 @@ std::string CPU::disassemble_instruction_at(uint16_t current_pc, uint8_t &instru
 
 void CPU::print_disassembled_instructions(std::ostream &stream, uint16_t number_of_instructions) {
     auto current_pc = m_reg_pc;
+    if (m_state == CPU::State::FetchAndDecode && m_next_instruction_preloaded)
+        current_pc--;
+
     uint8_t last_instruction_length = 0;
     for (auto i = 0; i < number_of_instructions; i++) {
         stream << "\033[1;37m" << std::left << std::setw(10) << std::setfill(' ') << GeneralUtilities::formatted_string("0x%04X", m_reg_pc);
@@ -274,13 +302,9 @@ void CPU::enable_breakpoint_at(uint16_t pc) {
 
 void CPU::set_cpu_to_halt() { m_is_halted = true; }
 
-bool CPU::breakpoint_hit() const { return m_has_breakpoint && m_current_breakpoint == m_reg_pc && at_start_of_instruction(); }
+bool CPU::breakpoint_hit() const { return false; }
 
 void CPU::clear_breakpoint() { m_has_breakpoint = false; }
-
-void CPU::interleave_execute_and_decode(const bool b) { m_interleave_execute_and_decode = b; }
-
-bool CPU::at_start_of_instruction() const { return m_at_start_of_instruction; }
 
 bool CPU::half_carry_occurs_on_subtract(uint8_t v, const uint8_t value_to_subtract) const { return ((v & 0x0F) - (value_to_subtract & 0x0F)) & 0x10; }
 
@@ -404,10 +428,14 @@ void CPU::print_reg(std::ostream &stream, const CPU::Register reg, const bool in
 }
 
 void CPU::print_sp_and_pc(std::ostream &stream) const {
+    auto current_pc = get_16_bit_register(CPU::Register::PC);
+    if (m_state == CPU::State::FetchAndDecode && m_next_instruction_preloaded)
+        current_pc--;
+
     stream << "\033[0;36m" << register_name.find(CPU::Register::SP)->second << ": "
            << "\033[1;37m" << GeneralUtilities::formatted_string("0x%04x", get_16_bit_register(CPU::Register::SP)) << "\033[0;36m\t"
            << register_name.find(CPU::Register::PC)->second << ": "
-           << "\033[1;37m" << GeneralUtilities::formatted_string("0x%04x", get_16_bit_register(CPU::Register::PC)) << "\033[0m" << std::endl;
+           << "\033[1;37m" << GeneralUtilities::formatted_string("0x%04x", m_state) << "\033[0m" << std::endl;
 }
 
 void CPU::print_additional_info(std::ostream &stream) const {

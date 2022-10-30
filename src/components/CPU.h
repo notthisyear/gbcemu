@@ -59,6 +59,7 @@ class CPU {
         CPU::Register::HL,
         CPU::Register::SP,
     };
+
     static inline std::unordered_map<CPU::Register, std::string> register_name = {
         { CPU::Register::B, "B" },   { CPU::Register::C, "C" },   { CPU::Register::D, "D" },   { CPU::Register::E, "E" },   { CPU::Register::H, "H" },
         { CPU::Register::L, "L" },   { CPU::Register::A, "A" },   { CPU::Register::AF, "AF" }, { CPU::Register::BC, "BC" }, { CPU::Register::DE, "DE" },
@@ -245,10 +246,6 @@ class CPU {
 
     bool breakpoint_hit() const;
 
-    void interleave_execute_and_decode(const bool);
-
-    bool at_start_of_instruction() const;
-
     bool half_carry_occurs_on_add(uint8_t v, const uint8_t value_to_add, const bool include_carry = false) const;
 
     bool half_carry_occurs_on_add(uint16_t v, const uint16_t value_to_add, const bool include_carry = false) const;
@@ -267,27 +264,41 @@ class CPU {
 
     void set_cpu_to_halt();
 
+    bool at_start_of_instruction() const;
+
     ~CPU();
 
   private:
+    void fetch_and_decode();
+
+    bool check_for_interrupts();
+
     const std::string TraceFileName = "trace.log";
     const int MaxPathLength = 255;
 
-    enum class State { Idle, Wait, Execute, InterruptTransition, InterruptPushPC, InterruptSetPC };
+    enum class State {
+        FetchAndDecode,
+        FetchAndDecodeExtended,
+        Execute,
+        InterruptTransition,
+        InterruptPushPC,
+        InterruptSetPC,
+    };
     std::shared_ptr<MMU> m_mmu;
     std::shared_ptr<PPU> m_ppu;
 
     const uint8_t ExecutionTicksPerOperationStep = 4;
 
+    uint8_t m_current_cpu_phase_tick_count;
+
+    bool m_next_instruction_preloaded;
     bool m_is_extended_opcode;
-    bool m_interleave_execute_and_decode;
-    bool m_at_start_of_instruction;
+    bool m_interrupt_to_be_serviced;
     bool m_output_trace;
     bool m_is_halted;
     bool m_halt_bug_active;
 
     std::ofstream m_trace_stream;
-    uint8_t m_current_instruction_cycle_count;
     std::shared_ptr<Opcode> m_current_opcode;
 
     CPU::State m_state;
@@ -332,9 +343,9 @@ class CPU {
     void print_trace_line();
 
     static inline std::unordered_map<CPU::State, std::string> s_cpu_state_name = {
-        { CPU::State::Idle, "Idle" },
+        { CPU::State::FetchAndDecode, "FetchAndDecode" },
+        { CPU::State::FetchAndDecodeExtended, "FetchAndDecodeExtended" },
         { CPU::State::Execute, "Execute" },
-        { CPU::State::Wait, "Wait" },
         { CPU::State::InterruptPushPC, "InterruptPushPC" },
         { CPU::State::InterruptSetPC, "InterruptSetPC" },
         { CPU::State::InterruptTransition, "InterruptTransition" },
