@@ -337,51 +337,6 @@ void CPU::set_initial_values_for_registers(const MMU::BootRomType boot_rom_type,
     m_reg_sp = boot_rom_type == MMU::BootRomType::DMG ? 0x0000 : 0xFFFE;
     m_reg_pc = boot_rom_type == MMU::BootRomType::DMG ? 0x0000 : 0x0100;
     m_reg_af = boot_rom_type == MMU::BootRomType::DMG ? 0x0000 : header_checksum_is_zero ? 0x0180 : 0x01B0;
-
-    m_mmu->set_io_register(MMU::IORegister::JOYP, 0xCF);
-    m_mmu->set_io_register(MMU::IORegister::SB, 0x00);
-    m_mmu->set_io_register(MMU::IORegister::SC, 0x7E);
-    m_mmu->set_io_register(MMU::IORegister::DIV, 0xAB);
-    m_mmu->set_io_register(MMU::IORegister::TIMA, 0x00);
-    m_mmu->set_io_register(MMU::IORegister::TMA, 0x00);
-    m_mmu->set_io_register(MMU::IORegister::TAC, 0xF8);
-    m_mmu->set_io_register(MMU::IORegister::IF, 0xE1);
-
-    m_mmu->set_io_register(MMU::IORegister::NR10, 0x80);
-    m_mmu->set_io_register(MMU::IORegister::NR11, 0xBF);
-    m_mmu->set_io_register(MMU::IORegister::NR12, 0xF3);
-    m_mmu->set_io_register(MMU::IORegister::NR13, 0xFF);
-    m_mmu->set_io_register(MMU::IORegister::NR14, 0xBF);
-    m_mmu->set_io_register(MMU::IORegister::NR21, 0x3F);
-    m_mmu->set_io_register(MMU::IORegister::NR22, 0x00);
-    m_mmu->set_io_register(MMU::IORegister::NR23, 0xFF);
-    m_mmu->set_io_register(MMU::IORegister::NR24, 0xBF);
-    m_mmu->set_io_register(MMU::IORegister::NR30, 0x7F);
-    m_mmu->set_io_register(MMU::IORegister::NR31, 0xFF);
-    m_mmu->set_io_register(MMU::IORegister::NR32, 0x9F);
-    m_mmu->set_io_register(MMU::IORegister::NR33, 0xFF);
-    m_mmu->set_io_register(MMU::IORegister::NR34, 0xBF);
-    m_mmu->set_io_register(MMU::IORegister::NR41, 0xFF);
-    m_mmu->set_io_register(MMU::IORegister::NR42, 0x00);
-    m_mmu->set_io_register(MMU::IORegister::NR43, 0x00);
-    m_mmu->set_io_register(MMU::IORegister::NR44, 0xBF);
-    m_mmu->set_io_register(MMU::IORegister::NR50, 0x77);
-    m_mmu->set_io_register(MMU::IORegister::NR51, 0xF3);
-    m_mmu->set_io_register(MMU::IORegister::NR52, 0xF1);
-
-    m_mmu->set_io_register(MMU::IORegister::LCDC, 0x91);
-    m_mmu->set_io_register(MMU::IORegister::STAT, 0x85);
-    m_mmu->set_io_register(MMU::IORegister::SCY, 0x00);
-    m_mmu->set_io_register(MMU::IORegister::SCX, 0x00);
-    m_mmu->set_io_register(MMU::IORegister::LY, 0x00);
-    m_mmu->set_io_register(MMU::IORegister::LYC, 0x00);
-    m_mmu->set_io_register(MMU::IORegister::DMA, 0xFF);
-    m_mmu->set_io_register(MMU::IORegister::BGP, 0xFC);
-    m_mmu->set_io_register(MMU::IORegister::WY, 0x00);
-    m_mmu->set_io_register(MMU::IORegister::WX, 0x00);
-
-    m_mmu->set_io_register(MMU::IORegister::IE, 0x00);
-
     m_reg_wz = 0x0000;
 }
 

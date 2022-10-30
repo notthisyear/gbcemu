@@ -4,10 +4,12 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 namespace gbcemu {
 
@@ -19,6 +21,50 @@ MMU::MMU(uint16_t memory_size) : m_memory_size(memory_size) {
 
     m_cartridge = nullptr;
     set_io_register(gbcemu::MMU::IORegister::BootRomDisableOffset, 0x01);
+
+    set_io_register(MMU::IORegister::JOYP, 0xCF);
+    set_io_register(MMU::IORegister::SB, 0x00);
+    set_io_register(MMU::IORegister::SC, 0x7E);
+    set_io_register(MMU::IORegister::DIV, 0xAB);
+    set_io_register(MMU::IORegister::TIMA, 0x00);
+    set_io_register(MMU::IORegister::TMA, 0x00);
+    set_io_register(MMU::IORegister::TAC, 0xF8);
+    set_io_register(MMU::IORegister::IF, 0xE1);
+
+    set_io_register(MMU::IORegister::NR10, 0x80);
+    set_io_register(MMU::IORegister::NR11, 0xBF);
+    set_io_register(MMU::IORegister::NR12, 0xF3);
+    set_io_register(MMU::IORegister::NR13, 0xFF);
+    set_io_register(MMU::IORegister::NR14, 0xBF);
+    set_io_register(MMU::IORegister::NR21, 0x3F);
+    set_io_register(MMU::IORegister::NR22, 0x00);
+    set_io_register(MMU::IORegister::NR23, 0xFF);
+    set_io_register(MMU::IORegister::NR24, 0xBF);
+    set_io_register(MMU::IORegister::NR30, 0x7F);
+    set_io_register(MMU::IORegister::NR31, 0xFF);
+    set_io_register(MMU::IORegister::NR32, 0x9F);
+    set_io_register(MMU::IORegister::NR33, 0xFF);
+    set_io_register(MMU::IORegister::NR34, 0xBF);
+    set_io_register(MMU::IORegister::NR41, 0xFF);
+    set_io_register(MMU::IORegister::NR42, 0x00);
+    set_io_register(MMU::IORegister::NR43, 0x00);
+    set_io_register(MMU::IORegister::NR44, 0xBF);
+    set_io_register(MMU::IORegister::NR50, 0x77);
+    set_io_register(MMU::IORegister::NR51, 0xF3);
+    set_io_register(MMU::IORegister::NR52, 0xF1);
+
+    set_io_register(MMU::IORegister::LCDC, 0x91);
+    set_io_register(MMU::IORegister::STAT, 0x85);
+    set_io_register(MMU::IORegister::SCY, 0x00);
+    set_io_register(MMU::IORegister::SCX, 0x00);
+    set_io_register(MMU::IORegister::LY, 0x00);
+    set_io_register(MMU::IORegister::LYC, 0x00);
+    set_io_register(MMU::IORegister::DMA, 0xFF);
+    set_io_register(MMU::IORegister::BGP, 0xFC);
+    set_io_register(MMU::IORegister::WY, 0x00);
+    set_io_register(MMU::IORegister::WX, 0x00);
+
+    set_io_register(MMU::IORegister::IE, 0x00);
 
     m_timer_controller = std::make_unique<TimerController>(this);
 }
@@ -118,7 +164,7 @@ bool MMU::try_map_data_to_memory(uint8_t *data, uint16_t offset, uint16_t size) 
         break;
     case MMU::MemoryRegion::IORegisters:
         if (size == 1)
-            pre_process_io_register_access(offset - 0xFF00, data[0]);
+            pre_process_io_register_access(offset - 0xFF00, AccessType::Write, &(data[0]));
     case MMU::MemoryRegion::WRAMFixed:
     case MMU::MemoryRegion::SpriteAttributeTable:
     case MMU::MemoryRegion::HRAM:
@@ -178,11 +224,12 @@ bool MMU::try_read_from_memory(uint8_t *data, uint16_t offset, uint64_t size) co
             read_from_memory(data, offset - 0x2000, size);
             break;
 
+        case MMU::MemoryRegion::IERegister:
+            pre_process_io_register_access(offset, AccessType::Read);
         case MMU::MemoryRegion::WRAMFixed:
         case MMU::MemoryRegion::SpriteAttributeTable:
         case MMU::MemoryRegion::IORegisters:
         case MMU::MemoryRegion::HRAM:
-        case MMU::MemoryRegion::IERegister:
             read_from_memory(data, offset, size);
             break;
 
@@ -414,28 +461,40 @@ std::string MMU::get_region_name(MMU::MemoryRegion region) const { return MMU::s
 
 std::string MMU::get_io_register_name(MMU::IORegister reg) const { return MMU::s_io_register_names.find(reg)->second; }
 
-void MMU::pre_process_io_register_access(uint8_t offset, uint8_t &data) const {
-    switch (offset) {
+void MMU::pre_process_io_register_access(uint8_t offset, AccessType access_type, uint8_t *data) const {
+    auto io_reg = static_cast<MMU::IORegister>(offset);
+    switch (io_reg) {
 
-    case static_cast<uint8_t>(MMU::IORegister::JOYP):
-        data = (data & 0xF0) | (get_io_register(MMU::IORegister::JOYP) & 0x0F); // Bits 0-3 are readonly
+    case MMU::IORegister::JOYP:
+        if (access_type == AccessType::Write)
+            *data = (*data & 0xF0) | (get_io_register(MMU::IORegister::JOYP) & 0x0F); // Bits 0-3 are readonly
         break;
 
-    case static_cast<uint8_t>(MMU::IORegister::DIV):
-        data = 0x00; // All writes to DIV causes it to be reset
-        m_timer_controller->reset_divider();
+    case MMU::IORegister::DIV:
+        if (access_type == AccessType::Write) {
+            *data = 0x00; // All writes to DIV causes it to be reset
+            m_timer_controller->reset_divider();
+        }
         break;
 
-    case static_cast<uint8_t>(MMU::IORegister::NR52):
-        data = (data & 0xF0) | (get_io_register(MMU::IORegister::NR52) & 0x0F); // Bits 0-3 are readonly
+    case MMU::IORegister::TIMA:
+        if (access_type == AccessType::Write)
+            m_timer_controller->tima_write_occured();
         break;
 
-    case static_cast<uint8_t>(MMU::IORegister::STAT):
-        data = (data & 0xF8) | (get_io_register(MMU::IORegister::STAT) & 0x07); // Bits 0-2 are readonly
+    case MMU::IORegister::NR52:
+        if (access_type == AccessType::Write)
+            *data = (*data & 0xF0) | (get_io_register(MMU::IORegister::NR52) & 0x0F); // Bits 0-3 are readonly
         break;
 
-    case static_cast<uint8_t>(MMU::IORegister::LY):
-        data = get_io_register(MMU::IORegister::LY); // LY is read-only
+    case MMU::IORegister::STAT:
+        if (access_type == AccessType::Write)
+            *data = (*data & 0xF8) | (get_io_register(MMU::IORegister::STAT) & 0x07); // Bits 0-2 are readonly
+        break;
+
+    case MMU::IORegister::LY:
+        if (access_type == AccessType::Write)
+            *data = get_io_register(MMU::IORegister::LY); // LY is read-only
         break;
 
     default:

@@ -2,6 +2,7 @@
 
 #include "Cartridge.h"
 #include "TimerController.h"
+#include <functional>
 #include <map>
 #include <memory>
 #include <stdint.h>
@@ -116,12 +117,15 @@ class MMU {
     ~MMU();
 
   private:
+    enum class AccessType {
+        Read,
+        Write,
+    };
     uint16_t m_memory_size;
     uint8_t *m_memory;
     uint8_t *m_boot_rom;
 
     std::unique_ptr<TimerController> m_timer_controller;
-
     const uint16_t RegisterOffsetBase = 0xFF00;
     const uint16_t DmgBootRomSize = 0x0100;
 
@@ -142,7 +146,7 @@ class MMU {
 
     std::string get_region_name(MMU::MemoryRegion) const;
     std::string get_io_register_name(MMU::IORegister) const;
-    void pre_process_io_register_access(uint8_t, uint8_t &) const;
+    void pre_process_io_register_access(uint8_t, AccessType, uint8_t *data = nullptr) const;
 
     bool get_file_size(const std::string &, uint64_t *) const;
 
