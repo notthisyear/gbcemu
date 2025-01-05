@@ -66,7 +66,7 @@ MMU::MMU(uint16_t memory_size) : m_memory_size(memory_size) {
 
     set_io_register(MMU::IORegister::IE, 0x00);
 
-    m_timer_controller = std::make_unique<TimerController>(this);
+    m_timer_controller = TimerController::get(this);
 }
 
 bool MMU::try_load_boot_rom(std::ostream &stream, const std::string &path) {
@@ -164,7 +164,7 @@ bool MMU::try_map_data_to_memory(uint8_t *data, uint16_t offset, uint16_t size) 
         break;
     case MMU::MemoryRegion::IORegisters:
         if (size == 1)
-            pre_process_io_register_access(offset - 0xFF00, AccessType::Write, &(data[0]));
+            pre_process_io_register_access(offset - 0xFF00, AccessType::Write, data);
     case MMU::MemoryRegion::WRAMFixed:
     case MMU::MemoryRegion::SpriteAttributeTable:
     case MMU::MemoryRegion::HRAM:
@@ -254,8 +254,6 @@ uint8_t MMU::get_io_register(const MMU::IORegister reg) const {
     read_from_memory(&data, RegisterOffsetBase | static_cast<uint16_t>(reg), 1);
     return data;
 }
-
-void MMU::tick_timer_controller() { m_timer_controller->tick(); }
 
 void MMU::read_from_memory(uint8_t *data, uint16_t offset, uint16_t size) const {
     for (auto i = 0; i < size; i++)
@@ -480,6 +478,11 @@ void MMU::pre_process_io_register_access(uint8_t offset, AccessType access_type,
     case MMU::IORegister::TIMA:
         if (access_type == AccessType::Write)
             m_timer_controller->tima_write_occured();
+        break;
+
+    case MMU::IORegister::TAC:
+        if (access_type == AccessType::Write)
+            *data = (*data & 0x07) | (get_io_register(MMU::IORegister::TAC) & 0xF8); // Bits 7-3 are readonly
         break;
 
     case MMU::IORegister::NR52:

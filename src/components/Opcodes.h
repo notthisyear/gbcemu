@@ -486,12 +486,12 @@ struct Load8bitRegister final : public Opcode {
                 (void)mmu->try_map_data_to_memory(&data, cpu->get_16_bit_register(CPU::Register::HL), 1);
             });
         } else if (m_source == CPU::Register::HL) {
-            m_operations.push_back([](CPU *cpu, MMU *mmu) {
+            m_operations.push_back([](CPU *, MMU *) {});
+            m_operations.push_back([&](CPU *cpu, MMU *mmu) {
                 uint8_t source_value;
                 (void)mmu->try_read_from_memory(&source_value, cpu->get_16_bit_register(CPU::Register::HL), 1);
-                cpu->set_register(CPU::Register::Z, source_value);
+                cpu->set_register(m_target, source_value);
             });
-            m_operations.push_back([&](CPU *cpu, MMU *) { cpu->set_register(m_target, cpu->get_8_bit_register(CPU::Register::Z)); });
         } else {
             m_operations.push_back([&](CPU *cpu, MMU *) { cpu->set_register(m_target, cpu->get_8_bit_register(m_source)); });
         }
@@ -879,7 +879,7 @@ struct ReadWriteIOPortCWithA final : public Opcode {
     ReadWriteIOPortCWithA::ActionType m_type;
 };
 
-// Read/Write IO-port n from/to A
+// Read/Write IO-port n to/from A
 struct ReadWriteIOPortNWithA final : public Opcode {
 
   public:
@@ -895,12 +895,13 @@ struct ReadWriteIOPortNWithA final : public Opcode {
         m_operations.push_back([](CPU *cpu, MMU *) { cpu->read_at_pc_and_store_in_intermediate(CPU::Register::Z); });
         m_operations.push_back([](CPU *cpu, MMU *) { cpu->set_register(CPU::Register::W, (uint8_t)0xFF); });
         m_operations.push_back([&](CPU *cpu, MMU *mmu) {
+            auto address = cpu->get_16_bit_register(CPU::Register::WZ);
             if (m_type == ReadWriteIOPortNWithA::ActionType::Write) {
                 uint8_t reg_a = cpu->get_8_bit_register(CPU::Register::A);
-                (void)mmu->try_map_data_to_memory(&reg_a, cpu->get_16_bit_register(CPU::Register::WZ), 1);
+                (void)mmu->try_map_data_to_memory(&reg_a, address, 1);
             } else {
                 uint8_t value;
-                (void)mmu->try_read_from_memory(&value, cpu->get_16_bit_register(CPU::Register::WZ), 1);
+                (void)mmu->try_read_from_memory(&value, address, 1);
                 cpu->set_register(CPU::Register::A, value);
             }
         });
@@ -968,12 +969,13 @@ struct LoadFromOrSetAIndirect final : public Opcode {
         m_operations.push_back([](CPU *cpu, MMU *) { cpu->read_at_pc_and_store_in_intermediate(CPU::Register::W); });
         m_operations.push_back([](CPU *, MMU *) {});
         m_operations.push_back([&](CPU *cpu, MMU *mmu) {
+            auto address = cpu->get_16_bit_register(CPU::Register::WZ);
             if (m_type == LoadFromOrSetAIndirect::Direction::FromAccumulator) {
                 uint8_t reg_a = cpu->get_8_bit_register(CPU::Register::A);
-                (void)mmu->try_map_data_to_memory(&reg_a, cpu->get_16_bit_register(CPU::Register::WZ), 1);
+                (void)mmu->try_map_data_to_memory(&reg_a, address, 1);
             } else {
                 uint8_t value;
-                (void)mmu->try_read_from_memory(&value, cpu->get_16_bit_register(CPU::Register::WZ), 1);
+                (void)mmu->try_read_from_memory(&value, address, 1);
                 cpu->set_register(CPU::Register::A, value);
             }
         });

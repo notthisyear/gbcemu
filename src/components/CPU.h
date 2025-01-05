@@ -269,9 +269,10 @@ class CPU {
     ~CPU();
 
   private:
+    uint64_t m_tick_ctr = 0;
     void fetch_and_decode();
 
-    bool check_for_interrupts();
+    bool should_handle_interrupt();
 
     const std::string TraceFileName = "trace.log";
     const int MaxPathLength = 255;
@@ -286,6 +287,7 @@ class CPU {
     };
     std::shared_ptr<MMU> m_mmu;
     std::shared_ptr<PPU> m_ppu;
+    TimerController *m_timer_controller;
 
     const uint8_t ExecutionTicksPerOperationStep = 4;
 
@@ -295,7 +297,6 @@ class CPU {
 
     bool m_next_instruction_preloaded;
     bool m_is_extended_opcode;
-    bool m_interrupt_to_be_serviced;
     bool m_output_trace;
     bool m_is_halted;
     bool m_halt_bug_active;

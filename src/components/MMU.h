@@ -5,6 +5,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <ostream>
 #include <stdint.h>
 #include <string>
 #include <unordered_map>
@@ -112,8 +113,6 @@ class MMU {
 
     void print_memory_at_location(std::ostream &stream, uint16_t start, uint16_t end) const;
 
-    void tick_timer_controller();
-
     ~MMU();
 
   private:
@@ -125,7 +124,7 @@ class MMU {
     uint8_t *m_memory;
     uint8_t *m_boot_rom;
 
-    std::unique_ptr<TimerController> m_timer_controller;
+    TimerController *m_timer_controller;
     const uint16_t RegisterOffsetBase = 0xFF00;
     const uint16_t DmgBootRomSize = 0x0100;
 

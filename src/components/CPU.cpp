@@ -19,10 +19,10 @@ namespace gbcemu {
 CPU::CPU(std::shared_ptr<MMU> mmu, std::shared_ptr<PPU> ppu, bool output_trace) : m_mmu(mmu), m_ppu(ppu), m_output_trace(output_trace) {
     m_current_cpu_phase_tick_count = 0;
     m_current_interrupt_phase_counter = 0;
+    m_tick_ctr = 0;
 
     m_next_instruction_preloaded = false;
     m_is_extended_opcode = false;
-    m_interrupt_to_be_serviced = false;
     m_current_opcode = nullptr;
     m_cycles_until_interrupts_enabled = -1;
 
@@ -31,6 +31,7 @@ CPU::CPU(std::shared_ptr<MMU> mmu, std::shared_ptr<PPU> ppu, bool output_trace) 
     m_is_halted = false;
     m_halt_bug_active = false;
 
+    m_timer_controller = TimerController::get(m_mmu.get());
     m_state = CPU::State::FetchAndDecode;
     if (m_mmu->has_cartridge()) {
         set_initial_values_for_registers(m_mmu->get_boot_rom_type(),
@@ -62,14 +63,15 @@ void CPU::tick() {
         }
     }
 
-    bool move_pc_back_and_trace_at_end = false;
+    m_timer_controller->process();
+    auto move_pc_back_and_trace_at_end = false;
+
     if (m_current_cpu_phase_tick_count == 0) {
         auto run_state_machine = true;
         if (m_state == CPU::State::FetchAndDecode) {
             run_state_machine = false;
-            m_interrupt_to_be_serviced = check_for_interrupts();
 
-            if (m_interrupt_to_be_serviced) {
+            if (should_handle_interrupt()) {
                 m_state = CPU::State::InterruptTransition;
                 if (m_next_instruction_preloaded) {
                     m_next_instruction_preloaded = false;
@@ -144,8 +146,6 @@ void CPU::tick() {
             }
         }
     }
-
-    m_mmu->tick_timer_controller();
     m_ppu->tick();
 
     if (move_pc_back_and_trace_at_end) {
@@ -155,11 +155,12 @@ void CPU::tick() {
     }
 
     m_current_cpu_phase_tick_count = (m_current_cpu_phase_tick_count + 1) & (ExecutionTicksPerOperationStep - 1);
+    m_tick_ctr++;
 }
 
 bool CPU::at_start_of_instruction() const { return m_current_cpu_phase_tick_count == 0 && m_state == CPU::State::FetchAndDecode; }
 
-bool CPU::check_for_interrupts() {
+bool CPU::should_handle_interrupt() {
     auto interrupt_enable = m_mmu->get_io_register(MMU::IORegister::IE);
     auto interrupt_flag = m_mmu->get_io_register(MMU::IORegister::IF);
     bool interrupt_pending = (interrupt_enable & interrupt_flag) > 0x00;
@@ -408,12 +409,15 @@ void CPU::print_additional_info(std::ostream &stream) const {
 
 void CPU::print_trace_line() {
     uint8_t instruction_length = 0;
-    m_trace_stream << GeneralUtilities::formatted_string(
-                          "A: 0x%02X F: %c%c%c%c BC: 0x%04X DE: 0x%04X HL: 0x%04X SP: 0x%04X PC: 0x%04X | ", get_8_bit_register(CPU::Register::A),
-                          flag_is_set(CPU::Flag::Z) ? 'Z' : '-', flag_is_set(CPU::Flag::N) ? 'N' : '-', flag_is_set(CPU::Flag::H) ? 'H' : '-',
-                          flag_is_set(CPU::Flag::C) ? 'C' : '-', get_16_bit_register(CPU::Register::BC), get_16_bit_register(CPU::Register::DE),
-                          get_16_bit_register(CPU::Register::HL), get_16_bit_register(CPU::Register::SP), get_16_bit_register(CPU::Register::PC))
-                   << disassemble_instruction_at(m_reg_pc, instruction_length) << std::endl;
+    std::cout
+        << GeneralUtilities::formatted_string(
+               "A: 0x%02X F: %c%c%c%c BC: 0x%04X DE: 0x%04X HL: 0x%04X SP: 0x%04X PC: 0x%04X (cy: %d, DIV: 0x%02X TIMA: 0x%02X TMA: 0x%02X TAC: 0x%02X) | ",
+               get_8_bit_register(CPU::Register::A), flag_is_set(CPU::Flag::Z) ? 'Z' : '-', flag_is_set(CPU::Flag::N) ? 'N' : '-',
+               flag_is_set(CPU::Flag::H) ? 'H' : '-', flag_is_set(CPU::Flag::C) ? 'C' : '-', get_16_bit_register(CPU::Register::BC),
+               get_16_bit_register(CPU::Register::DE), get_16_bit_register(CPU::Register::HL), get_16_bit_register(CPU::Register::SP),
+               get_16_bit_register(CPU::Register::PC), m_tick_ctr, m_mmu->get_io_register(MMU::IORegister::DIV), m_mmu->get_io_register(MMU::IORegister::TIMA),
+               m_mmu->get_io_register(MMU::IORegister::TMA), m_mmu->get_io_register(MMU::IORegister::TAC))
+        << disassemble_instruction_at(m_reg_pc, instruction_length) << std::endl;
 }
 
 CPU::~CPU() {
