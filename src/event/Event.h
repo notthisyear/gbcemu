@@ -38,6 +38,6 @@ class Event {
     std::string m_event_as_string = "";
 };
 
-using EventCallbackHandler = std::function<void(Event &)>;
+using EventCallbackHandler = std::function<void(Event const &)>;
 
 }

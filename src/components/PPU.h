@@ -30,7 +30,7 @@ class PPU {
 
     void tick();
 
-    PPU(std::shared_ptr<MMU>, uint16_t, uint16_t, uint8_t);
+    PPU(const std::shared_ptr<MMU>, uint16_t, uint16_t, uint8_t);
 
     void request_frame_trace();
     bool cycles_per_frame_reached() const;

@@ -10,7 +10,7 @@
 
 namespace gbcemu {
 
-PPU::PPU(std::shared_ptr<MMU> mmu, uint16_t framebuffer_width, uint16_t framebuffer_height, uint8_t bytes_per_pixel)
+PPU::PPU(const std::shared_ptr<MMU> mmu, uint16_t framebuffer_width, uint16_t framebuffer_height, uint8_t bytes_per_pixel)
     : m_mmu(mmu), m_framebuffer_width(framebuffer_width), m_framebuffer_height(framebuffer_height), m_bytes_per_pixel(bytes_per_pixel) {
 
     m_framebuffer = new uint8_t[m_framebuffer_width * m_framebuffer_height * m_bytes_per_pixel];

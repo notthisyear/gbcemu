@@ -119,7 +119,7 @@ const std::unordered_map<Cartridge::CartridgeType, std::string> Cartridge::s_mbc
     { Cartridge::CartridgeType::NO_MBC, "ROM ONLY" },
     { Cartridge::CartridgeType::MBC1, "MBC1" },
     { Cartridge::CartridgeType::MBC1_RAM, "MBC1 + RAM" },
-    { Cartridge::CartridgeType::MBC1_RAM_BATTERY, "MBC + RAM + BATTERY" },
+    { Cartridge::CartridgeType::MBC1_RAM_BATTERY, "MBC1 + RAM + BATTERY" },
     { Cartridge::CartridgeType::MBC2, "MBC2" },
     { Cartridge::CartridgeType::MBC2_BATTERY, "MBC2 + BATTERY" },
     { Cartridge::CartridgeType::ROM_RAM, "ROM + RAM" },

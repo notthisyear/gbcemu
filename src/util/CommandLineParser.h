@@ -25,27 +25,17 @@ class CommandLineParser {
 
     CommandLineParser();
 
-    void parse(int, char **);
+    void parse(int, char **) const;
 
-    bool has_argument(ArgumentType);
+    bool has_argument(ArgumentType) const;
 
-    std::shared_ptr<CommandLineArgument> get_argument(ArgumentType);
+    std::shared_ptr<CommandLineArgument> get_argument(ArgumentType) const;
 
-    void print_usage_string(std::ostream &, const std::string &);
+    void print_usage_string(std::ostream &, const std::string &) const;
 
-    void print_options(std::ostream &);
-
-    void fix_path(std::string &);
+    void print_options(std::ostream &) const;
 
   private:
-    std::string get_regexp(ArgumentType);
-
-    std::string get_help_text(ArgumentType);
-
-    std::string get_regexp_printable(const ArgumentType);
-
-    std::string get_regexp_in_usage(const ArgumentType);
-
     std::unordered_map<CommandLineParser::ArgumentType, std::shared_ptr<CommandLineArgument>> m_argument_options;
 
     // Command regexp, is switch, argument validation regexp, help text

@@ -11,16 +11,16 @@ namespace gbcemu {
 
 class Application {
   public:
-    Application(std::shared_ptr<CPU>, std::shared_ptr<PPU>, std::shared_ptr<Renderer>, const WindowProperties &);
+    Application(const std::shared_ptr<CPU>, const std::shared_ptr<PPU>, const std::shared_ptr<Renderer>, const WindowProperties &);
 
     void init();
     void run();
     void set_cpu_debug_mode(const bool);
     void set_cpu_breakpoint(const uint16_t);
 
-    uint32_t register_event_callback(EventType, EventCallbackHandler);
-    void handle_event(Event &);
-    bool try_remove_event_callback(EventType, uint32_t);
+    uint32_t register_event_callback(const EventType, const EventCallbackHandler);
+    void handle_event(Event const &);
+    bool try_remove_event_callback(const EventType, const uint32_t);
 
     ~Application();
 
@@ -39,7 +39,7 @@ class Application {
     std::unique_ptr<WindowsWindow> m_window;
     WindowProperties m_window_properties;
 
-    void window_resized_event(WindowResizeEvent &);
-    void window_closed_event(WindowCloseEvent &);
+    void window_resized_event(WindowResizeEvent const &);
+    void window_closed_event(WindowCloseEvent const &);
 };
 }

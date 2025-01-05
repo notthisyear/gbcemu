@@ -14,16 +14,18 @@ CommandLineParser::CommandLineParser() {
     }
 }
 
-void CommandLineParser::parse(int argc, char **argv) {
-    std::vector<ArgumentType> missing_arguments;
+void CommandLineParser::parse(int argc, char **argv) const {
+    std::vector<ArgumentType> missing_arguments{};
     for (auto const &it : m_argument_options) {
-        bool found_argument = false;
-        for (auto i = 1; i < argc; i++) {
-            if (argv[i][0] != '-')
+        bool found_argument{ false };
+        for (std::size_t i = 1; i < argc; ++i) {
+            if (argv[i][0] != '-') {
                 continue;
+            }
 
-            if (!it.second->is_command(argv[i]))
+            if (!it.second->is_command(argv[i])) {
                 continue;
+            }
 
             if (it.second->is_switch) {
                 found_argument = true;
@@ -35,28 +37,30 @@ void CommandLineParser::parse(int argc, char **argv) {
             }
         }
 
-        if (!found_argument)
+        if (!found_argument) {
             it.second->set_as_missing();
+        }
     }
 }
 
-bool CommandLineParser::has_argument(ArgumentType type) { return m_argument_options.find(type)->second->argument_type != ArgumentType::Missing; }
+bool CommandLineParser::has_argument(ArgumentType type) const { return m_argument_options.find(type)->second->argument_type != ArgumentType::Missing; }
 
-std::shared_ptr<CommandLineArgument> CommandLineParser::get_argument(ArgumentType type) { return m_argument_options.find(type)->second; }
+std::shared_ptr<CommandLineArgument> CommandLineParser::get_argument(ArgumentType type) const { return m_argument_options.find(type)->second; }
 
-void CommandLineParser::print_usage_string(std::ostream &stream, const std::string &program_name) {
+void CommandLineParser::print_usage_string(std::ostream &stream, const std::string &program_name) const {
     stream << "usage: " << program_name << " ";
-    int i = 0;
+    std::size_t i{ 0 };
+    std::size_t const number_of_arguments{ m_argument_options.size() };
     for (auto const &it : m_argument_options) {
         stream << it.second->get_regexp_in_usage();
 
-        if (i < m_argument_options.size() - 1)
+        if (i < (number_of_arguments - 1))
             stream << " ";
         i++;
     }
 }
 
-void CommandLineParser::print_options(std::ostream &stream) {
+void CommandLineParser::print_options(std::ostream &stream) const {
     stream << "options:\n";
     for (auto const &it : m_argument_options) {
         stream << std::left << std::setw(20) << it.second->get_regexp_printable() << std::right << it.second->get_help_text() << std::endl;
