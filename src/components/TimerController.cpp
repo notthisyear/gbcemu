@@ -17,7 +17,12 @@ TimerController *TimerController::get(MMU *mmu) {
 }
 
 TimerController::TimerController(MMU *mmu) : m_mmu(mmu) {
-    m_div_value = ((m_mmu->get_io_register(MMU::IORegister::DIV) << 8) & 0xFF00); // + 199;
+    // Note: I don't have a good justification for adding 0xC8 here, other than
+    //       that it's required to pass some of the Mooneye test's. Apparantly,
+    //       a DIV increase is supposed to happen after (boot sequence), seven NOP's
+    //       and one JP. Initializing the lower bits of internal counter to zero puts
+    //       us out of phase.
+    m_div_value = ((m_mmu->get_io_register(MMU::IORegister::DIV) << 8) & 0xFF00) + 0xC8;
     m_last_output_value = false;
     m_overflow_process_pending = false;
     m_overflow_counter = 0x00;
