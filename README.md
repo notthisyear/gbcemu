@@ -26,8 +26,8 @@ Tests can be found [here](https://github.com/Gekkio/mooneye-test-suite). We do f
 | Test name | Status | Comment |
 | ----------- | -------- | --- |
 | `add_sp_e_timing` | &#x274c; | *Writing to cartridge RAM not yet supported.*
-| `boot_div-dmgABCmgb` | &#x274c; | *We quite close here and we can make it pass be arbitrarily adding 200 cycles to the internal system counter at start-up. Odd.*
-| `boot_hwio-dmgABCmgb` | &#x274c; | *Here, we also seem to fail for various values, including `DIV`. Might be connected to the failure above.*
+| `boot_div-dmgABCmgb` | &#x2705; |
+| `boot_hwio-dmgABCmgb` | &#x2705; |
 | `boot_regs-dmgABC` | &#x2705; |
 | `call_cc_timing` | &#x274c; | *Fails in round 1.*
 | `call_cc_timing2` | &#x274c; | *Fails assertions on register `BC` and `D`. Might be releated to OAM that we've not yet looked at.*
