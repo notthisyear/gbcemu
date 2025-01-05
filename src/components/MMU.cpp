@@ -224,15 +224,14 @@ bool MMU::try_read_from_memory(uint8_t *data, uint16_t offset, uint64_t size) co
             read_from_memory(data, offset - 0x2000, size);
             break;
 
-        case MMU::MemoryRegion::IERegister:
+        case MMU::MemoryRegion::IORegisters:
             pre_process_io_register_access(offset, AccessType::Read);
         case MMU::MemoryRegion::WRAMFixed:
         case MMU::MemoryRegion::SpriteAttributeTable:
-        case MMU::MemoryRegion::IORegisters:
         case MMU::MemoryRegion::HRAM:
+        case MMU::MemoryRegion::IERegister:
             read_from_memory(data, offset, size);
             break;
-
         case MMU::MemoryRegion::Restricted:
             // TODO: Emulate correct behavior
             result = false;
