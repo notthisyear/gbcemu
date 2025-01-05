@@ -20,9 +20,71 @@ Tests can be found [here](https://github.com/retrio/gb-test-roms).
 | `oam_bug` | &#x274c; | *`MBC1+RAM+BATTERY` MBC not implemented yet*
 
 ## Mooneye test suite
-Tests can be found [here](https://github.com/Gekkio/mooneye-test-suite).
+Tests can be found [here](https://github.com/Gekkio/mooneye-test-suite). We do fail quite a bit of tests at the moment. A small comfort is that some emulators that work well in game also seems to fail a few of these tests. However, there are a few things to address...
 
-### Acceptance - Timer
+### Acceptance
+| Test name | Status | Comment |
+| ----------- | -------- | --- |
+| `add_sp_e_timing` | &#x274c; | *Writing to cartridge RAM not yet supported.*
+| `boot_div-dmgABCmgb` | &#x274c; | *We quite close here and we can make it pass be arbitrarily adding 200 cycles to the internal system counter at start-up. Odd.*
+| `boot_hwio-dmgABCmgb` | &#x274c; | *Here, we also seem to fail for various values, including `DIV`. Might be connected to the failure above.*
+| `boot_regs-dmgABC` | &#x2705; |
+| `call_cc_timing` | &#x274c; | *Fails in round 1.*
+| `call_cc_timing2` | &#x274c; | *Fails assertions on register `BC` and `D`. Might be releated to OAM that we've not yet looked at.*
+| `call_timing` | &#x274c; | *Fails in round 1.*
+| `call_timing2` | &#x274c; | *Fails assertions on register `BC` and `D`. Might be releated to OAM that we've not yet looked at.*
+| `di_timing-GS` | &#x274c; | *Fails in round 1.*
+| `div_timing` | &#x2705; |
+| `ei_sequence` | &#x274c; | *Crashes the emulator. Interesting.*
+| `ei_timing.` | &#x274c; | *Crashes the emulator. Interesting.*
+| `halt_ime0_ei` | &#x2705; |
+| `halt_ime0_nointr_timing` | &#x274c; | *Fails on assertions on register `DE`.*
+| `halt_ime1_timing` | &#x274c; | *Writing to cartridge RAM not yet supported.*
+| `halt_ime1_timing2-GS` | &#x274c; | *Fails in round 1.*
+| `if_ie_registers` | &#x274c; | *Crashes the emulator. Interesting.*
+| `intr_timing` | &#x274c; | *Crashes the emulator. Interesting.*
+| `jp_cc_timing` | &#x274c; | *Fails in round 1.*
+| `jp_timing` | &#x274c; | *Fails in round 1.*
+| `ld_hl_sp_e_timing` | &#x274c; | *Fails on assertions on register `BC`.*
+| `oam_dma_restart` | &#x274c; | *Quite expected, as we haven't looked at DMA/OAM yet.*
+| `oam_dma_start` | &#x274c; | *Quite expected, as we haven't looked at DMA/OAM yet.*
+| `oam_dma_timing` | &#x274c; | *Quite expected, as we haven't looked at DMA/OAM yet.*
+| `pop_timing` | &#x274c; | *Fails on assertions on register `E`.*
+| `push_timing` | &#x274c; | *Fails on assertions on register `D`.*
+| `rapid_di_ei` | &#x274c; | *Crashes the emulator. Interesting.*
+| `ret_cc_timing` | &#x274c; | *Writing to cartridge RAM not yet supported.*
+| `ret_timing` | &#x274c; | *Writing to cartridge RAM not yet supported.*
+| `reti_intr_timing` | &#x274c; | *Writing to cartridge RAM not yet supported.*
+| `reti_timing` | &#x274c; | *Writing to cartridge RAM not yet supported.*
+| `rst_timing` | &#x274c; | *Quite expected, as we haven't really looked at RST yet.*
+
+#### Acceptance - Bits
+| Test name | Status | Comment |
+| ----------- | -------- | --- |
+| `mem_oam` | &#x2705; |
+| `reg_f` | &#x2705; |
+| `unused_hwio-GS` | &#x274c; | *Fails as unused HW registers are supposed to return `0xFF` when read. We currently zero-out the entire range, so an easy fix.* 
+
+### Acceptance - Instr
+| Test name | Status | Comment |
+| ----------- | -------- | --- |
+| `daa` | &#x2705; |
+
+#### Acceptance - Interrupts
+| Test name | Status | Comment |
+| ----------- | -------- | --- |
+| `ie_push` | &#x274c; | *Fails round 1, interrupt wasn't cancelled properly*
+
+#### Acceptance - OAM DMA
+We haven't looked at this yet.
+
+#### Acceptance - PPU
+The PPU is currently very rudimentary, so we don't expect to pass a lot here.
+
+#### Acceptance - Serial
+We haven't looked at this yet.
+
+#### Acceptance - Timer
 | Test name | Status | Comment |
 | ----------- | -------- | --- |
 | `div_write` | &#x2705; |
