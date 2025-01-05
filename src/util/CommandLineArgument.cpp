@@ -1,90 +1,66 @@
 #include "CommandLineArgument.h"
+#include "GeneralUtilities.h"
 
 namespace gbcemu {
 
-bool CommandLineArgument::is_command(std::string s) const {
-    std::smatch sm;
-    return std::regex_search(s, sm, m_argument_regex);
-}
+bool CommandLineArgument::is_switch() const { return m_command_data.is_switch; }
 
-bool CommandLineArgument::parameter_is_valid(std::string s) const {
-    std::smatch sm;
-    return std::regex_search(s, sm, m_parameter_validation_regex);
-}
-
-void CommandLineArgument::set_value(std::string s) { value = s; }
-
-void CommandLineArgument::set_as_missing() { argument_type = CommandLineParser::ArgumentType::Missing; }
-
-std::string CommandLineArgument::get_help_text() const { return m_help_text; }
-
-std::string CommandLineArgument::get_regexp_printable() const {
-    auto location_of_whitespace = m_argument_regex_string.find(' ');
-    auto last_idx = location_of_whitespace != std::string::npos ? location_of_whitespace : m_argument_regex_string.length();
-
-    auto number_of_parentheses = 2 * std::count(m_argument_regex_string.begin(), m_argument_regex_string.begin() + last_idx, '(');
-    auto number_of_variants = number_of_parentheses / 2;
-
-    char *buffer = new char[(number_of_variants == 0) ? (last_idx + 1) : (last_idx - number_of_parentheses + number_of_variants)];
-    auto result_idx = 0;
-    for (int i = 0; i < last_idx; i++) {
-        if (m_argument_regex_string[i] == '(' || m_argument_regex_string[i] == ')') {
-            continue;
-        } else if (m_argument_regex_string[i] == '|') {
-            buffer[result_idx++] = ',';
-            buffer[result_idx++] = ' ';
-        } else {
-            buffer[result_idx++] = m_argument_regex_string[i];
-        }
+bool CommandLineArgument::is_command(std::string const &s) const {
+    std::smatch sm{};
+    std::regex command_regex{};
+    if (m_command_data.short_name.has_value()) {
+        command_regex = std::regex(GeneralUtilities::formatted_string("(-%c)|(--%s)", m_command_data.short_name.value(), m_command_data.long_name),
+                                   std::regex_constants::icase);
+    } else {
+        command_regex = std::regex(GeneralUtilities::formatted_string("--%s", m_command_data.long_name), std::regex_constants::icase);
     }
-
-    buffer[result_idx] = '\0';
-    std::string result(buffer);
-    delete[] buffer;
-    return result;
+    return std::regex_search(s, sm, command_regex);
 }
 
-std::string CommandLineArgument::get_regexp_in_usage() const {
-    auto location_of_split = m_argument_regex_string.find('|');
-    auto location_of_whitespace = m_argument_regex_string.find(' ');
+CommandData::ArgumentType CommandLineArgument::argument_type() const { return m_argument_type; }
 
-    auto last_idx = (location_of_split != std::string::npos)
-                        ? location_of_split
-                        : (location_of_whitespace != std::string::npos ? location_of_whitespace : m_argument_regex_string.length());
+bool CommandLineArgument::is_found() const { return m_is_found; }
 
-    char *buffer = new char[last_idx + 1];
-    char prev_chr;
-    int buffer_idx = 0;
-    for (int i = 0; i < last_idx; i++) {
-        if (m_argument_regex_string[i] == '(') {
-            if (i > 0 && prev_chr == '(')
-                continue;
-            buffer[buffer_idx++] = '[';
+std::string CommandLineArgument::value() const { return m_value; }
 
-        } else if (m_argument_regex_string[i] == ')') {
-            if (i > 0 && prev_chr == '(')
-                continue;
-            buffer[buffer_idx++] = ']';
-        } else {
-            buffer[buffer_idx++] = m_argument_regex_string[i];
-        }
-        prev_chr = m_argument_regex_string[i];
+bool CommandLineArgument::parameter_is_valid(std::string const &s) const {
+    std::smatch sm;
+    if (m_command_data.validation_regex.has_value()) {
+        return std::regex_search(s, sm, std::regex(m_command_data.validation_regex.value(), std::regex_constants::icase));
     }
-
-    buffer[buffer_idx] = '\0';
-    std::string result(buffer);
-    delete[] buffer;
-    return result;
+    return true;
 }
 
-CommandLineArgument::CommandLineArgument(CommandLineParser::ArgumentType type, std::string argument_regex, bool is_switch_arg,
-                                         std::string parameter_validation_regex_string, std::string help_text)
-    : argument_type(type), m_argument_regex_string(argument_regex), is_switch(is_switch_arg), m_help_text(help_text) {
+void CommandLineArgument::set_value(std::string const s) { m_value = s; }
 
-    m_argument_regex = std::regex(m_argument_regex_string, std::regex_constants::icase);
-    if (!is_switch)
-        m_parameter_validation_regex = std::regex(parameter_validation_regex_string, std::regex_constants::icase);
+void CommandLineArgument::set_found() { m_is_found = true; }
+
+std::string CommandLineArgument::get_help_text() const { return m_command_data.help_text; }
+
+std::string CommandLineArgument::get_command_in_help() const {
+    std::string const argument_value_name{ m_command_data.argument_value_name.has_value()
+                                               ? GeneralUtilities::formatted_string(" <%s>", m_command_data.argument_value_name.value())
+                                               : "" };
+    if (m_command_data.short_name.has_value()) {
+        return GeneralUtilities::formatted_string("-%c, --%s%s", m_command_data.short_name.value(), m_command_data.long_name, argument_value_name);
+    } else {
+        return GeneralUtilities::formatted_string("--%s%s", m_command_data.long_name, argument_value_name);
+    }
 }
 
-CommandLineArgument::CommandLineArgument(CommandLineParser::ArgumentType type) : argument_type(type) {}
+std::string CommandLineArgument::get_command_in_usage() const {
+    std::string const argument_name{ m_command_data.short_name.has_value() ? GeneralUtilities::formatted_string("-%c", m_command_data.short_name)
+                                                                           : GeneralUtilities::formatted_string("--%s", m_command_data.long_name) };
+    std::string const argument_value_name{ m_command_data.argument_value_name.has_value()
+                                               ? GeneralUtilities::formatted_string(" <%s>", m_command_data.argument_value_name.value())
+                                               : "" };
+    if (m_command_data.is_required) {
+        return GeneralUtilities::formatted_string("%s%s", argument_name, argument_value_name);
+    } else {
+        return GeneralUtilities::formatted_string("[%s%s]", argument_name, argument_value_name);
+    }
+}
+
+CommandLineArgument::CommandLineArgument(CommandData const &command_data)
+    : m_argument_type{ command_data.type }, m_is_found{ false }, m_command_data{ command_data } {}
 }

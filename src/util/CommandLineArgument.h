@@ -1,38 +1,42 @@
 #pragma once
 
+#include "CommandData.h"
 #include "CommandLineParser.h"
+#include <optional>
 #include <regex>
 
 namespace gbcemu {
 
 struct CommandLineArgument {
   public:
-    CommandLineParser::ArgumentType argument_type;
-    bool is_switch;
-    std::string value;
+    bool is_switch() const;
 
-    bool is_command(std::string) const;
+    bool is_command(std::string const &) const;
 
-    bool parameter_is_valid(std::string) const;
+    CommandData::ArgumentType argument_type() const;
 
-    void set_value(std::string);
+    bool is_found() const;
 
-    void set_as_missing();
+    std::string value() const;
+
+    bool parameter_is_valid(std::string const &) const;
+
+    void set_value(const std::string);
+
+    void set_found();
 
     std::string get_help_text() const;
 
-    std::string get_regexp_printable() const;
+    std::string get_command_in_help() const;
 
-    std::string get_regexp_in_usage() const;
+    std::string get_command_in_usage() const;
 
-    CommandLineArgument(CommandLineParser::ArgumentType, std::string, bool, std::string, std::string);
-
-    CommandLineArgument(CommandLineParser::ArgumentType);
+    CommandLineArgument(CommandData const &);
 
   private:
-    std::string m_argument_regex_string;
-    std::regex m_argument_regex;
-    std::regex m_parameter_validation_regex;
-    std::string m_help_text;
+    CommandData m_command_data;
+    CommandData::ArgumentType m_argument_type;
+    bool m_is_found;
+    std::string m_value{ "" };
 };
 }

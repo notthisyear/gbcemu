@@ -1,8 +1,12 @@
 #pragma once
 
+#include "CommandData.h"
 #include "GeneralUtilities.h"
+
+#include <array>
 #include <iomanip>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <unordered_map>
@@ -14,42 +18,63 @@ struct CommandLineArgument;
 class CommandLineParser {
 
   public:
-    enum class ArgumentType {
-        Missing = 0,
-        Help = 1,
-        AttachDebugger = 2,
-        BootRomPath = 3,
-        CartridgePath = 4,
-        OutputTrace = 5,
-    };
-
     CommandLineParser();
 
-    void parse(int, char **) const;
+    bool try_parse(int, char **);
 
-    bool has_argument(ArgumentType) const;
+    std::size_t parsing_error_argument_index() const;
 
-    std::shared_ptr<CommandLineArgument> get_argument(ArgumentType) const;
+    bool has_argument(const CommandData::ArgumentType) const;
 
-    void print_usage_string(std::ostream &, const std::string &) const;
+    std::string get_argument_value(const CommandData::ArgumentType) const;
+
+    void print_usage_string(std::ostream &, std::string const &) const;
 
     void print_options(std::ostream &) const;
 
   private:
-    std::unordered_map<CommandLineParser::ArgumentType, std::shared_ptr<CommandLineArgument>> m_argument_options;
+    std::size_t m_parsing_error_argument_index{ 0U };
+    std::unordered_map<CommandData::ArgumentType, std::shared_ptr<CommandLineArgument>> m_argument_options;
 
-    // Command regexp, is switch, argument validation regexp, help text
-    static inline const std::unordered_map<CommandLineParser::ArgumentType, std::tuple<std::string, bool, std::string, std::string>> s_arguments = {
-        { CommandLineParser::ArgumentType::Help,
-          std::tuple<std::string, bool, std::string, std::string>("(-h)|(--help)", true, "", "show this help message and exit") },
-        { CommandLineParser::ArgumentType::AttachDebugger,
-          std::tuple<std::string, bool, std::string, std::string>("(-d)|(--dgb)", true, "", "attach the debugger at startup") },
-        { CommandLineParser::ArgumentType::BootRomPath,
-          std::tuple<std::string, bool, std::string, std::string>("--boot-rom", false, R"( *[\w\\:\.\-/\\(\\)\[\] \, ]+\.\w+)", "path to boot rom") },
-        { CommandLineParser::ArgumentType::CartridgePath,
-          std::tuple<std::string, bool, std::string, std::string>("(-c)|(--cartridge)", false, R"( *[\w\\:\.\-/\\(\\)\[\] \, ]+\.\w+)", "path to cartridge") },
-        { CommandLineParser::ArgumentType::OutputTrace,
-          std::tuple<std::string, bool, std::string, std::string>("(-t)|(--trace)", true, "", "output cpu trace to file for each cycle") },
+    static const size_t kNumberOfArguments{ 5 };
+    static inline const std::array<CommandData, kNumberOfArguments> kArguments = {
+        CommandData{
+            .type = CommandData::ArgumentType::kHelp,
+            .long_name = "help",
+            .help_text = "show this help message and exit",
+            .is_switch = true,
+            .short_name = 'h',
+        },
+        CommandData{
+            .type = CommandData::ArgumentType::kAttachDebugger,
+            .long_name = "debugger",
+            .help_text = "attach the debugger at startup",
+            .is_switch = true,
+            .short_name = 'd',
+        },
+        CommandData{
+            .type = CommandData::ArgumentType::kBootRomPath,
+            .long_name = "boot_rom",
+            .help_text = "path to boot rom",
+            .argument_value_name = "path",
+            .validation_regex = R"( *[\w\\:\.\-/\\(\\)\[\] \, ]+\.\w+)",
+        },
+        CommandData{
+            .type = CommandData::ArgumentType::kCartridgePath,
+            .long_name = "cartridge",
+            .help_text = "path to boot cartridge",
+            .is_required = true,
+            .argument_value_name = "path",
+            .short_name = 'c',
+            .validation_regex = R"( *[\w\\:\.\-/\\(\\)\[\] \, ]+\.\w+)",
+        },
+        CommandData{
+            .type = CommandData::ArgumentType::kOutputTrace,
+            .long_name = "trace",
+            .help_text = "output cpu trace to file for each cycle",
+            .is_switch = true,
+            .short_name = 't',
+        },
     };
 };
 }

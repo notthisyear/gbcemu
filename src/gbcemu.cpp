@@ -66,9 +66,16 @@ std::string windowsify_path(std::string const &path) {
 
 int main(int argc, char **argv) {
 
-    gbcemu::CommandLineParser const parser{};
-    parser.parse(argc, argv);
-    if (parser.has_argument(gbcemu::CommandLineParser::ArgumentType::Help)) {
+    gbcemu::CommandLineParser parser{};
+    if (!parser.try_parse(argc, argv)) {
+        gbcemu::LogUtilities::log_error(
+            std::cout, gbcemu::GeneralUtilities::formatted_string("Invalid arguments! Could not parse '%s' as either a valid argument or valid argument value",
+                                                                  argv[parser.parsing_error_argument_index()]));
+        print_help(parser);
+        exit(1);
+    }
+
+    if (argc == 1 || parser.has_argument(gbcemu::CommandData::ArgumentType::kHelp)) {
         print_help(parser);
         return 0;
     }
@@ -78,12 +85,12 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    if (!parser.has_argument(gbcemu::CommandLineParser::ArgumentType::CartridgePath)) {
+    if (!parser.has_argument(gbcemu::CommandData::ArgumentType::kCartridgePath)) {
         gbcemu::LogUtilities::log_error(std::cout, "Running without cartridge is currently not supported");
         exit(1);
     }
 
-    std::string const cartridge_path{ windowsify_path(parser.get_argument(gbcemu::CommandLineParser::ArgumentType::CartridgePath)->value) };
+    std::string const cartridge_path{ windowsify_path(parser.get_argument_value(gbcemu::CommandData::ArgumentType::kCartridgePath)) };
 
     auto const window_properties = gbcemu::WindowProperties();
 
@@ -93,8 +100,8 @@ int main(int argc, char **argv) {
 
     gbcemu::LogUtilities::log_info(std::cout, "Emulator started!");
 
-    if (parser.has_argument(gbcemu::CommandLineParser::ArgumentType::BootRomPath)) {
-        std::string const boot_rom_path{ windowsify_path(parser.get_argument(gbcemu::CommandLineParser::ArgumentType::BootRomPath)->value) };
+    if (parser.has_argument(gbcemu::CommandData::ArgumentType::kBootRomPath)) {
+        std::string const boot_rom_path{ windowsify_path(parser.get_argument_value(gbcemu::CommandData::ArgumentType::kBootRomPath)) };
         if (!mmu->try_load_boot_rom(std::cout, boot_rom_path)) {
             exit(1);
         } else {
@@ -108,10 +115,10 @@ int main(int argc, char **argv) {
 
     gbcemu::LogUtilities::log_info(std::cout, gbcemu::GeneralUtilities::formatted_string("Cartridge '%s' loaded", cartridge_path));
 
-    auto const cpu{ std::make_shared<gbcemu::CPU>(mmu, ppu, parser.has_argument(gbcemu::CommandLineParser::ArgumentType::OutputTrace)) };
+    auto const cpu{ std::make_shared<gbcemu::CPU>(mmu, ppu, parser.has_argument(gbcemu::CommandData::ArgumentType::kOutputTrace)) };
     auto const app{ std::make_shared<gbcemu::Application>(cpu, ppu, renderer, gbcemu::WindowProperties()) };
 
-    bool const attach_debugger{ parser.has_argument(gbcemu::CommandLineParser::ArgumentType::AttachDebugger) };
+    bool const attach_debugger{ parser.has_argument(gbcemu::CommandData::ArgumentType::kAttachDebugger) };
     gbcemu::Debugger *const dbg = { attach_debugger ? new gbcemu::Debugger(cpu, mmu, ppu, app) : nullptr };
     std::thread *const dbg_thread{ attach_debugger ? new std::thread(&gbcemu::Debugger::run, dbg, std::ref(std::cout)) : nullptr };
 

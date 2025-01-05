@@ -1,6 +1,7 @@
 set(HEADER_FILES 
 		LogUtilities.h
 		GeneralUtilities.h
+		CommandData.h
 		CommandLineParser.h
 		CommandLineArgument.h
 		BitUtilities.h
