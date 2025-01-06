@@ -63,7 +63,7 @@ Tests can be found [here](https://github.com/Gekkio/mooneye-test-suite). We do f
 | ----------- | -------- | --- |
 | `mem_oam` | &#x2705; |
 | `reg_f` | &#x2705; |
-| `unused_hwio-GS` | &#x274c; | *Fails as unused HW registers are supposed to return `0xFF` when read. We currently zero-out the entire range, so an easy fix.* 
+| `unused_hwio-GS` | &#x2705; |
 
 ### Acceptance - Instr
 | Test name | Status | Comment |

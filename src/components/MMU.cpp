@@ -473,17 +473,25 @@ std::string MMU::get_io_register_name(MMU::IORegister reg) const { return MMU::s
 
 void MMU::pre_process_io_register_access(std::uint8_t offset, AccessType access_type, std::uint8_t *data) const {
     IORegister const io_reg = static_cast<MMU::IORegister>(offset);
-    switch (io_reg) {
 
+    switch (io_reg) {
     case MMU::IORegister::JOYP:
         if (access_type == AccessType::Write) {
-            *data = (*data & 0xF0) | (get_io_register(MMU::IORegister::JOYP) & 0x0F); // Bits 0-3 are readonly
+            // Bits 0-3 are readonly and bits 6-7 are unused (and unwriteable).
+            *data = (*data & 0x30) | (get_io_register(MMU::IORegister::JOYP) & 0xCF);
         }
         break;
 
+    case MMU::IORegister::SC:
+        if (access_type == AccessType::Write) {
+            // Bits 2-6 are unused (and unwriteable). Additionally, bit 1 can only be written to on GBC.
+            // TODO: Deal with bit 1 whenever we support GBC.
+            *data = (*data & 0x81) | (get_io_register(MMU::IORegister::SC) & 0x7E);
+        }
+        break;
     case MMU::IORegister::DIV:
         if (access_type == AccessType::Write) {
-            *data = 0x00; // All writes to DIV causes it to be reset
+            *data = 0x00; // All writes to DIV causes it to be reset.
             m_timer_controller->reset_divider();
         }
         break;
@@ -496,30 +504,136 @@ void MMU::pre_process_io_register_access(std::uint8_t offset, AccessType access_
 
     case MMU::IORegister::TAC:
         if (access_type == AccessType::Write) {
-            *data = (*data & 0x07) | (get_io_register(MMU::IORegister::TAC) & 0xF8); // Bits 7-3 are readonly
+            // Bits 3-7 are unused (and unwriteable).
+            *data = (*data & 0x07) | (get_io_register(MMU::IORegister::TAC) & 0xF8);
+        }
+        break;
+
+    case MMU::IORegister::IF:
+        if (access_type == AccessType::Write) {
+            // Bits 5-7 are unused (and unwriteable).
+            *data = (*data & 0x1F) | (get_io_register(MMU::IORegister::IF) & 0xE0);
+        }
+        break;
+
+    case MMU::IORegister::NR10:
+        if (access_type == AccessType::Write) {
+            // Bit 7 is unused (and unwriteable).
+            *data = (*data & 0x7F) | (get_io_register(MMU::IORegister::NR10) & 0x80);
+        }
+        break;
+
+    case MMU::IORegister::NR14:
+        if (access_type == AccessType::Write) {
+            // Bits 3-5 are unused (and unwriteable).
+            *data = (*data & 0xC7) | (get_io_register(MMU::IORegister::NR14) & 0x38);
+        }
+        break;
+
+    case MMU::IORegister::NR24:
+        if (access_type == AccessType::Write) {
+            // Bits 3-5 are unused (and unwriteable).
+            *data = (*data & 0xC7) | (get_io_register(MMU::IORegister::NR24) & 0x38);
+        }
+        break;
+
+    case MMU::IORegister::NR30:
+        if (access_type == AccessType::Write) {
+            // Bits 0-6 are unused (and unwriteable).
+            *data = (*data & 0x80) | (get_io_register(MMU::IORegister::NR30) & 0x7F);
+        }
+        break;
+
+    case MMU::IORegister::NR32:
+        if (access_type == AccessType::Write) {
+            // Bits 0-4 and bit 7 are unused (and unwriteable).
+            *data = (*data & 0x60) | (get_io_register(MMU::IORegister::NR32) & 0x9F);
+        }
+        break;
+
+    case MMU::IORegister::NR34:
+        if (access_type == AccessType::Write) {
+            // Bits 3-5 are unused (and unwriteable).
+            *data = (*data & 0xC7) | (get_io_register(MMU::IORegister::NR34) & 0x38);
+        }
+        break;
+
+    case MMU::IORegister::NR41:
+        if (access_type == AccessType::Write) {
+            // Bits 6-7 are unused (and unwriteable).
+            *data = (*data & 0x3F) | (get_io_register(MMU::IORegister::NR41) & 0xC0);
+        }
+        break;
+
+    case MMU::IORegister::NR44:
+        if (access_type == AccessType::Write) {
+            // Bits 0-5 are unused (and unwriteable).
+            *data = (*data & 0xC0) | (get_io_register(MMU::IORegister::NR44) & 0x3F);
         }
         break;
 
     case MMU::IORegister::NR52:
         if (access_type == AccessType::Write) {
-            *data = (*data & 0xF0) | (get_io_register(MMU::IORegister::NR52) & 0x0F); // Bits 0-3 are readonly
+            // Bits 0-3 are readonly and bits 4-6 are unused (and unwriteable).
+            *data = (*data & 0x80) | (get_io_register(MMU::IORegister::NR52) & 0x7F);
         }
         break;
 
     case MMU::IORegister::STAT:
         if (access_type == AccessType::Write) {
-            *data = (*data & 0xF8) | (get_io_register(MMU::IORegister::STAT) & 0x07); // Bits 0-2 are readonly
+            // Bit 7 is unused (and unwriteable).
+            *data = (*data & 0x7F) | (get_io_register(MMU::IORegister::STAT) & 0x80);
         }
         break;
 
     case MMU::IORegister::LY:
         if (access_type == AccessType::Write) {
-            *data = get_io_register(MMU::IORegister::LY); // LY is read-only
+            // LY is read-only.
+            *data = get_io_register(MMU::IORegister::LY);
         }
         break;
 
+    case MMU::IORegister::BootRomDisableOffset:
+        if (access_type == AccessType::Write) {
+            // Outside of the boot rom, this register cannot be written to.
+            // TODO: Ensure that the boot rom is allowed to write to this register.
+            *data = get_io_register(MMU::IORegister::BootRomDisableOffset);
+        }
+        break;
+    case MMU::IORegister::SB:
+    case MMU::IORegister::NR11:
+    case MMU::IORegister::NR12:
+    case MMU::IORegister::NR13:
+    case MMU::IORegister::NR21:
+    case MMU::IORegister::NR22:
+    case MMU::IORegister::NR23:
+    case MMU::IORegister::NR31:
+    case MMU::IORegister::NR33:
+    case MMU::IORegister::NR42:
+    case MMU::IORegister::NR43:
+    case MMU::IORegister::NR50:
+    case MMU::IORegister::NR51:
+    case MMU::IORegister::LCDC:
+    case MMU::IORegister::SCY:
+    case MMU::IORegister::SCX:
+    case MMU::IORegister::LYC:
+    case MMU::IORegister::DMA:
+    case MMU::IORegister::BGP:
+    case MMU::IORegister::OBP0:
+    case MMU::IORegister::OBP1:
+    case MMU::IORegister::WY:
+    case MMU::IORegister::WX:
+    case MMU::IORegister::IE:
+        // For all of these accesses, no pre-processing is necessary
+        break;
+
     default:
-        break; // Do nothing
+        if (access_type == AccessType::Write) {
+            // If we are here, the program is trying to write to unused registers within the IO register span.
+            // Hence, we simply overwrite whatever data the program is trying to write with the data that's
+            // already there, ensuring that nothing happens.
+            read_from_memory(data, kRegisterOffsetBase | static_cast<std::uint16_t>(offset), 1U);
+        }
     }
 }
 
