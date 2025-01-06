@@ -57,46 +57,23 @@ Tests can be found [here](https://github.com/Gekkio/mooneye-test-suite). We do f
 | `reti_intr_timing` | &#x274c; | *Writing to cartridge RAM not yet supported.*
 | `reti_timing` | &#x274c; | *Writing to cartridge RAM not yet supported.*
 | `rst_timing` | &#x274c; | *Quite expected, as we haven't really looked at RST yet.*
+| `bits` / `mem_oam` | &#x2705; |
+| `bits` / `reg_f` | &#x2705; |
+| `bits` / `unused_hwio-GS` | &#x2705; |
+| `instr` / `daa` | &#x2705; |
+| `interrupts` / `ie_push` | &#x274c; | *Fails round 1, interrupt wasn't cancelled properly*
+| `timer` / `div_write` | &#x2705; |
+| `timer` / `rapid_toggle` | &#x274c; | *Assertion of register `C` failed (expected `D9`, was `D8`)*
+| `timer` / `tim00` | &#x2705; |
+| `timer` / `tim00_div_trigger` | &#x2705; |
+| `timer` / `tim01` | &#x2705; |
+| `timer` / `tim01_div_trigger` | &#x2705; |
+| `timer` / `tim10` | &#x2705; |
+| `timer` / `tim10_div_trigger` | &#x2705; |
+| `timer` / `tim11` | &#x2705; |
+| `timer` / `tim11_div_trigger` | &#x2705; |
+| `timer` / `tima_reload` | &#x2705; |
+| `timer` / `tima_write_reloading` | &#x274c; | *Assertion of register `C` failed (expected `FE`, was `7F`)*
+| `timer` / `tma_write_reloading` | &#x274c; | *Assertion of register `E` failed (expected `7F`, was `FE`)*
 
-#### Acceptance - Bits
-| Test name | Status | Comment |
-| ----------- | -------- | --- |
-| `mem_oam` | &#x2705; |
-| `reg_f` | &#x2705; |
-| `unused_hwio-GS` | &#x2705; |
-
-### Acceptance - Instr
-| Test name | Status | Comment |
-| ----------- | -------- | --- |
-| `daa` | &#x2705; |
-
-#### Acceptance - Interrupts
-| Test name | Status | Comment |
-| ----------- | -------- | --- |
-| `ie_push` | &#x274c; | *Fails round 1, interrupt wasn't cancelled properly*
-
-#### Acceptance - OAM DMA
-We haven't looked at this yet.
-
-#### Acceptance - PPU
-The PPU is currently very rudimentary, so we don't expect to pass a lot here.
-
-#### Acceptance - Serial
-We haven't looked at this yet.
-
-#### Acceptance - Timer
-| Test name | Status | Comment |
-| ----------- | -------- | --- |
-| `div_write` | &#x2705; |
-| `rapid_toggle` | &#x274c; | *Assertion of register `C` failed (expected `D9`, was `D8`)*
-| `tim00` | &#x2705; |
-| `tim00_div_trigger` | &#x2705; |
-| `tim01` | &#x2705; |
-| `tim01_div_trigger` | &#x2705; |
-| `tim10` | &#x2705; |
-| `tim10_div_trigger` | &#x2705; |
-| `tim11` | &#x2705; |
-| `tim11_div_trigger` | &#x2705; |
-| `tima_reload` | &#x2705; |
-| `tima_write_reloading` | &#x274c; | *Assertion of register `C` failed (expected `FE`, was `7F`)*
-| `tma_write_reloading` | &#x274c; | *Assertion of register `E` failed (expected `7F`, was `FE`)*
+Regarding the OAM DMA, PPU and serial categories, we haven't looked at those yet.
