@@ -601,6 +601,7 @@ void MMU::pre_process_io_register_access(std::uint8_t offset, AccessType access_
         }
         break;
     case MMU::IORegister::SB:
+    case MMU::IORegister::TMA:
     case MMU::IORegister::NR11:
     case MMU::IORegister::NR12:
     case MMU::IORegister::NR13:
