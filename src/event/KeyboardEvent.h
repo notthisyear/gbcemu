@@ -12,15 +12,15 @@ class KeyboardEvent : public Event {
     KeyCode get_key_code() const { return m_key_code; }
 
   protected:
-    KeyboardEvent(const KeyCode key_code) : m_key_code(key_code) {}
+    KeyboardEvent(KeyCode const key_code) : m_key_code(key_code) {}
 
     KeyCode m_key_code;
 };
 
-class KeyPressedEvent : public KeyboardEvent {
+class KeyPressedEvent final : public KeyboardEvent {
 
   public:
-    KeyPressedEvent(const KeyCode key_code, bool is_repeated) : KeyboardEvent(key_code), m_is_repeated(is_repeated) {
+    KeyPressedEvent(KeyCode const key_code, bool const is_repeated) : KeyboardEvent(key_code), m_is_repeated(is_repeated) {
         set_event_type(GeneralUtilities::formatted_string("KeyPressedEvent: %i (%s)", m_key_code, m_is_repeated ? "repeat" : "single"), EventType::KeyPressed);
     }
 
@@ -30,16 +30,16 @@ class KeyPressedEvent : public KeyboardEvent {
     bool m_is_repeated;
 };
 
-class KeyReleasedEvent : public KeyboardEvent {
+class KeyReleasedEvent final : public KeyboardEvent {
   public:
-    KeyReleasedEvent(const KeyCode key_code) : KeyboardEvent(key_code) {
+    KeyReleasedEvent(KeyCode const key_code) : KeyboardEvent(key_code) {
         set_event_type(GeneralUtilities::formatted_string("KeyReleasedEvent: %i", m_key_code), EventType::KeyReleased);
     }
 };
 
-class CharacterTypedEvent : public KeyboardEvent {
+class CharacterTypedEvent final : public KeyboardEvent {
   public:
-    CharacterTypedEvent(const KeyCode key_code) : KeyboardEvent(key_code) {
+    CharacterTypedEvent(KeyCode const key_code) : KeyboardEvent(key_code) {
         set_event_type(GeneralUtilities::formatted_string("CharacterTypedEvent: %i", m_key_code), EventType::CharacterTyped);
     }
 };

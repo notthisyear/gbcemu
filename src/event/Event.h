@@ -28,14 +28,14 @@ class Event {
     std::string to_string() const { return m_event_as_string; }
 
   protected:
-    void set_event_type(const std::string &event_as_string, EventType event_type) {
+    void set_event_type(std::string const &event_as_string, EventType const event_type) {
         m_event_as_string = event_as_string;
         m_event_type = event_type;
     }
 
   private:
-    EventType m_event_type = EventType::None;
-    std::string m_event_as_string = "";
+    EventType m_event_type{ EventType::None };
+    std::string m_event_as_string{ "" };
 };
 
 using EventCallbackHandler = std::function<void(Event const &)>;

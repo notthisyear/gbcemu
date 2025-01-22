@@ -2,24 +2,25 @@
 
 #include "event/Event.h"
 #include "util/GeneralUtilities.h"
+#include <cstdint>
 
 namespace gbcemu {
 
-class WindowResizeEvent : public Event {
+class WindowResizeEvent final : public Event {
   public:
-    WindowResizeEvent(unsigned int width, unsigned int height) : m_width(width), m_height(height) {
+    WindowResizeEvent(uint32_t const width, uint32_t const height) : m_width(width), m_height(height) {
         set_event_type(GeneralUtilities::formatted_string("WindowResizeEvent: %i, %i", m_width, m_height), gbcemu::EventType::WindowResized);
     }
 
-    unsigned int get_width() const { return m_width; }
-    unsigned int get_height() const { return m_height; }
+    uint32_t get_width() const { return m_width; }
+    uint32_t get_height() const { return m_height; }
 
   private:
-    unsigned int m_width;
-    unsigned int m_height;
+    uint32_t m_width;
+    uint32_t m_height;
 };
 
-class WindowCloseEvent : public Event {
+class WindowCloseEvent final : public Event {
   public:
     WindowCloseEvent() { set_event_type("WindowClosedEvent", gbcemu::EventType::WindowClosed); }
 };
