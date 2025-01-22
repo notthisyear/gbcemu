@@ -1,14 +1,14 @@
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 
 namespace gbcemu {
 
-class Cartridge {
+class Cartridge final {
   public:
-    enum class HeaderField {
+    enum class HeaderField : uint16_t {
 
         CGBFlag = 0x0143,
         NewLicenseeCode = 0x0144,
@@ -24,7 +24,7 @@ class Cartridge {
         NewLicenseCodeFlag = 0x33,
     };
 
-    enum class CartridgeType {
+    enum class CartridgeType : uint8_t {
         NO_MBC = 0x00,
         MBC1 = 0x01,
         MBC1_RAM = 0x02,
@@ -54,17 +54,17 @@ class Cartridge {
         HuC3 = 0xFE,
         HuC1_RAM_BATTERY = 0xFF,
     };
-    Cartridge(uint8_t *, uint64_t);
+    Cartridge(uint8_t *const, std::size_t const);
 
-    void read_from_cartridge_switchable(uint8_t *, uint32_t, uint64_t) const;
-    void read_from_cartridge_ram(uint8_t *, uint32_t, uint64_t) const;
-    void write_to_cartridge_registers(uint8_t *, uint16_t, uint16_t);
-    void write_to_cartridge_ram(uint8_t *, uint16_t, uint16_t);
+    void read_from_cartridge_switchable(uint8_t *const, uint32_t const, std::size_t const) const;
+    void read_from_cartridge_ram(uint8_t *const, uint32_t const, std::size_t const) const;
+    void write_to_cartridge_registers(uint8_t *const, uint16_t const, uint16_t const);
+    void write_to_cartridge_ram(uint8_t *const, uint16_t const, std::size_t const);
 
     std::string get_title() const;
     std::string get_manufacturer_code() const;
-    uint8_t get_single_byte_header_field(const Cartridge::HeaderField) const;
-    uint16_t get_two_byte_header_field(const Cartridge::HeaderField) const;
+    uint8_t get_single_byte_header_field(Cartridge::HeaderField const) const;
+    uint16_t get_two_byte_header_field(Cartridge::HeaderField const) const;
     void print_info(std::ostream &stream) const;
     ~Cartridge();
 
@@ -74,18 +74,53 @@ class Cartridge {
     CartridgeType m_type;
     uint8_t m_current_bank_number;
 
-    const uint16_t TitleStart = 0x0134;
-    const uint16_t TitleEnd = 0x0143;
+    constexpr static uint16_t TitleStart{ 0x0134 };
+    constexpr static uint16_t TitleEnd{ 0x0143 };
 
-    const uint16_t ManufacturerCodeStart = 0x013F;
-    const uint16_t ManufacturerCodeEnd = 0x0142;
+    constexpr static uint16_t ManufacturerCodeStart{ 0x013F };
+    constexpr static uint16_t ManufacturerCodeEnd{ 0x0142 };
 
-    const static uint32_t RomBaseSizeBytes = 32 * 0x400;
-    std::string read_string_from_header(uint16_t, uint16_t) const;
+    constexpr static uint32_t RomBaseSizeBytes{ 32 * 0x400 };
+    std::string read_string_from_header(uint16_t const, uint16_t const) const;
 
-    static const std::unordered_map<Cartridge::CartridgeType, std::string> s_mbc_names;
-    static const std::unordered_map<uint8_t, uint32_t> s_rom_sizes;
-    static const std::unordered_map<uint8_t, uint32_t> s_ram_sizes;
+    static inline std::unordered_map<Cartridge::CartridgeType, std::string> const s_mbc_names{
+        { Cartridge::CartridgeType::NO_MBC, "ROM ONLY" },
+        { Cartridge::CartridgeType::MBC1, "MBC1" },
+        { Cartridge::CartridgeType::MBC1_RAM, "MBC1 + RAM" },
+        { Cartridge::CartridgeType::MBC1_RAM_BATTERY, "MBC1 + RAM + BATTERY" },
+        { Cartridge::CartridgeType::MBC2, "MBC2" },
+        { Cartridge::CartridgeType::MBC2_BATTERY, "MBC2 + BATTERY" },
+        { Cartridge::CartridgeType::ROM_RAM, "ROM + RAM" },
+        { Cartridge::CartridgeType::ROM_RAM_BATTERY, "ROM + RAM + BATTERY" },
+        { Cartridge::CartridgeType::MMM01, "MMM01" },
+        { Cartridge::CartridgeType::MMM01_RAM, "MMM01 + RAM" },
+        { Cartridge::CartridgeType::MMM01_RAM_BATTERY, "MMM01 + RAM + BATTERY" },
+        { Cartridge::CartridgeType::MBC3_TIMER_BATTERY, "MBC3 + TIMER + BATTERY" },
+        { Cartridge::CartridgeType::MBC3_TIMER_RAM_BATTERY, "MBC3 + TIMER + RAM + BATTERY" },
+        { Cartridge::CartridgeType::MBC3, "MBC3" },
+        { Cartridge::CartridgeType::MBC3_RAM, "MBC3 + RAM" },
+        { Cartridge::CartridgeType::MBC3_RAM_BATTERY, "MBC3 + RAM + BATTERY" },
+        { Cartridge::CartridgeType::MBC5, "MBC5" },
+        { Cartridge::CartridgeType::MBC5_RAM, "MBC5 + RAM" },
+        { Cartridge::CartridgeType::MBC5_RAM_BATTERY, "MBC5 + RAM + BATTERY" },
+        { Cartridge::CartridgeType::MBC5_RUMBLE, "MBC5 + RUMBLE" },
+        { Cartridge::CartridgeType::MBC5_RUMBLE_RAM, "MBC5 + RUMBLE + RAM" },
+        { Cartridge::CartridgeType::MBC5_RUMBLE_RAM_BATTERY, "MBC5 + RUMBLE + RAM + BATTERY" },
+        { Cartridge::CartridgeType::MBC6, "MBC6" },
+        { Cartridge::CartridgeType::MBC7_SENSOR_RUMBLE_RAM_BATTERY, "MBC7 + SENSOR + RUMBLE + RAM + BATTERY" },
+        { Cartridge::CartridgeType::POCKET_CAMERA, "POCKET CAMERA" },
+        { Cartridge::CartridgeType::BANDAI_TAMA5, "BANDAI TAMA5" },
+        { Cartridge::CartridgeType::HuC3, "HuC3" },
+        { Cartridge::CartridgeType::HuC1_RAM_BATTERY, "HuC1 + RAM + BATTERY" },
+    };
+    static inline std::unordered_map<uint8_t, uint32_t> const s_rom_sizes{
+        { 0x00, RomBaseSizeBytes },      { 0x01, RomBaseSizeBytes << 1 }, { 0x02, RomBaseSizeBytes << 2 },
+        { 0x03, RomBaseSizeBytes << 3 }, { 0x04, RomBaseSizeBytes << 4 }, { 0x05, RomBaseSizeBytes << 5 },
+        { 0x06, RomBaseSizeBytes << 6 }, { 0x07, RomBaseSizeBytes << 7 }, { 0x08, RomBaseSizeBytes << 8 },
+    };
+    static inline std::unordered_map<uint8_t, uint32_t> const s_ram_sizes{
+        { 0x00, 0 }, { 0x02, 8 * 0x400 }, { 0x03, 32 * 0x400 }, { 0x04, 128 * 0x400 }, { 0x05, 64 * 0x400 }
+    };
 };
 
 // 00	None

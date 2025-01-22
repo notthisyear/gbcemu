@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include <stdint.h>
 #include <unordered_map>
 
@@ -9,18 +8,18 @@ namespace gbcemu {
 // Forward declare MMU
 class MMU;
 
-class TimerController {
+class TimerController final {
   public:
     void process();
     void reset_divider();
     void tima_write_occured();
 
-    static TimerController *get(MMU *);
+    static TimerController *get(MMU *const);
 
   private:
     static TimerController *m_instance;
     MMU *m_mmu;
-    TimerController(MMU *);
+    TimerController(MMU *const);
 
     uint16_t m_div_value;
     bool m_last_output_value;

@@ -2,24 +2,22 @@
 
 #include "Cartridge.h"
 #include "TimerController.h"
-#include <functional>
+#include <cstdint>
 #include <map>
-#include <memory>
 #include <ostream>
-#include <stdint.h>
 #include <string>
 #include <unordered_map>
 
 namespace gbcemu {
 
-class MMU {
+class MMU final {
   public:
-    enum class BootRomType {
+    enum class BootRomType : uint8_t {
         None,
         DMG,
     };
 
-    enum class MemoryRegion {
+    enum class MemoryRegion : uint8_t {
         CartridgeFixed,
         CartridgeSwitchable,
         VRAMSwitchable,
@@ -34,7 +32,7 @@ class MMU {
         Restricted,
     };
 
-    enum class IORegister : std::uint8_t {
+    enum class IORegister : uint8_t {
         // Joypad input
         JOYP = 0x00,
         // Serial data transfer
@@ -89,29 +87,29 @@ class MMU {
         BootRomDisableOffset = 0x50,
     };
 
-    MMU(std::uint16_t);
+    MMU(std::size_t const);
 
     bool try_load_boot_rom(std::ostream &stream, std::string const &);
 
     bool try_load_cartridge(std::ostream &stream, std::string const &);
 
-    bool try_map_data_to_memory(std::uint8_t *data, std::uint16_t offset, std::uint16_t size);
+    bool try_map_data_to_memory(std::uint8_t *const data, uint16_t const offset, std::size_t const size);
 
-    bool try_read_from_memory(std::uint8_t *data, std::uint16_t offset, std::uint64_t size) const;
+    bool try_read_from_memory(std::uint8_t *const data, uint16_t const offset, std::size_t const size) const;
 
-    void set_debug_mode(bool);
+    void set_debug_mode(bool const);
 
     MMU::BootRomType get_boot_rom_type() const;
 
-    void set_io_register(const MMU::IORegister, const std::uint8_t);
+    void set_io_register(MMU::IORegister const, uint8_t const);
 
-    std::uint8_t get_io_register(const MMU::IORegister) const;
+    std::uint8_t get_io_register(MMU::IORegister const) const;
 
     bool has_cartridge() const;
 
     Cartridge *get_cartridge() const;
 
-    void print_memory_at_location(std::ostream &stream, std::uint16_t start, std::uint16_t end) const;
+    void print_memory_at_location(std::ostream &stream, uint16_t const start, uint16_t const end) const;
 
     ~MMU();
 
@@ -120,38 +118,41 @@ class MMU {
         Read,
         Write,
     };
-    std::uint16_t m_memory_size;
-    std::uint8_t *m_memory;
-    std::uint8_t *m_boot_rom;
+
+    std::size_t m_memory_size;
+    uint8_t *m_memory;
+    uint8_t *m_boot_rom;
 
     TimerController *m_timer_controller;
     static constexpr std::uint16_t kRegisterOffsetBase{ 0xFF00 };
     static constexpr std::uint16_t kDmgBootRomSize{ 0x0100 };
 
-    Cartridge *m_cartridge;
-    MMU::MemoryRegion find_memory_region(std::uint16_t) const;
-
     bool m_loading_cartridge;
-    MMU::BootRomType m_boot_rom_type;
-    std::uint64_t m_boot_rom_size;
+    Cartridge *m_cartridge{ nullptr };
+    BootRomType m_boot_rom_type{ BootRomType::None };
+    std::size_t m_boot_rom_size{ 0U };
 
-    void read_from_memory(std::uint8_t *, std::uint16_t, std::uint16_t) const;
+    void initialize_registers();
 
-    void write_to_memory(std::uint8_t *, std::uint16_t, std::uint16_t);
+    MMU::MemoryRegion find_memory_region(uint16_t const) const;
 
-    bool is_boot_rom_range(std::uint16_t, std::uint64_t) const;
-    void read_from_boot_rom(std::uint8_t *, std::uint16_t, std::uint64_t) const;
-    bool try_load_from_file(std::string const &, std::uint8_t *, const std::uint64_t) const;
+    void read_from_memory(std::uint8_t *, uint16_t const, std::size_t const) const;
 
-    std::string get_region_name(MMU::MemoryRegion) const;
-    std::string get_io_register_name(MMU::IORegister) const;
-    void pre_process_io_register_access(std::uint8_t, AccessType, std::uint8_t *data = nullptr) const;
+    void write_to_memory(std::uint8_t *const, uint16_t const, std::size_t const);
 
-    bool get_file_size(std::string const &, std::uint64_t *) const;
+    bool is_boot_rom_range(uint16_t const, std::size_t const) const;
+    void read_from_boot_rom(uint8_t *, uint16_t, std::size_t const) const;
+    bool try_load_from_file(std::string const &, uint8_t *, std::size_t const) const;
 
-    static const std::map<MMU::MemoryRegion, std::pair<std::uint16_t, std::uint16_t>> s_region_map;
-    static const std::unordered_map<MMU::MemoryRegion, std::string> s_region_names;
-    static const std::unordered_map<MMU::IORegister, std::string> s_io_register_names;
+    std::string get_region_name(const MMU::MemoryRegion) const;
+    std::string get_io_register_name(const MMU::IORegister) const;
+    void pre_process_io_register_access(uint8_t const, const MMU::AccessType, uint8_t *data = nullptr) const;
+
+    bool try_get_file_size(std::string const &, std::size_t *) const;
+
+    static std::map<MMU::MemoryRegion, std::pair<std::uint16_t, std::uint16_t>> const s_region_map;
+    static std::unordered_map<MMU::MemoryRegion, std::string> const s_region_names;
+    static std::unordered_map<MMU::IORegister, std::string> const s_io_register_names;
 
     static std::pair<std::uint8_t, std::uint8_t> make_offset_and_size_pair(std::uint8_t offset, std::uint8_t size) { return std::make_pair(offset, size); }
     static std::pair<std::uint16_t, std::uint16_t> make_address_pair(std::uint16_t lower, std::uint16_t upper) { return std::make_pair(lower, upper); }

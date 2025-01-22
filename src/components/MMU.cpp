@@ -4,83 +4,31 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
-#include <functional>
 #include <iostream>
-#include <memory>
-#include <stdexcept>
 #include <utility>
-#include <vector>
 
 namespace gbcemu {
 
-MMU::MMU(std::uint16_t memory_size) : m_memory_size(memory_size) {
+MMU::MMU(std::size_t const memory_size) : m_memory_size(memory_size) {
 
-    m_memory = new std::uint8_t[m_memory_size];
-    memset(m_memory, (std::uint8_t)0x00, m_memory_size);
+    m_memory = new uint8_t[m_memory_size];
+    memset(m_memory, (uint8_t)0x00, m_memory_size);
+    initialize_registers();
 
-    // Unused registers in the IO-register range should return 0xFF
-    memset(m_memory + kRegisterOffsetBase, (std::uint8_t)0xFF, 0x0080);
-
-    m_boot_rom_type = MMU::BootRomType::None;
-    m_cartridge = nullptr;
-
-    set_io_register(MMU::IORegister::JOYP, 0xCF);
-    set_io_register(MMU::IORegister::SB, 0x00);
-    set_io_register(MMU::IORegister::SC, 0x7E);
-    set_io_register(MMU::IORegister::DIV, 0xAB);
-    set_io_register(MMU::IORegister::TIMA, 0x00);
-    set_io_register(MMU::IORegister::TMA, 0x00);
-    set_io_register(MMU::IORegister::TAC, 0xF8);
-    set_io_register(MMU::IORegister::IF, 0xE1);
-
-    set_io_register(MMU::IORegister::NR10, 0x80);
-    set_io_register(MMU::IORegister::NR11, 0xBF);
-    set_io_register(MMU::IORegister::NR12, 0xF3);
-    set_io_register(MMU::IORegister::NR13, 0xFF);
-    set_io_register(MMU::IORegister::NR14, 0xBF);
-    set_io_register(MMU::IORegister::NR21, 0x3F);
-    set_io_register(MMU::IORegister::NR22, 0x00);
-    set_io_register(MMU::IORegister::NR23, 0xFF);
-    set_io_register(MMU::IORegister::NR24, 0xBF);
-    set_io_register(MMU::IORegister::NR30, 0x7F);
-    set_io_register(MMU::IORegister::NR31, 0xFF);
-    set_io_register(MMU::IORegister::NR32, 0x9F);
-    set_io_register(MMU::IORegister::NR33, 0xFF);
-    set_io_register(MMU::IORegister::NR34, 0xBF);
-    set_io_register(MMU::IORegister::NR41, 0xFF);
-    set_io_register(MMU::IORegister::NR42, 0x00);
-    set_io_register(MMU::IORegister::NR43, 0x00);
-    set_io_register(MMU::IORegister::NR44, 0xBF);
-    set_io_register(MMU::IORegister::NR50, 0x77);
-    set_io_register(MMU::IORegister::NR51, 0xF3);
-    set_io_register(MMU::IORegister::NR52, 0xF1);
-
-    set_io_register(MMU::IORegister::LCDC, 0x91);
-    set_io_register(MMU::IORegister::STAT, 0x85);
-    set_io_register(MMU::IORegister::SCY, 0x00);
-    set_io_register(MMU::IORegister::SCX, 0x00);
-    set_io_register(MMU::IORegister::LY, 0x00);
-    set_io_register(MMU::IORegister::LYC, 0x00);
-    set_io_register(MMU::IORegister::DMA, 0xFF);
-    set_io_register(MMU::IORegister::BGP, 0xFC);
-    set_io_register(MMU::IORegister::WY, 0x00);
-    set_io_register(MMU::IORegister::WX, 0x00);
-
-    set_io_register(MMU::IORegister::IE, 0x00);
     m_timer_controller = TimerController::get(this);
 }
 
 bool MMU::try_load_boot_rom(std::ostream &stream, std::string const &path) {
 
-    std::uint64_t size{};
-    if (!get_file_size(path, &size)) {
+    std::size_t size{};
+    if (!try_get_file_size(path, &size)) {
         stream << "\033[1;31m[error] "
                << "\033[0m Could not load boot ROM from '" << path << "'" << std::endl;
         return false;
     }
 
     m_boot_rom_size = size;
-    m_boot_rom = new std::uint8_t[size];
+    m_boot_rom = new uint8_t[size];
 
     if (!try_load_from_file(path, m_boot_rom, size)) {
         stream << "\033[1;31m[error] "
@@ -91,20 +39,21 @@ bool MMU::try_load_boot_rom(std::ostream &stream, std::string const &path) {
     if (m_boot_rom_size == kDmgBootRomSize) {
         m_boot_rom_type = MMU::BootRomType::DMG;
     }
+
     set_io_register(gbcemu::MMU::IORegister::BootRomDisableOffset, 0x00);
     return true;
 }
 
 bool MMU::try_load_cartridge(std::ostream &stream, std::string const &path) {
 
-    std::uint64_t size{};
-    if (!get_file_size(path, &size)) {
+    std::size_t size{};
+    if (!try_get_file_size(path, &size)) {
         stream << "\033[1;31m[error] "
                << "\033[0m Could not load cartridge from '" << path << "'" << std::endl;
         return false;
     }
 
-    auto cartridge_data = new std::uint8_t[size];
+    uint8_t *const cartridge_data = new uint8_t[size];
     bool success{ try_load_from_file(path, cartridge_data, size) };
     if (!success) {
         stream << "\033[1;31m[error] "
@@ -113,7 +62,7 @@ bool MMU::try_load_cartridge(std::ostream &stream, std::string const &path) {
     }
 
     m_cartridge = new Cartridge(cartridge_data, size);
-    auto fixed_cartridge_location{ s_region_map.find(MMU::MemoryRegion::CartridgeFixed)->second };
+    std::pair<uint16_t, uint16_t> const fixed_cartridge_location{ s_region_map.find(MMU::MemoryRegion::CartridgeFixed)->second };
 
     m_loading_cartridge = true;
     success = try_map_data_to_memory(cartridge_data, fixed_cartridge_location.first, fixed_cartridge_location.second - fixed_cartridge_location.first + 1);
@@ -122,10 +71,10 @@ bool MMU::try_load_cartridge(std::ostream &stream, std::string const &path) {
     return success;
 }
 
-bool MMU::try_map_data_to_memory(std::uint8_t *data, std::uint16_t offset, std::uint16_t size) {
+bool MMU::try_map_data_to_memory(uint8_t *const data, uint16_t const offset, std::size_t const size) {
 
     MemoryRegion const region{ find_memory_region(offset) };
-    auto region_endpoints{ s_region_map.find(region)->second };
+    std::pair<uint16_t, uint16_t> const region_endpoints{ s_region_map.find(region)->second };
 
     if ((offset + size - 1) > region_endpoints.second) {
         return false;
@@ -191,9 +140,9 @@ bool MMU::try_map_data_to_memory(std::uint8_t *data, std::uint16_t offset, std::
     return result;
 }
 
-bool MMU::try_read_from_memory(std::uint8_t *data, std::uint16_t offset, uint64_t size) const {
+bool MMU::try_read_from_memory(uint8_t *data, uint16_t const offset, std::size_t const size) const {
     MemoryRegion const region{ find_memory_region(offset) };
-    auto region_endpoints{ s_region_map.find(region)->second };
+    std::pair<uint16_t, uint16_t> const region_endpoints{ s_region_map.find(region)->second };
 
     bool result{ true };
     bool const boot_rom_enabled{ get_io_register(MMU::IORegister::BootRomDisableOffset) == 0x00 };
@@ -254,20 +203,23 @@ bool MMU::try_read_from_memory(std::uint8_t *data, std::uint16_t offset, uint64_
     return result;
 }
 
-void MMU::set_io_register(const MMU::IORegister reg, std::uint8_t value) { write_to_memory(&value, kRegisterOffsetBase | static_cast<std::uint16_t>(reg), 1); }
+void MMU::set_io_register(const MMU::IORegister reg, uint8_t const value) {
+    uint8_t v{ value };
+    write_to_memory(&v, kRegisterOffsetBase | static_cast<uint16_t>(reg), 1);
+}
 
-std::uint8_t MMU::get_io_register(const MMU::IORegister reg) const {
-    std::uint8_t data{};
-    read_from_memory(&data, kRegisterOffsetBase | static_cast<std::uint16_t>(reg), 1);
+uint8_t MMU::get_io_register(const MMU::IORegister reg) const {
+    uint8_t data{};
+    read_from_memory(&data, kRegisterOffsetBase | static_cast<uint16_t>(reg), 1);
     return data;
 }
 
-void MMU::read_from_memory(std::uint8_t *data, std::uint16_t offset, std::uint16_t size) const {
+void MMU::read_from_memory(uint8_t *data, uint16_t const offset, std::size_t const size) const {
     for (std::size_t i{ 0 }; i < size; ++i)
         data[i] = m_memory[offset + i];
 }
 
-void MMU::write_to_memory(std::uint8_t *data, std::uint16_t offset, std::uint16_t size) {
+void MMU::write_to_memory(uint8_t *const data, uint16_t const offset, std::size_t const size) {
     for (std::size_t i{ 0 }; i < size; ++i)
         m_memory[offset + i] = data[i];
 }
@@ -276,11 +228,11 @@ bool MMU::has_cartridge() const { return m_cartridge != nullptr; }
 
 Cartridge *MMU::get_cartridge() const { return m_cartridge; }
 
-void MMU::print_memory_at_location(std::ostream &stream, std::uint16_t start, std::uint16_t end) const {
+void MMU::print_memory_at_location(std::ostream &stream, uint16_t const start, uint16_t const end) const {
 
     stream << std::endl;
 
-    std::uint16_t address_start{};
+    uint16_t address_start{};
     if (start % 16 != 0) {
         address_start = start - (start % 16);
     } else {
@@ -288,7 +240,7 @@ void MMU::print_memory_at_location(std::ostream &stream, std::uint16_t start, st
     }
 
     std::size_t const number_of_bytes_to_print{ (end - start) + 1U };
-    auto buffer = new std::uint8_t[number_of_bytes_to_print];
+    uint8_t *const buffer = new uint8_t[number_of_bytes_to_print];
 
     if (!try_read_from_memory(buffer, start, number_of_bytes_to_print)) {
         stream << "\033[1;31m[error] \033[0;mCannot show memory across memory regions" << std::endl;
@@ -297,13 +249,13 @@ void MMU::print_memory_at_location(std::ostream &stream, std::uint16_t start, st
 
     MemoryRegion const region = find_memory_region(start);
     bool const boot_rom_enabled{ get_io_register(MMU::IORegister::BootRomDisableOffset) == 0x00 };
-    bool is_boot_rom = (region == MMU::MemoryRegion::CartridgeFixed) && boot_rom_enabled && is_boot_rom_range(start, (end - start) + 1);
+    bool const is_boot_rom{ (region == MMU::MemoryRegion::CartridgeFixed) && boot_rom_enabled && is_boot_rom_range(start, (end - start) + 1) };
 
     std::cout << "from region "
               << "\033[1;32m" << (is_boot_rom ? "Boot ROM" : get_region_name(region)) << "\033[0m\n"
               << std::endl;
 
-    int const number_of_rows{ ((end - address_start) / 16) + 1 };
+    uint16_t const number_of_rows{ static_cast<uint16_t>(((end - address_start) / 16) + 1) };
 
     if (number_of_bytes_to_print == 1) {
         stream << "\033[1;37m" << std::left << std::setw(10) << std::setfill(' ') << GeneralUtilities::formatted_string("0x%04X", start);
@@ -318,17 +270,17 @@ void MMU::print_memory_at_location(std::ostream &stream, std::uint16_t start, st
     }
     stream << "\033[0m" << std::endl;
 
-    std::uint16_t current_start_offset{};
-    std::uint16_t row_end{};
-    std::size_t buffer_idx{ 0 };
+    uint16_t current_start_offset{};
+    uint16_t row_end{};
+    size_t buffer_idx{ 0 };
 
-    for (std::size_t r{ 0 }; r < number_of_rows; ++r) {
+    for (uint16_t r{ 0 }; r < number_of_rows; ++r) {
         current_start_offset = address_start + (r * 16);
         row_end = current_start_offset + 16 < (end + 1) ? current_start_offset + 16 : end + 1;
         stream << "\033[1;37m" << std::left << std::setw(10) << std::setfill(' ') << GeneralUtilities::formatted_string("0x%04X", current_start_offset);
         stream << "\033[0m";
 
-        for (std::uint16_t i{ current_start_offset }; i < row_end; ++i) {
+        for (uint16_t i{ current_start_offset }; i < row_end; ++i) {
             stream << std::left << std::setw(4);
             if (i < start) {
                 stream << std::setfill(' ') << " ";
@@ -341,7 +293,7 @@ void MMU::print_memory_at_location(std::ostream &stream, std::uint16_t start, st
     }
 }
 
-bool MMU::get_file_size(std::string const &path, uint64_t *size) const {
+bool MMU::try_get_file_size(std::string const &path, std::size_t *size) const {
     try {
         *size = std::filesystem::file_size(path);
         return true;
@@ -350,7 +302,7 @@ bool MMU::get_file_size(std::string const &path, uint64_t *size) const {
     }
 }
 
-bool MMU::try_load_from_file(std::string const &path, std::uint8_t *buffer, const uint64_t size) const {
+bool MMU::try_load_from_file(std::string const &path, std::uint8_t *buffer, std::size_t const size) const {
     std::ifstream boot_file(path, std::ios::in | std::ios::binary);
     if (boot_file.fail()) {
         return false;
@@ -359,7 +311,7 @@ bool MMU::try_load_from_file(std::string const &path, std::uint8_t *buffer, cons
     return true;
 }
 
-bool MMU::is_boot_rom_range(std::uint16_t offset, uint64_t size) const {
+bool MMU::is_boot_rom_range(uint16_t const offset, std::size_t const size) const {
     // CGB boot ROM is split into two, 0x0000 - 0x00FF and 0x0200 - 0x08FF
     if (m_boot_rom_type == MMU::BootRomType::DMG) {
         return (offset + size) <= kDmgBootRomSize;
@@ -368,7 +320,7 @@ bool MMU::is_boot_rom_range(std::uint16_t offset, uint64_t size) const {
     return end < 0xFF || (offset > 0x01FF && end < 0x0900);
 }
 
-void MMU::read_from_boot_rom(std::uint8_t *data, std::uint16_t offset, uint64_t size) const {
+void MMU::read_from_boot_rom(uint8_t *data, uint16_t offset, std::size_t const size) const {
     // CGB boot ROM is split into two, 0x0000 - 0x00FF and 0x0200 - 0x08FF
     if (m_boot_rom_size > 0xFF && offset > 0x01FF) {
         offset -= 0x0100;
@@ -379,7 +331,7 @@ void MMU::read_from_boot_rom(std::uint8_t *data, std::uint16_t offset, uint64_t 
 
 MMU::BootRomType MMU::get_boot_rom_type() const { return m_boot_rom_type; }
 
-MMU::MemoryRegion MMU::find_memory_region(std::uint16_t address) const {
+MMU::MemoryRegion MMU::find_memory_region(uint16_t const address) const {
     for (auto const &entry : s_region_map) {
         if (address > entry.second.second) {
             continue;
@@ -389,7 +341,56 @@ MMU::MemoryRegion MMU::find_memory_region(std::uint16_t address) const {
     __builtin_unreachable();
 }
 
-const std::map<MMU::MemoryRegion, std::pair<std::uint16_t, std::uint16_t>> MMU::s_region_map = {
+void MMU::initialize_registers() {
+    // Unused registers in the IO-register range should return 0xFF
+    memset(m_memory + kRegisterOffsetBase, (std::uint8_t)0xFF, 0x0080);
+
+    set_io_register(MMU::IORegister::JOYP, 0xCF);
+    set_io_register(MMU::IORegister::SB, 0x00);
+    set_io_register(MMU::IORegister::SC, 0x7E);
+    set_io_register(MMU::IORegister::DIV, 0xAB);
+    set_io_register(MMU::IORegister::TIMA, 0x00);
+    set_io_register(MMU::IORegister::TMA, 0x00);
+    set_io_register(MMU::IORegister::TAC, 0xF8);
+    set_io_register(MMU::IORegister::IF, 0xE1);
+
+    set_io_register(MMU::IORegister::NR10, 0x80);
+    set_io_register(MMU::IORegister::NR11, 0xBF);
+    set_io_register(MMU::IORegister::NR12, 0xF3);
+    set_io_register(MMU::IORegister::NR13, 0xFF);
+    set_io_register(MMU::IORegister::NR14, 0xBF);
+    set_io_register(MMU::IORegister::NR21, 0x3F);
+    set_io_register(MMU::IORegister::NR22, 0x00);
+    set_io_register(MMU::IORegister::NR23, 0xFF);
+    set_io_register(MMU::IORegister::NR24, 0xBF);
+    set_io_register(MMU::IORegister::NR30, 0x7F);
+    set_io_register(MMU::IORegister::NR31, 0xFF);
+    set_io_register(MMU::IORegister::NR32, 0x9F);
+    set_io_register(MMU::IORegister::NR33, 0xFF);
+    set_io_register(MMU::IORegister::NR34, 0xBF);
+    set_io_register(MMU::IORegister::NR41, 0xFF);
+    set_io_register(MMU::IORegister::NR42, 0x00);
+    set_io_register(MMU::IORegister::NR43, 0x00);
+    set_io_register(MMU::IORegister::NR44, 0xBF);
+    set_io_register(MMU::IORegister::NR50, 0x77);
+    set_io_register(MMU::IORegister::NR51, 0xF3);
+    set_io_register(MMU::IORegister::NR52, 0xF1);
+
+    set_io_register(MMU::IORegister::LCDC, 0x91);
+    set_io_register(MMU::IORegister::STAT, 0x85);
+    set_io_register(MMU::IORegister::SCY, 0x00);
+    set_io_register(MMU::IORegister::SCX, 0x00);
+    set_io_register(MMU::IORegister::LY, 0x00);
+    set_io_register(MMU::IORegister::LYC, 0x00);
+    set_io_register(MMU::IORegister::DMA, 0xFF);
+    set_io_register(MMU::IORegister::BGP, 0xFC);
+    set_io_register(MMU::IORegister::WY, 0x00);
+    set_io_register(MMU::IORegister::WX, 0x00);
+
+    set_io_register(MMU::IORegister::IE, 0x00);
+}
+
+std::map<MMU::MemoryRegion, std::pair<std::uint16_t, std::uint16_t>> const MMU::s_region_map = {
     { MMU::MemoryRegion::CartridgeFixed, MMU::make_address_pair(0x0000, 0x3FFF) },
     { MMU::MemoryRegion::CartridgeSwitchable, MMU::make_address_pair(0x4000, 0x7FFF) },
     { MMU::MemoryRegion::VRAMSwitchable, MMU::make_address_pair(0x8000, 0x9FFF) },
@@ -404,7 +405,7 @@ const std::map<MMU::MemoryRegion, std::pair<std::uint16_t, std::uint16_t>> MMU::
     { MMU::MemoryRegion::IERegister, MMU::make_address_pair(0xFFFF, 0xFFFF) },
 };
 
-const std::unordered_map<MMU::MemoryRegion, std::string> MMU::s_region_names = {
+std::unordered_map<MMU::MemoryRegion, std::string> const MMU::s_region_names = {
     { MMU::MemoryRegion::CartridgeFixed, "CartridgeFixed" },
     { MMU::MemoryRegion::CartridgeSwitchable, "CartridgeSwitchable" },
     { MMU::MemoryRegion::VRAMSwitchable, "VRAMSwitchable" },
@@ -419,7 +420,7 @@ const std::unordered_map<MMU::MemoryRegion, std::string> MMU::s_region_names = {
     { MMU::MemoryRegion::IERegister, "IERegister" },
 };
 
-const std::unordered_map<MMU::IORegister, std::string> MMU::s_io_register_names = {
+std::unordered_map<MMU::IORegister, std::string> const MMU::s_io_register_names = {
 
     { MMU::IORegister::JOYP, "Joypad" },
     { MMU::IORegister::SB, "SerialTransferData" },
@@ -467,11 +468,11 @@ const std::unordered_map<MMU::IORegister, std::string> MMU::s_io_register_names 
 
 };
 
-std::string MMU::get_region_name(MMU::MemoryRegion region) const { return MMU::s_region_names.find(region)->second; }
+std::string MMU::get_region_name(MMU::MemoryRegion const region) const { return MMU::s_region_names.find(region)->second; }
 
-std::string MMU::get_io_register_name(MMU::IORegister reg) const { return MMU::s_io_register_names.find(reg)->second; }
+std::string MMU::get_io_register_name(MMU::IORegister const reg) const { return MMU::s_io_register_names.find(reg)->second; }
 
-void MMU::pre_process_io_register_access(std::uint8_t offset, AccessType access_type, std::uint8_t *data) const {
+void MMU::pre_process_io_register_access(uint8_t const offset, AccessType const access_type, uint8_t *data) const {
     IORegister const io_reg = static_cast<MMU::IORegister>(offset);
 
     switch (io_reg) {

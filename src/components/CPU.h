@@ -4,19 +4,19 @@
 #include "PPU.h"
 #include "components/TimerController.h"
 #include "util/BitUtilities.h"
+#include <cstdint>
 #include <fstream>
 #include <memory>
-#include <stdint.h>
 #include <string>
 #include <unordered_map>
 
 namespace gbcemu {
 
-class Opcode;
+struct Opcode;
 
-class CPU {
+class CPU final {
   public:
-    enum class Register {
+    enum class Register : uint8_t {
         B,
         C,
         D,
@@ -35,14 +35,14 @@ class CPU {
         WZ, // Intermediate register pair
     };
 
-    enum class Flag {
+    enum class Flag : uint8_t {
         Z, // Zero flag
         C, // Add/sub flag (used to convert to BCD)
         N, // Half carry flag (used to convert to BCD)
         H, // Carry flag
     };
 
-    enum class InterruptSource {
+    enum class InterruptSource : uint8_t {
         VBlank = 0x00,
         LCDStat = 0x01,
         Timer = 0x02,
@@ -66,17 +66,17 @@ class CPU {
         { CPU::Register::HL, "HL" }, { CPU::Register::SP, "SP" }, { CPU::Register::PC, "PC" },
     };
 
-    CPU(std::shared_ptr<MMU>, std::shared_ptr<PPU>, bool output_trace = false);
+    CPU(std::shared_ptr<MMU> const, std::shared_ptr<PPU> const, bool const output_trace = false);
 
     void tick();
 
-    void print_disassembled_instructions(std::ostream &, uint16_t);
+    void print_disassembled_instructions(std::ostream &, uint16_t const);
 
     void clear_breakpoint();
 
-    void enable_breakpoint_at(uint16_t);
+    void enable_breakpoint_at(uint16_t const);
 
-    void set_interrupt_enable(bool);
+    void set_interrupt_enable(bool const);
 
     bool interrupt_enabled() const;
 
@@ -132,7 +132,7 @@ class CPU {
         }
     }
 
-    void set_register(const CPU::Register reg, const uint8_t value) {
+    void set_register(const CPU::Register reg, uint8_t const value) {
         switch (reg) {
         case CPU::Register::B:
             set_register_upper(m_reg_bc, value);
@@ -166,7 +166,7 @@ class CPU {
         }
     }
 
-    void set_register(const CPU::Register reg, const uint16_t value) {
+    void set_register(const CPU::Register reg, uint16_t const value) {
         switch (reg) {
         case CPU::Register::AF:
             set_register(m_reg_af, value & 0xFFF0); // The lower four bits should never be set
@@ -204,7 +204,7 @@ class CPU {
             set_register(target, get_8_bit_register(CPU::Register::Z));
     }
 
-    bool flag_is_set(CPU::Flag flag) const {
+    bool flag_is_set(const CPU::Flag flag) const {
         switch (flag) {
         case CPU::Flag::Z:
             return BitUtilities::bit_is_set(m_reg_af, 7);
@@ -219,7 +219,7 @@ class CPU {
         }
     }
 
-    void set_flag(CPU::Flag flag, const bool value) {
+    void set_flag(const CPU::Flag flag, bool const value) {
         uint8_t bit_to_set;
         switch (flag) {
         case CPU::Flag::Z:
@@ -246,19 +246,19 @@ class CPU {
 
     bool breakpoint_hit() const;
 
-    bool half_carry_occurs_on_add(uint8_t v, const uint8_t value_to_add, const bool include_carry = false) const;
+    bool half_carry_occurs_on_add(uint8_t const v, uint8_t const value_to_add, bool const include_carry = false) const;
 
-    bool half_carry_occurs_on_add(uint16_t v, const uint16_t value_to_add, const bool include_carry = false) const;
+    bool half_carry_occurs_on_add(uint16_t const v, uint16_t const value_to_add, bool const include_carry = false) const;
 
-    bool half_carry_occurs_on_subtract(uint8_t v, const uint8_t value_to_subtract) const;
+    bool half_carry_occurs_on_subtract(uint8_t const v, uint8_t const value_to_subtract) const;
 
-    bool half_carry_occurs_on_subtract_with_carry(uint8_t v, const uint8_t value_to_subtract) const;
+    bool half_carry_occurs_on_subtract_with_carry(uint8_t const v, uint8_t const value_to_subtract) const;
 
-    bool carry_occurs_on_add(uint8_t v, const uint8_t value_to_add, const bool include_carry = false) const;
+    bool carry_occurs_on_add(uint8_t const v, uint8_t const value_to_add, bool const include_carry = false) const;
 
-    bool carry_occurs_on_add(uint16_t v, const uint16_t value_to_add, const bool include_carry = false) const;
+    bool carry_occurs_on_add(uint16_t const v, uint16_t const value_to_add, bool const include_carry = false) const;
 
-    bool carry_occurs_on_subtract(uint16_t v, const uint16_t value_to_subtract) const;
+    bool carry_occurs_on_subtract(uint16_t const v, uint16_t const value_to_subtract) const;
 
     void print_state(std::ostream &) const;
 
@@ -269,15 +269,11 @@ class CPU {
     ~CPU();
 
   private:
-    uint64_t m_tick_ctr = 0;
     void fetch_and_decode();
 
     bool should_handle_interrupt();
 
-    const std::string TraceFileName = "trace.log";
-    const int MaxPathLength = 255;
-
-    enum class State {
+    enum class State : uint8_t {
         FetchAndDecode,
         FetchAndDecodeExtended,
         Execute,
@@ -285,59 +281,63 @@ class CPU {
         InterruptPushPC,
         InterruptSetPC,
     };
+
+    static constexpr std::string kTraceFileName{ "trace.log" };
+    static constexpr int kMaxPathLength{ 255 };
+    static constexpr uint8_t kExecutionTicksPerOperationStep{ 4 };
+
     std::shared_ptr<MMU> m_mmu;
     std::shared_ptr<PPU> m_ppu;
     TimerController *m_timer_controller;
 
-    const uint8_t ExecutionTicksPerOperationStep = 4;
-
-    uint8_t m_current_cpu_phase_tick_count;
-    uint8_t m_current_interrupt_phase_counter;
-    int8_t m_cycles_until_interrupts_enabled;
-
-    bool m_next_instruction_preloaded;
-    bool m_is_extended_opcode;
     bool m_output_trace;
-    bool m_is_halted;
-    bool m_halt_bug_active;
-
-    std::ofstream m_trace_stream;
-    std::shared_ptr<Opcode> m_current_opcode;
-
+    bool m_is_running_boot_rom;
     CPU::State m_state;
 
-    uint16_t m_current_breakpoint;
-    bool m_has_breakpoint;
+    uint64_t m_tick_ctr{ 0U };
+    uint8_t m_current_cpu_phase_tick_count{ 0U };
+    uint8_t m_current_interrupt_phase_counter{ 0U };
+    int8_t m_cycles_until_interrupts_enabled{ 0 };
 
-    bool m_interrupt_enabled;
-    CPU::InterruptSource m_current_interrupt;
-    bool m_is_running_boot_rom;
+    bool m_next_instruction_preloaded{ false };
+    bool m_is_extended_opcode{ false };
+    bool m_is_halted{ false };
+    bool m_halt_bug_active{ false };
+    bool m_has_breakpoint{ false };
+    bool m_interrupt_enabled{ false };
 
-    uint16_t m_reg_af; // Accumulator and flags
-    uint16_t m_reg_bc; // BC (can be accessed as two 8-bit registers)
-    uint16_t m_reg_de; // DE (can be accessed as two 8-bit registers)
-    uint16_t m_reg_hl; // HL (can be accessed as two 8-bit registers)
-    uint16_t m_reg_sp; // Stack pointer
-    uint16_t m_reg_pc; // Program counter
-    uint16_t m_reg_wz; // Internal temporary register
+    std::shared_ptr<Opcode> m_current_opcode{ nullptr };
+    std::ofstream m_trace_stream{};
 
-    std::string disassemble_instruction_at(const uint16_t, uint8_t &) const;
+    uint16_t m_current_breakpoint{ 0U };
 
-    void set_register(uint16_t &reg, const uint16_t value) { reg = value; }
+    CPU::InterruptSource m_current_interrupt{};
 
-    void set_register_lower(uint16_t &reg, const uint8_t value) { reg = (reg & 0xFF00) | value; }
+    uint16_t m_reg_af{ 0U }; // Accumulator and flags
+    uint16_t m_reg_bc{ 0U }; // BC (can be accessed as two 8-bit registers)
+    uint16_t m_reg_de{ 0U }; // DE (can be accessed as two 8-bit registers)
+    uint16_t m_reg_hl{ 0U }; // HL (can be accessed as two 8-bit registers)
+    uint16_t m_reg_sp{ 0U }; // Stack pointer
+    uint16_t m_reg_pc{ 0U }; // Program counter
+    uint16_t m_reg_wz{ 0U }; // Internal temporary register
 
-    void set_register_upper(uint16_t &reg, const uint8_t value) { reg = (reg & 0x00FF) | (value << 8); }
+    std::string disassemble_instruction_at(uint16_t, uint8_t &) const;
 
-    uint8_t get_register_lower(const uint16_t &reg) const { return reg & 0x00FF; }
+    void set_register(uint16_t &reg, uint16_t const value) { reg = value; }
 
-    uint8_t get_register_upper(const uint16_t &reg) const { return reg >> 8; }
+    void set_register_lower(uint16_t &reg, uint8_t const value) { reg = (reg & 0xFF00) | value; }
+
+    void set_register_upper(uint16_t &reg, uint8_t const value) { reg = (reg & 0x00FF) | (value << 8); }
+
+    uint8_t get_register_lower(uint16_t const &reg) const { return reg & 0x00FF; }
+
+    uint8_t get_register_upper(uint16_t const &reg) const { return reg >> 8; }
 
     void set_initial_values_for_registers(const MMU::BootRomType, bool);
 
-    void print_flag_value(std::ostream &, const std::string &, const bool, const bool) const;
+    void print_flag_value(std::ostream &, std::string const &, bool const, bool const) const;
 
-    void print_reg(std::ostream &, const CPU::Register, const bool) const;
+    void print_reg(std::ostream &, const CPU::Register, bool const) const;
 
     void print_sp_and_pc(std::ostream &stream) const;
 
@@ -354,6 +354,9 @@ class CPU {
         { CPU::State::InterruptTransition, "InterruptTransition" },
     };
 
-    static const std::unordered_map<CPU::InterruptSource, uint16_t> s_interrupt_vector;
+    static inline std::unordered_map<CPU::InterruptSource, uint16_t> const s_interrupt_vector{
+        { CPU::InterruptSource::VBlank, 0x40 }, { CPU::InterruptSource::LCDStat, 0x48 }, { CPU::InterruptSource::Timer, 0x50 },
+        { CPU::InterruptSource::Serial, 0x58 }, { CPU::InterruptSource::Joypad, 0x60 },
+    };
 };
 }
