@@ -1,9 +1,10 @@
 #include "PPU.h"
 #include "CPU.h"
 #include "util/BitUtilities.h"
+#include <cstdint>
 #include <cstring>
 #include <memory>
-#include <stdint.h>
+
 
 namespace gbcemu {
 
