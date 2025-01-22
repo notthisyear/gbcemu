@@ -4,15 +4,16 @@
 #include "event/MouseEvent.h"
 #include "util/GeneralUtilities.h"
 #include "util/LogUtilities.h"
+#include <cstdint>
 #include <iostream>
 
 namespace gbcemu {
 
-static void glfw_error_callback(int error, const char *description) {
+static void glfw_error_callback(int error, char const *description) {
     LogUtilities::log_error(std::cout, GeneralUtilities::formatted_string("GLFW error (%d) - %s", error, description));
 }
 
-WindowsWindow::WindowsWindow(const WindowProperties &properties) : m_properties(properties) {
+WindowsWindow::WindowsWindow(WindowProperties const &properties) : m_properties(properties) {
     if (!glfwInit()) {
         LogUtilities::log_error(std::cout, "GLFW initialization failed");
         return;
@@ -49,18 +50,19 @@ void WindowsWindow::update() {
     m_context->swap_buffers();
 }
 
-void WindowsWindow::set_event_callback(const EventCallbackHandler &callback) { m_window_data.callback = callback; }
+void WindowsWindow::set_event_callback(EventCallbackHandler const &callback) { m_window_data.callback = callback; }
 
-void WindowsWindow::set_window_hint(int hint_to_set, int value) { glfwWindowHint(hint_to_set, value); }
+void WindowsWindow::set_window_hint(int const hint_to_set, int const value) { glfwWindowHint(hint_to_set, value); }
 
 void WindowsWindow::create_and_set_glfw_window() {
     // Maybe the width and height must be changed to match the screen manually if full size?
-    if (m_properties.mode == WindowProperties::WindowMode::Windowed)
+    if (m_properties.mode == WindowProperties::WindowMode::Windowed) {
         m_window = glfwCreateWindow(m_properties.width, m_properties.height, m_properties.title.c_str(), NULL, NULL);
-    else if (m_properties.mode == WindowProperties::WindowMode::FullScreen)
+    } else if (m_properties.mode == WindowProperties::WindowMode::FullScreen) {
         m_window = glfwCreateWindow(m_properties.width, m_properties.height, m_properties.title.c_str(), glfwGetPrimaryMonitor(), NULL);
-    else
+    } else {
         m_window = nullptr;
+    }
 }
 
 void WindowsWindow::set_properties_as_requested() {
@@ -76,32 +78,32 @@ void WindowsWindow::set_glfw_callbacks() {
 
     glfwSetWindowSizeCallback(m_window, [](GLFWwindow *window, int width, int height) {
         WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
-        WindowResizeEvent event(width, height);
+        WindowResizeEvent const event{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
         data.callback(event);
     });
 
     glfwSetWindowCloseCallback(m_window, [](GLFWwindow *window) {
         WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
-        WindowCloseEvent event;
+        WindowCloseEvent event{};
         data.callback(event);
     });
 
-    glfwSetKeyCallback(m_window, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
+    glfwSetKeyCallback(m_window, [](GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/) {
         WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
 
         switch (action) {
         case GLFW_PRESS: {
-            KeyPressedEvent event(key, false);
+            KeyPressedEvent event{ static_cast<uint16_t>(key), false };
             data.callback(event);
             break;
         }
         case GLFW_RELEASE: {
-            KeyReleasedEvent event(key);
+            KeyReleasedEvent event{ static_cast<uint16_t>(key) };
             data.callback(event);
             break;
         }
         case GLFW_REPEAT: {
-            KeyPressedEvent event(key, true);
+            KeyPressedEvent event{ static_cast<uint16_t>(key), true };
             data.callback(event);
             break;
         }
@@ -111,21 +113,21 @@ void WindowsWindow::set_glfw_callbacks() {
     glfwSetCharCallback(m_window, [](GLFWwindow *window, unsigned int keycode) {
         WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
 
-        CharacterTypedEvent event(keycode);
+        CharacterTypedEvent event{ static_cast<uint16_t>(keycode) };
         data.callback(event);
     });
 
-    glfwSetMouseButtonCallback(m_window, [](GLFWwindow *window, int button, int action, int mods) {
+    glfwSetMouseButtonCallback(m_window, [](GLFWwindow *window, int button, int action, int /*mods*/) {
         WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
 
         switch (action) {
         case GLFW_PRESS: {
-            MouseButtonPressedEvent event(button);
+            MouseButtonPressedEvent event{ static_cast<uint16_t>(button) };
             data.callback(event);
             break;
         }
         case GLFW_RELEASE: {
-            MouseButtonReleasedEvent event(button);
+            MouseButtonReleasedEvent event{ static_cast<uint16_t>(button) };
             data.callback(event);
             break;
         }
@@ -135,13 +137,13 @@ void WindowsWindow::set_glfw_callbacks() {
     glfwSetScrollCallback(m_window, [](GLFWwindow *window, double x_offset, double y_offset) {
         WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
 
-        MouseScrolledEvent event((float)x_offset, (float)y_offset);
+        MouseScrolledEvent event{ static_cast<float>(x_offset), static_cast<float>(y_offset) };
         data.callback(event);
     });
 
     glfwSetCursorPosCallback(m_window, [](GLFWwindow *window, double x_position, double y_position) {
         WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
-        MouseMovedEvent event((float)x_position, (float)y_position);
+        MouseMovedEvent event{ static_cast<float>(x_position), static_cast<float>(y_position) };
         data.callback(event);
     });
 }

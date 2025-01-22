@@ -17,6 +17,8 @@ add_library(gbcemu_windows
 target_include_directories(gbcemu_windows PUBLIC ${SRC_PATH})
 target_include_directories(gbcemu_windows PUBLIC ${EXT_PATH}/glfw/include)
 
+target_compile_options(gbcemu_windows PRIVATE -Wall -Wextra -Wpedantic -Werror)
+
 target_link_libraries(gbcemu_windows PRIVATE gbcemu_opengl)
 target_link_libraries(gbcemu_windows PRIVATE gbcemu_event)
 target_link_libraries(gbcemu_windows PRIVATE glfw)
