@@ -1,12 +1,9 @@
 #pragma once
 
 #include "CommandData.h"
-#include "GeneralUtilities.h"
 
 #include <array>
-#include <iomanip>
 #include <memory>
-#include <optional>
 #include <ostream>
 #include <string>
 #include <unordered_map>
@@ -15,18 +12,18 @@ namespace gbcemu {
 
 struct CommandLineArgument;
 
-class CommandLineParser {
+class CommandLineParser final {
 
   public:
     CommandLineParser();
 
-    bool try_parse(int, char **);
+    bool try_parse(int const, char *const *const);
 
     std::size_t parsing_error_argument_index() const;
 
-    bool has_argument(const CommandData::ArgumentType) const;
+    bool has_argument(CommandData::ArgumentType const) const;
 
-    std::string get_argument_value(const CommandData::ArgumentType) const;
+    std::string get_argument_value(CommandData::ArgumentType const) const;
 
     void print_usage_string(std::ostream &, std::string const &) const;
 
@@ -36,8 +33,8 @@ class CommandLineParser {
     std::size_t m_parsing_error_argument_index{ 0U };
     std::unordered_map<CommandData::ArgumentType, std::shared_ptr<CommandLineArgument>> m_argument_options;
 
-    static const size_t kNumberOfArguments{ 5 };
-    static inline const std::array<CommandData, kNumberOfArguments> kArguments = {
+    static std::size_t constexpr kNumberOfArguments{ 5 };
+    static inline std::array<CommandData, kNumberOfArguments> const kArguments = {
         CommandData{
             .type = CommandData::ArgumentType::kHelp,
             .long_name = "help",

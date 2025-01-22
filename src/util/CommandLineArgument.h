@@ -1,13 +1,10 @@
 #pragma once
 
 #include "CommandData.h"
-#include "CommandLineParser.h"
-#include <optional>
-#include <regex>
 
 namespace gbcemu {
 
-struct CommandLineArgument {
+class CommandLineArgument final {
   public:
     bool is_switch() const;
 
@@ -21,7 +18,7 @@ struct CommandLineArgument {
 
     bool parameter_is_valid(std::string const &) const;
 
-    void set_value(const std::string);
+    void set_value(std::string const);
 
     void set_found();
 
@@ -36,7 +33,7 @@ struct CommandLineArgument {
   private:
     CommandData m_command_data;
     CommandData::ArgumentType m_argument_type;
-    bool m_is_found;
+    bool m_is_found{ false };
     std::string m_value{ "" };
 };
 }

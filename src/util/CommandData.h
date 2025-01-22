@@ -5,7 +5,7 @@
 
 namespace gbcemu {
 
-struct CommandData {
+struct CommandData final {
     enum class ArgumentType {
         kHelp,
         kAttachDebugger,

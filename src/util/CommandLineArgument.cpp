@@ -1,5 +1,6 @@
 #include "CommandLineArgument.h"
 #include "GeneralUtilities.h"
+#include <regex>
 
 namespace gbcemu {
 
@@ -61,6 +62,5 @@ std::string CommandLineArgument::get_command_in_usage() const {
     }
 }
 
-CommandLineArgument::CommandLineArgument(CommandData const &command_data)
-    : m_argument_type{ command_data.type }, m_is_found{ false }, m_command_data{ command_data } {}
+CommandLineArgument::CommandLineArgument(CommandData const &command_data) : m_command_data{ command_data }, m_argument_type{ command_data.type } {}
 }

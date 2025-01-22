@@ -1,15 +1,14 @@
 #pragma once
 
 #include <string>
-#include <unordered_map>
 
 namespace gbcemu {
 
-class LogUtilities {
+class LogUtilities final {
   public:
-    static void log_info(std::ostream &, const std::string &);
-    static void log_warning(std::ostream &, const std::string &);
-    static void log_error(std::ostream &, const std::string &);
-    static std::string to_tf(const bool b) { return b ? "true" : "false"; }
+    static void log_info(std::ostream &, std::string const &);
+    static void log_warning(std::ostream &, std::string const &);
+    static void log_error(std::ostream &, std::string const &);
+    static std::string to_tf(bool const b) { return b ? "true" : "false"; }
 };
 }

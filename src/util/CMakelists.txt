@@ -17,3 +17,5 @@ add_library(gbcemu_util
 		${SOURCE_FILES}
 		${HEADER_FILES}
 	)
+
+target_compile_options(gbcemu_util PRIVATE -Wall -Wextra -Wpedantic -Werror)

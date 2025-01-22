@@ -1,5 +1,7 @@
 #include "CommandLineParser.h"
 #include "CommandLineArgument.h"
+#include <algorithm>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -13,13 +15,17 @@ CommandLineParser::CommandLineParser() {
     }
 }
 
-bool CommandLineParser::try_parse(int argc, char **argv) {
+bool CommandLineParser::try_parse(int const argc, char *const *const argv) {
     std::vector<std::size_t> arguments_accounted_for{};
+    std::size_t const number_of_arguments{ static_cast<std::size_t>(argc) };
     bool has_errors{ false };
+
     for (auto const &it : m_argument_options) {
         bool found_argument{ false };
-        for (std::size_t i{ 1 }; i < argc; ++i) {
-            if (std::find(arguments_accounted_for.cbegin(), arguments_accounted_for.cend(), i) != arguments_accounted_for.cend()) {
+        for (std::size_t i{ 1 }; i < number_of_arguments; ++i) {
+            bool const argument_already_accounted_for{ std::find(arguments_accounted_for.cbegin(), arguments_accounted_for.cend(), i) !=
+                                                       arguments_accounted_for.cend() };
+            if (argument_already_accounted_for) {
                 continue;
             }
 
@@ -39,7 +45,7 @@ bool CommandLineParser::try_parse(int argc, char **argv) {
                 break;
             }
             // ...or, it should have some value
-            else if (i < (argc - 1) && it.second->parameter_is_valid(argv[i + 1])) {
+            else if (i < (number_of_arguments - 1U) && it.second->parameter_is_valid(argv[i + 1])) {
                 it.second->set_value(argv[i + 1]);
                 found_argument = true;
                 arguments_accounted_for.push_back(i);
@@ -67,8 +73,8 @@ bool CommandLineParser::try_parse(int argc, char **argv) {
         return false;
     }
 
-    if (arguments_accounted_for.size() != (argc - 1)) {
-        for (std::size_t i{ 1 }; i < argc; ++i) {
+    if (arguments_accounted_for.size() != (number_of_arguments - 1U)) {
+        for (std::size_t i{ 1 }; i < number_of_arguments; ++i) {
             if (std::find(arguments_accounted_for.cbegin(), arguments_accounted_for.cend(), i) == arguments_accounted_for.cend()) {
                 m_parsing_error_argument_index = i;
                 break;
@@ -82,9 +88,9 @@ bool CommandLineParser::try_parse(int argc, char **argv) {
 
 std::size_t CommandLineParser::parsing_error_argument_index() const { return m_parsing_error_argument_index; }
 
-bool CommandLineParser::has_argument(const CommandData::ArgumentType type) const { return m_argument_options.find(type)->second->is_found(); }
+bool CommandLineParser::has_argument(CommandData::ArgumentType const type) const { return m_argument_options.find(type)->second->is_found(); }
 
-std::string CommandLineParser::get_argument_value(const CommandData::ArgumentType type) const { return m_argument_options.find(type)->second->value(); }
+std::string CommandLineParser::get_argument_value(CommandData::ArgumentType const type) const { return m_argument_options.find(type)->second->value(); }
 
 void CommandLineParser::print_usage_string(std::ostream &stream, std::string const &program_name) const {
     stream << "usage: " << program_name << " ";
