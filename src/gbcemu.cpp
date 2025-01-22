@@ -3,9 +3,7 @@
 #include "components/CPU.h"
 #include "debugger/Debugger.h"
 #include "debugger/DebuggerCommand.cpp"
-#include "debugger/DebuggerCommand.h"
 #include "opengl/Renderer.h"
-#include "util/CommandLineArgument.h"
 #include "util/CommandLineParser.h"
 #include "util/GeneralUtilities.h"
 #include "util/LogUtilities.h"
@@ -31,13 +29,13 @@ void print_help(gbcemu::CommandLineParser const &parser) {
 std::string windowsify_path(std::string const &path) {
     std::size_t const path_length{ path.length() };
     bool const remove_quotes{ (path[0] == '"') && (path[path_length - 1] == '"') };
-    auto const number_of_backslashes{ std::count(path.cbegin(), path.cend(), '\\') };
+    int64_t const number_of_backslashes{ std::count(path.cbegin(), path.cend(), '\\') };
 
-    auto const new_length{ path_length + number_of_backslashes + (remove_quotes ? -2 : 0) };
+    std::size_t const new_length{ path_length + number_of_backslashes + (remove_quotes ? -2 : 0) };
     char *const new_path_string = new char[new_length + 1];
 
-    std::int32_t i{ 0 };
-    std::int32_t j{ 0 };
+    std::size_t i{ 0U };
+    int32_t j{ 0 };
 
     while (true) {
         if (i == 0 && remove_quotes) {
@@ -92,11 +90,12 @@ int main(int argc, char **argv) {
 
     std::string const cartridge_path{ windowsify_path(parser.get_argument_value(gbcemu::CommandData::ArgumentType::kCartridgePath)) };
 
-    auto const window_properties = gbcemu::WindowProperties();
+    gbcemu::WindowProperties const window_properties{};
 
-    auto const renderer{ std::make_shared<gbcemu::Renderer>(window_properties.width, window_properties.height) };
-    auto const mmu{ std::make_shared<gbcemu::MMU>(0xFFFF) };
-    auto const ppu{ std::make_shared<gbcemu::PPU>(mmu, gbcemu::WindowProperties().width, gbcemu::WindowProperties().height, gbcemu::Renderer::kBytesPerPixel) };
+    std::shared_ptr<gbcemu::Renderer> const renderer{ std::make_shared<gbcemu::Renderer>(window_properties.width, window_properties.height) };
+    std::shared_ptr<gbcemu::MMU> const mmu{ std::make_shared<gbcemu::MMU>(0xFFFF) };
+    std::shared_ptr<gbcemu::PPU> const ppu{ std::make_shared<gbcemu::PPU>(mmu, gbcemu::WindowProperties().width, gbcemu::WindowProperties().height,
+                                                                          gbcemu::Renderer::kBytesPerPixel) };
 
     gbcemu::LogUtilities::log_info(std::cout, "Emulator started!");
 
@@ -115,8 +114,8 @@ int main(int argc, char **argv) {
 
     gbcemu::LogUtilities::log_info(std::cout, gbcemu::GeneralUtilities::formatted_string("Cartridge '%s' loaded", cartridge_path));
 
-    auto const cpu{ std::make_shared<gbcemu::CPU>(mmu, ppu, parser.has_argument(gbcemu::CommandData::ArgumentType::kOutputTrace)) };
-    auto const app{ std::make_shared<gbcemu::Application>(cpu, ppu, renderer, gbcemu::WindowProperties()) };
+    std::shared_ptr<gbcemu::CPU> const cpu{ std::make_shared<gbcemu::CPU>(mmu, ppu, parser.has_argument(gbcemu::CommandData::ArgumentType::kOutputTrace)) };
+    std::shared_ptr<gbcemu::Application> const app{ std::make_shared<gbcemu::Application>(cpu, ppu, renderer, gbcemu::WindowProperties()) };
 
     bool const attach_debugger{ parser.has_argument(gbcemu::CommandData::ArgumentType::kAttachDebugger) };
     gbcemu::Debugger *const dbg = { attach_debugger ? new gbcemu::Debugger(cpu, mmu, ppu, app) : nullptr };

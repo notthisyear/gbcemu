@@ -1,12 +1,11 @@
 #include "Application.h"
-#include "util/GeneralUtilities.h"
 #include "util/LogUtilities.h"
 #include <iostream>
 
 namespace gbcemu {
 
-Application::Application(const std::shared_ptr<CPU> cpu, const std::shared_ptr<PPU> ppu, const std::shared_ptr<Renderer> renderer,
-                         const WindowProperties &properties)
+Application::Application(std::shared_ptr<CPU> const cpu, std::shared_ptr<PPU> const ppu, std::shared_ptr<Renderer> const renderer,
+                         WindowProperties const &properties)
     : m_cpu(cpu), m_ppu(ppu), m_renderer(renderer), m_window_properties(properties) {}
 
 void Application::init() {
@@ -30,7 +29,7 @@ void Application::init() {
     m_app_should_run = true;
 }
 
-void Application::set_cpu_debug_mode(const bool on_or_off) { m_cpu_should_run = !on_or_off; }
+void Application::set_cpu_debug_mode(bool const on_or_off) { m_cpu_should_run = !on_or_off; }
 
 void Application::run() {
     while (m_app_should_run) {
@@ -49,18 +48,18 @@ void Application::run() {
     }
 }
 
-uint32_t Application::register_event_callback(const EventType event_type, const EventCallbackHandler callback) {
-    if (!m_event_callbacks.count(event_type))
+uint32_t Application::register_event_callback(EventType const event_type, EventCallbackHandler const callback) {
+    if (!m_event_callbacks.count(event_type)) {
         m_event_callbacks.emplace(event_type, std::vector<std::pair<uint32_t, EventCallbackHandler>>());
-
+    }
     auto &list{ m_event_callbacks.at(event_type) };
-    std::uint32_t const event_id{ m_current_event_id++ };
+    uint32_t const event_id{ m_current_event_id++ };
 
     list.push_back(std::make_pair(event_id, callback));
     return event_id;
 }
 
-bool Application::try_remove_event_callback(const EventType event_type, const uint32_t event_id) {
+bool Application::try_remove_event_callback(EventType const event_type, uint32_t const event_id) {
     if (!m_event_callbacks.count(event_type)) {
         return false;
     }
@@ -85,7 +84,7 @@ void Application::handle_event(Event const &e) {
         return;
     }
 
-    for (const auto &callback_pair : m_event_callbacks.at(e.get_event_type())) {
+    for (auto const &callback_pair : m_event_callbacks.at(e.get_event_type())) {
         callback_pair.second(e);
     }
 }

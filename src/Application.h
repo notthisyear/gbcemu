@@ -9,35 +9,37 @@
 
 namespace gbcemu {
 
-class Application {
+class Application final {
   public:
-    Application(const std::shared_ptr<CPU>, const std::shared_ptr<PPU>, const std::shared_ptr<Renderer>, const WindowProperties &);
+    Application(std::shared_ptr<CPU> const, std::shared_ptr<PPU> const, std::shared_ptr<Renderer> const, WindowProperties const &);
 
     void init();
     void run();
-    void set_cpu_debug_mode(const bool);
-    void set_cpu_breakpoint(const uint16_t);
+    void set_cpu_debug_mode(bool const);
+    void set_cpu_breakpoint(uint16_t const);
 
-    uint32_t register_event_callback(const EventType, const EventCallbackHandler);
+    uint32_t register_event_callback(EventType const, EventCallbackHandler const);
     void handle_event(Event const &);
-    bool try_remove_event_callback(const EventType, const uint32_t);
+    bool try_remove_event_callback(EventType const, uint32_t const);
 
     ~Application();
 
   private:
-    bool m_app_should_run = false;
-    bool m_cpu_should_run = true;
-    const float MaxTimePerFrameSec = 0.02;
+    static float constexpr kMaxTimePerFrameSec{ 0.02f };
+
+    bool m_app_should_run{ false };
+    bool m_cpu_should_run{ true };
+
+    uint32_t m_current_event_id{ 0U };
 
     std::shared_ptr<CPU> m_cpu;
     std::shared_ptr<PPU> m_ppu;
     std::shared_ptr<Renderer> m_renderer;
-
-    uint32_t m_current_event_id = 0;
-    std::unordered_map<EventType, std::vector<std::pair<uint32_t, EventCallbackHandler>>> m_event_callbacks;
-
-    std::unique_ptr<WindowsWindow> m_window;
     WindowProperties m_window_properties;
+
+    std::unique_ptr<WindowsWindow> m_window{ nullptr };
+
+    std::unordered_map<EventType, std::vector<std::pair<uint32_t, EventCallbackHandler>>> m_event_callbacks;
 
     void window_resized_event(WindowResizeEvent const &);
     void window_closed_event(WindowCloseEvent const &);

@@ -35,11 +35,11 @@ class DebuggerCommand {
     };
 
     DebuggerCommand::Command command;
-    DebuggerCommand(const DebuggerCommand::Command, const std::string & = "");
+    DebuggerCommand(DebuggerCommand::Command const, std::string const & = "");
 
-    static DebuggerCommand *get_debugger_cmd(const std::string &input) {
+    static DebuggerCommand *get_debugger_cmd(std::string const &input) {
         int i = 0;
-        for (const auto &cmd_info : s_command_info_map) {
+        for (auto const &cmd_info : s_command_info_map) {
             std::regex r(cmd_info.regex, std::regex_constants::icase);
             if (std::regex_search(input, r)) {
                 DebuggerCommand *result;
@@ -62,7 +62,7 @@ class DebuggerCommand {
     }
 
     static void print_commands(std::ostream &stream) {
-        for (const auto &cmd_info : s_command_info_map) {
+        for (auto const &cmd_info : s_command_info_map) {
             if (cmd_info.include)
                 stream << std::left << std::setw(35) << cmd_info.command << std::right << cmd_info.description << std::endl;
         }
@@ -77,13 +77,13 @@ class DebuggerCommand {
     void print_command_help(std::ostream &) const;
 
   private:
-    CommandInfo m_command_info;
     std::string m_input;
+    CommandInfo m_command_info;
 
-    void set_input(const std::string &);
+    void set_input(std::string const &);
     void parse_input();
 
-    bool static try_parse_as_number(const std::string &, uint16_t *, int);
+    bool static try_parse_as_number(std::string const &, uint16_t *, int);
     static std::unordered_map<DebuggerCommand::Command, DebuggerCommand *> _s_command_cache;
     static inline CommandInfo s_command_info_map[] = {
         { "(^((h)|(help))$)", "[h|help]", "show available commands", false, true },

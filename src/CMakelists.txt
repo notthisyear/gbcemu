@@ -33,6 +33,8 @@ add_executable(gbcemu_main ${HEADER_FILES} ${SOURCE_FILES})
 target_include_directories(gbcemu_main PUBLIC ${EXT_PATH})
 target_include_directories(gbcemu_main PUBLIC ${EXT_PATH}/glad/include)
 
+target_compile_options(gbcemu_main PRIVATE -Wall -Wextra -Wpedantic -Werror)
+
 # Libraries
 target_link_libraries(gbcemu_main PRIVATE gbcemu_util)
 target_link_libraries(gbcemu_main PRIVATE gbcemu_debugger)

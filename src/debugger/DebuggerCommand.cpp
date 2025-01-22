@@ -1,18 +1,17 @@
 #include "DebuggerCommand.h"
 #include <exception>
 #include <iostream>
-#include <stdexcept>
 
 namespace gbcemu {
 
 std::unordered_map<DebuggerCommand::Command, DebuggerCommand *> DebuggerCommand::_s_command_cache;
 
-DebuggerCommand::DebuggerCommand(const DebuggerCommand::Command command, const std::string &input)
+DebuggerCommand::DebuggerCommand(DebuggerCommand::Command const command, std::string const &input)
     : command(command), m_input(input), m_command_info(s_command_info_map[static_cast<int>(command)]) {
     parse_input();
 }
 
-void DebuggerCommand::set_input(const std::string &input) {
+void DebuggerCommand::set_input(std::string const &input) {
     m_input = input;
     parse_input();
 }
@@ -43,7 +42,7 @@ bool DebuggerCommand::try_get_address_pair_arg(DebuggerCommand::address_pair *ar
            try_parse_as_number(to_parse.substr(hypen_location + 1, to_parse.length() - hypen_location - 1), &arg->second, 16);
 }
 
-bool DebuggerCommand::try_parse_as_number(const std::string &s, uint16_t *result, int base) {
+bool DebuggerCommand::try_parse_as_number(std::string const &s, uint16_t *result, int base) {
     try {
         std::size_t pos{};
         uint32_t r;
@@ -52,7 +51,7 @@ bool DebuggerCommand::try_parse_as_number(const std::string &s, uint16_t *result
             return false;
         *result = (uint16_t)r;
         return true;
-    } catch (std::exception) {
+    } catch (std::exception const &) {
         return false;
     }
 }
