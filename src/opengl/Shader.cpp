@@ -6,7 +6,7 @@
 #include <sstream>
 
 namespace gbcemu {
-bool Shader::try_construct_shader(Shader::ShaderType type, const std::string &shader_source_path) {
+bool Shader::try_construct_shader(Shader::ShaderType const type, std::string const &shader_source_path) {
 
     set_shader_type(type);
 
@@ -24,34 +24,34 @@ bool Shader::try_construct_shader(Shader::ShaderType type, const std::string &sh
         shader_code = shader_stream.str();
     }
 
-    catch (std::ifstream::failure e) {
+    catch (std::ifstream::failure const &e) {
         LogUtilities::log_error(std::cout, GeneralUtilities::formatted_string("Failed to read shader file '%s'", shader_source_path));
         return false;
     }
 
-    const char *shader_source = shader_code.c_str();
+    char const *const shader_source{ shader_code.c_str() };
 
-    unsigned int shader = glCreateShader(m_shader_type);
+    uint32_t const shader{ glCreateShader(m_shader_type) };
     glShaderSource(shader, 1, &shader_source, NULL);
     glCompileShader(shader);
 
-    int shaderCompilationResult;
+    int32_t shaderCompilationResult;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &shaderCompilationResult);
 
     if (!shaderCompilationResult) {
-        int infoLogLength;
+        int32_t infoLogLength;
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLength);
-        GLchar *infoLog = new GLchar[infoLogLength + 1];
+        GLchar *const infoLog{ new GLchar[infoLogLength + 1] };
         glGetShaderInfoLog(shader, infoLogLength, NULL, infoLog);
         LogUtilities::log_error(std::cout, GeneralUtilities::formatted_string("Shader compilation failed - %s", infoLog));
         delete[] infoLog;
     }
 
-    shader_id = shaderCompilationResult != 0 ? shader : 0;
+    shader_id = (shaderCompilationResult != 0) ? shader : 0U;
     return shaderCompilationResult != 0;
 }
 
-void Shader::set_shader_type(Shader::ShaderType type) {
+void Shader::set_shader_type(Shader::ShaderType const type) {
     switch (type) {
 
     case ShaderType::Vertex:
@@ -66,7 +66,8 @@ void Shader::set_shader_type(Shader::ShaderType type) {
 }
 
 Shader::~Shader() {
-    if (shader_id != 0)
+    if (shader_id != 0) {
         glDeleteShader(shader_id);
+    }
 }
 }

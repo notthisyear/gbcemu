@@ -14,9 +14,9 @@
 #include <thread>
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32)
-static const bool is_windows = true;
+static bool const is_windows = true;
 #else
-static const bool is_windows = false;
+static bool const is_windows = false;
 #endif
 
 void print_help(gbcemu::CommandLineParser const &parser) {
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
 
     auto const renderer{ std::make_shared<gbcemu::Renderer>(window_properties.width, window_properties.height) };
     auto const mmu{ std::make_shared<gbcemu::MMU>(0xFFFF) };
-    auto const ppu{ std::make_shared<gbcemu::PPU>(mmu, gbcemu::WindowProperties().width, gbcemu::WindowProperties().height, renderer->BytesPerPixel) };
+    auto const ppu{ std::make_shared<gbcemu::PPU>(mmu, gbcemu::WindowProperties().width, gbcemu::WindowProperties().height, gbcemu::Renderer::kBytesPerPixel) };
 
     gbcemu::LogUtilities::log_info(std::cout, "Emulator started!");
 

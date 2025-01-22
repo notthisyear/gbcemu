@@ -1,15 +1,11 @@
 #include "Renderer.h"
 #include "Shader.h"
 #include "opengl/ShaderProgram.h"
-#include <iostream>
 #include <memory>
 
 namespace gbcemu {
 
-Renderer::Renderer(uint32_t width, uint32_t height) : m_width(width), m_height(height) {
-    m_format = GL_RGBA;
-    m_is_initialized = false;
-}
+Renderer::Renderer(uint32_t width, uint32_t height) : m_width(width), m_height(height) {}
 
 void Renderer::init() {
     glCreateTextures(GL_TEXTURE_2D, 1, &m_texture_id);
@@ -61,8 +57,8 @@ void Renderer::init() {
     glBindVertexArray(0);
 
     // Compile and set shaders
-    Shader *vertexShader = new Shader();
-    Shader *fragmentShader = new Shader();
+    Shader *const vertexShader = new Shader();
+    Shader *const fragmentShader = new Shader();
 
     if (!vertexShader->try_construct_shader(Shader::ShaderType::Vertex, "D:\\programming\\gbcemu\\src\\opengl\\shaders\\vertex.vs") ||
         !fragmentShader->try_construct_shader(Shader::ShaderType::Fragment, "D:\\programming\\gbcemu\\src\\opengl\\shaders\\frag.fs")) {
@@ -83,9 +79,9 @@ void Renderer::init() {
     m_is_initialized = true;
 }
 
-void Renderer::set_viewport(uint32_t width, uint32_t height) { glViewport(0, 0, width, height); }
+void Renderer::set_viewport(uint32_t const width, uint32_t const height) { glViewport(0, 0, width, height); }
 
-void Renderer::update_framebuffer_and_draw(uint8_t *buffer) {
+void Renderer::update_framebuffer_and_draw(uint8_t *const buffer) {
     if (!m_is_initialized)
         exit(1);
 

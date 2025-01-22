@@ -1,20 +1,21 @@
 #pragma once
 
 #include "Shader.h"
+#include <cstdint>
 #include <glad/glad.h>
-#include <string>
+
 
 namespace gbcemu {
 
-class ShaderProgram {
+class ShaderProgram final {
 
   public:
-    unsigned int shader_program_id;
+    uint32_t shader_program_id;
 
     ShaderProgram();
 
     void activate();
-    void attach_shader(const Shader &shader) const;
+    void attach_shader(Shader const &shader) const;
     bool link_program() const;
 
     ~ShaderProgram();

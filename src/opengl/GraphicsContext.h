@@ -6,10 +6,10 @@
 
 namespace gbcemu {
 
-class GraphicsContext {
+class GraphicsContext final {
 
   public:
-    GraphicsContext(GLFWwindow *);
+    GraphicsContext(GLFWwindow *const);
 
     bool init();
     void swap_buffers() const;

@@ -26,6 +26,11 @@ target_include_directories(gbcemu_opengl PUBLIC ${SRC_PATH})
 target_include_directories(gbcemu_opengl PUBLIC ${EXT_PATH}/glad/include)
 target_include_directories(gbcemu_opengl PUBLIC ${EXT_PATH}/glfw/include)
 
+# Note: We cannot include -Wpedantic here as the included glad header will
+#       not pass those checks.
+# TODO: Figure out how to enable -Wpedantic on our own code.
+target_compile_options(gbcemu_opengl PRIVATE -Wall -Wextra -Werror)
+
 target_link_libraries(gbcemu_opengl PRIVATE gbcemu_util)
 target_link_libraries(gbcemu_opengl PRIVATE glad)
 target_link_libraries(gbcemu_opengl PRIVATE glfw)
