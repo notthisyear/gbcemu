@@ -162,30 +162,33 @@ bool CPU::should_handle_interrupt() {
 
     bool const IME_was_set{ m_interrupt_enabled };
 
-    // A pending interrupt can only be serviced if IME is set and the corresponding bit in the IE register is set
-    bool const pending_interrupt_can_be_serviced{ IME_was_set && ((interrupt_enable & interrupt_flag) > 0x00) };
+    // An interrupt is pending if the corresponding bit is set in both the IE and IF registers
+    uint8_t const pending_interrupts{ static_cast<uint8_t>(interrupt_enable & interrupt_flag) };
+    bool const interrupt_pending{ pending_interrupts > 0x00 };
+
+    // A pending interrupt can only be serviced if IME is set
+    bool const pending_interrupt_can_be_serviced{ IME_was_set && interrupt_pending };
     if (pending_interrupt_can_be_serviced) {
         m_interrupt_enabled = false;
 
-        // Let's find which interrupt that was non-zero
+        // Let's find the pending interrupt with the highest priority (lowest bit)
         std::size_t const last_interrupt_idx{ static_cast<std::size_t>(CPU::InterruptSource::Joypad) };
         for (std::size_t i{ 0 }; i <= last_interrupt_idx; ++i) {
-            if (BitUtilities::bit_is_set(interrupt_flag, i)) {
+            if (BitUtilities::bit_is_set(pending_interrupts, i)) {
                 BitUtilities::reset_bit_in_byte(interrupt_flag, i);
                 m_mmu->set_io_register(MMU::IORegister::IF, interrupt_flag);
                 m_current_interrupt = static_cast<CPU::InterruptSource>(i);
                 break;
             }
         }
+    }
 
-        // A pending interrupt always causes HALT to return
-        // However, if IME is not set, the "halt bug" can
-        // potentially be triggered.
-        if (m_is_halted) {
-            m_is_halted = false;
-            // Halt bug is active if interrupt is pending and IME was not set
-            m_halt_bug_active = !IME_was_set;
-        }
+    // A pending interrupt always causes HALT to return, regardless of IME.
+    // However, if IME is not set, the "halt bug" can potentially be triggered.
+    if (interrupt_pending && m_is_halted) {
+        m_is_halted = false;
+        // Halt bug is active if interrupt is pending and IME was not set
+        m_halt_bug_active = !IME_was_set;
     }
 
     return pending_interrupt_can_be_serviced;
