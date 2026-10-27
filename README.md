@@ -59,7 +59,7 @@ Tests can be found [here](https://github.com/Gekkio/mooneye-test-suite). We do f
 | `bits` / `reg_f` | &#x2705; |
 | `bits` / `unused_hwio-GS` | &#x2705; |
 | `instr` / `daa` | &#x2705; |
-| `interrupts` / `ie_push` | &#x274c; | *Fails round 1, interrupt wasn't cancelled properly*
+| `interrupts` / `ie_push` | &#x2705; |
 | `timer` / `div_write` | &#x2705; |
 | `timer` / `rapid_toggle` | &#x274c; | *Assertion of register `C` failed (expected `D9`, was `D8`)*
 | `timer` / `tim00` | &#x2705; |

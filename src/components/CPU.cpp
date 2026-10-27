@@ -126,6 +126,10 @@ void CPU::tick() {
                 m_current_interrupt_phase_counter++;
                 if (m_current_interrupt_phase_counter == 1) {
                     push_byte_to_stack(static_cast<uint8_t>(m_reg_pc >> 8));
+
+                    // The interrupt to service is selected after the upper byte has been pushed. If the push
+                    // overwrote IE so that no pending interrupt is enabled anymore, the dispatch is cancelled.
+                    m_current_interrupt = select_interrupt_to_service();
                 } else {
                     push_byte_to_stack(static_cast<uint8_t>(m_reg_pc & 0x00FF));
                     m_state = CPU::State::InterruptSetPC;
@@ -134,7 +138,9 @@ void CPU::tick() {
                 break;
 
             case CPU::State::InterruptSetPC:
-                set_register(CPU::Register::PC, s_interrupt_vector.find(m_current_interrupt)->second);
+                // A cancelled dispatch jumps to 0x0000 instead of an interrupt vector
+                set_register(CPU::Register::PC,
+                             m_current_interrupt.has_value() ? s_interrupt_vector.find(*m_current_interrupt)->second : static_cast<uint16_t>(0x0000));
                 m_state = CPU::State::FetchAndDecode;
                 break;
 
@@ -159,29 +165,18 @@ bool CPU::at_start_of_instruction() const { return m_current_cpu_phase_tick_coun
 
 bool CPU::should_handle_interrupt() {
     uint8_t const interrupt_enable{ m_mmu->get_io_register(MMU::IORegister::IE) };
-    uint8_t interrupt_flag{ m_mmu->get_io_register(MMU::IORegister::IF) };
+    uint8_t const interrupt_flag{ m_mmu->get_io_register(MMU::IORegister::IF) };
 
     bool const IME_was_set{ m_interrupt_enabled };
 
     // An interrupt is pending if the corresponding bit is set in both the IE and IF registers
-    uint8_t const pending_interrupts{ static_cast<uint8_t>(interrupt_enable & interrupt_flag) };
-    bool const interrupt_pending{ pending_interrupts > 0x00 };
+    bool const interrupt_pending{ (interrupt_enable & interrupt_flag) > 0x00 };
 
-    // A pending interrupt can only be serviced if IME is set
+    // A pending interrupt can only be serviced if IME is set. Note that which interrupt to
+    // service is not decided until during the dispatch, see select_interrupt_to_service().
     bool const pending_interrupt_can_be_serviced{ IME_was_set && interrupt_pending };
     if (pending_interrupt_can_be_serviced) {
         m_interrupt_enabled = false;
-
-        // Let's find the pending interrupt with the highest priority (lowest bit)
-        std::size_t const last_interrupt_idx{ static_cast<std::size_t>(CPU::InterruptSource::Joypad) };
-        for (std::size_t i{ 0 }; i <= last_interrupt_idx; ++i) {
-            if (BitUtilities::bit_is_set(pending_interrupts, i)) {
-                BitUtilities::reset_bit_in_byte(interrupt_flag, i);
-                m_mmu->set_io_register(MMU::IORegister::IF, interrupt_flag);
-                m_current_interrupt = static_cast<CPU::InterruptSource>(i);
-                break;
-            }
-        }
     }
 
     // A pending interrupt always causes HALT to return, regardless of IME.
@@ -193,6 +188,25 @@ bool CPU::should_handle_interrupt() {
     }
 
     return pending_interrupt_can_be_serviced;
+}
+
+std::optional<CPU::InterruptSource> CPU::select_interrupt_to_service() {
+    uint8_t const interrupt_enable{ m_mmu->get_io_register(MMU::IORegister::IE) };
+    uint8_t interrupt_flag{ m_mmu->get_io_register(MMU::IORegister::IF) };
+    uint8_t const pending_interrupts{ static_cast<uint8_t>(interrupt_enable & interrupt_flag) };
+
+    // Let's find the pending interrupt with the highest priority (lowest bit)
+    std::size_t const last_interrupt_idx{ static_cast<std::size_t>(CPU::InterruptSource::Joypad) };
+    for (std::size_t i{ 0 }; i <= last_interrupt_idx; ++i) {
+        if (BitUtilities::bit_is_set(pending_interrupts, i)) {
+            BitUtilities::reset_bit_in_byte(interrupt_flag, i);
+            m_mmu->set_io_register(MMU::IORegister::IF, interrupt_flag);
+            return static_cast<CPU::InterruptSource>(i);
+        }
+    }
+
+    // No pending interrupt left, the dispatch is cancelled
+    return std::nullopt;
 }
 
 void CPU::fetch_and_decode() {

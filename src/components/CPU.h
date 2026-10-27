@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <fstream>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 
@@ -277,6 +278,8 @@ class CPU final {
 
     bool should_handle_interrupt();
 
+    std::optional<CPU::InterruptSource> select_interrupt_to_service();
+
     enum class State : uint8_t {
         FetchAndDecode,
         FetchAndDecodeExtended,
@@ -315,7 +318,8 @@ class CPU final {
 
     uint16_t m_current_breakpoint{ 0U };
 
-    CPU::InterruptSource m_current_interrupt{};
+    // Empty if the interrupt dispatch was cancelled
+    std::optional<CPU::InterruptSource> m_current_interrupt{};
 
     uint16_t m_reg_af{ 0U }; // Accumulator and flags
     uint16_t m_reg_bc{ 0U }; // BC (can be accessed as two 8-bit registers)
