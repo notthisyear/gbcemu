@@ -73,8 +73,7 @@ void Application::run() {
             m_cpu->tick();
             if (m_cpu->breakpoint_hit()) {
                 m_cpu_should_run = false;
-                LogUtilities::log_info(std::cout,
-                                       GeneralUtilities::formatted_string("Breakpoint hit at 0x%04X", m_cpu->current_instruction_address()));
+                LogUtilities::log_info(std::cout, GeneralUtilities::formatted_string("Breakpoint hit at 0x%04X", m_cpu->current_instruction_address()));
             }
 
             if (++m_ticks_in_current_frame == kTicksPerFrame) {

@@ -5,7 +5,6 @@
 #include <cstring>
 #include <memory>
 
-
 namespace gbcemu {
 
 PPU::PPU(std::shared_ptr<MMU> const mmu, uint16_t const framebuffer_width, uint16_t const framebuffer_height, uint8_t const bytes_per_pixel)

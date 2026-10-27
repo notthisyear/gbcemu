@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <glad/glad.h>
 
-
 namespace gbcemu {
 
 class ShaderProgram final {

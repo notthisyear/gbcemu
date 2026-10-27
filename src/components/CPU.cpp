@@ -34,7 +34,8 @@ CPU::CPU(std::shared_ptr<MMU> const mmu, std::shared_ptr<PPU> const ppu, bool co
 #else
         // readlink does not null-terminate and truncates silently, so a full buffer is treated as too long
         ssize_t const result{ readlink("/proc/self/exe", full_path, CPU::kMaxPathLength - 1) };
-        std::size_t const size{ (result < 0 || result >= CPU::kMaxPathLength - 1) ? static_cast<std::size_t>(CPU::kMaxPathLength) : static_cast<std::size_t>(result) };
+        std::size_t const size{ (result < 0 || result >= CPU::kMaxPathLength - 1) ? static_cast<std::size_t>(CPU::kMaxPathLength)
+                                                                                  : static_cast<std::size_t>(result) };
 #endif
         if (size < CPU::kMaxPathLength) {
             std::string const s{ GeneralUtilities::formatted_string("%s/%s", GeneralUtilities::get_folder_name_from_full_path(full_path),
