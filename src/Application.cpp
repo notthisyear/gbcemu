@@ -1,6 +1,9 @@
 #include "Application.h"
+#include "util/GeneralUtilities.h"
 #include "util/LogUtilities.h"
+#include <chrono>
 #include <iostream>
+#include <thread>
 
 namespace gbcemu {
 
@@ -31,12 +34,49 @@ void Application::init() {
 
 void Application::set_cpu_debug_mode(bool const on_or_off) { m_cpu_should_run = !on_or_off; }
 
+void Application::pause_cpu() {
+    m_cpu_is_paused = false;
+    m_cpu_should_run = false;
+
+    // Wait until the CPU has stopped, so that it is safe to inspect its state
+    while (!m_cpu_is_paused && m_app_should_run) {
+        std::this_thread::yield();
+    }
+}
+
+void Application::resume_cpu() { m_cpu_should_run = true; }
+
+void Application::step_cpu_instruction() {
+    m_requested_instruction_steps++;
+
+    // Wait until the instruction has been executed
+    while (m_requested_instruction_steps > 0 && m_app_should_run) {
+        std::this_thread::yield();
+    }
+}
+
+bool Application::cpu_is_running() const { return m_cpu_should_run; }
+
 void Application::run() {
     while (m_app_should_run) {
         if (m_cpu_should_run) {
             m_cpu->tick();
             if (m_cpu->breakpoint_hit()) {
-                set_cpu_debug_mode(true);
+                m_cpu_should_run = false;
+                LogUtilities::log_info(std::cout,
+                                       GeneralUtilities::formatted_string("Breakpoint hit at 0x%04X", m_cpu->current_instruction_address()));
+            }
+        } else {
+            m_cpu_is_paused = true;
+
+            if (m_requested_instruction_steps > 0) {
+                do {
+                    m_cpu->tick();
+                } while (!m_cpu->at_start_of_instruction());
+                m_requested_instruction_steps--;
+            } else {
+                // Avoid spinning at full speed while paused
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
         }
 

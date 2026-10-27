@@ -5,6 +5,7 @@
 #include "event/Event.h"
 #include "opengl/Renderer.h"
 #include "window/Window.h"
+#include <atomic>
 #include <memory>
 
 namespace gbcemu {
@@ -18,6 +19,12 @@ class Application final {
     void set_cpu_debug_mode(bool const);
     void set_cpu_breakpoint(uint16_t const);
 
+    // Thread-safe CPU controls for the debugger. The CPU is only ever ticked by the thread calling run().
+    void pause_cpu();
+    void resume_cpu();
+    void step_cpu_instruction();
+    bool cpu_is_running() const;
+
     uint32_t register_event_callback(EventType const, EventCallbackHandler const);
     void handle_event(Event const &);
     bool try_remove_event_callback(EventType const, uint32_t const);
@@ -27,8 +34,12 @@ class Application final {
   private:
     static float constexpr kMaxTimePerFrameSec{ 0.02f };
 
-    bool m_app_should_run{ false };
-    bool m_cpu_should_run{ true };
+    std::atomic<bool> m_app_should_run{ false };
+    std::atomic<bool> m_cpu_should_run{ true };
+
+    // Set by the run() thread once it has observed that the CPU should not run, i.e. it has stopped ticking the CPU
+    std::atomic<bool> m_cpu_is_paused{ false };
+    std::atomic<uint32_t> m_requested_instruction_steps{ 0U };
 
     uint32_t m_current_event_id{ 0U };
 

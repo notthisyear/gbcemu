@@ -271,6 +271,8 @@ class CPU final {
 
     bool at_start_of_instruction() const;
 
+    uint16_t current_instruction_address() const;
+
     ~CPU();
 
   private:

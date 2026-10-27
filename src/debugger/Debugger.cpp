@@ -10,18 +10,18 @@ Debugger::Debugger(std::shared_ptr<CPU> cpu, std::shared_ptr<MMU> mmu, std::shar
     : m_cpu(cpu), m_mmu(mmu), m_ppu(ppu), m_app(app), m_is_in_run_mode(false) {}
 
 void Debugger::run(std::ostream &output_stream) {
-    m_app->set_cpu_debug_mode(true);
     std::string input, cmd;
 
     while (true) {
-        output_stream << (m_is_in_run_mode ? "[cpu running]>"
-                                           : GeneralUtilities::formatted_string("[PC: 0x%04X]> ", m_cpu->get_16_bit_register(CPU::Register::PC)));
+        // The CPU stops by itself when a breakpoint is hit
+        if (m_is_in_run_mode && !m_app->cpu_is_running())
+            m_is_in_run_mode = false;
+
+        output_stream << (m_is_in_run_mode ? "[cpu running]>" : GeneralUtilities::formatted_string("[PC: 0x%04X]> ", m_cpu->current_instruction_address()));
         std::getline(std::cin, input);
 
-        if (m_is_in_run_mode && m_cpu->breakpoint_hit()) {
+        if (m_is_in_run_mode && !m_app->cpu_is_running())
             m_is_in_run_mode = false;
-            continue;
-        }
 
         auto cmd = input.empty() ? DebuggerCommand::get_debugger_cmd("step") : DebuggerCommand::get_debugger_cmd(input);
 
@@ -95,23 +95,20 @@ void Debugger::run(std::ostream &output_stream) {
             break;
 
         case gbcemu::DebuggerCommand::Command::Step:
-            if (!m_is_in_run_mode) {
-                do {
-                    m_cpu->tick();
-                } while (!m_cpu->at_start_of_instruction());
-            }
+            if (!m_is_in_run_mode)
+                m_app->step_cpu_instruction();
             break;
 
         case gbcemu::DebuggerCommand::Command::Run:
             if (!m_is_in_run_mode) {
                 m_is_in_run_mode = true;
-                m_app->set_cpu_debug_mode(false);
+                m_app->resume_cpu();
             }
             break;
 
         case DebuggerCommand::Command::Break:
             if (m_is_in_run_mode) {
-                m_app->set_cpu_debug_mode(true);
+                m_app->pause_cpu();
                 m_is_in_run_mode = false;
             }
             break;

@@ -115,6 +115,10 @@ int main(int argc, char **argv) {
     std::shared_ptr<gbcemu::Application> const app{ std::make_shared<gbcemu::Application>(cpu, ppu, renderer, gbcemu::WindowProperties()) };
 
     bool const attach_debugger{ parser.has_argument(gbcemu::CommandData::ArgumentType::kAttachDebugger) };
+
+    // Start with the CPU paused when debugging. This must happen before the debugger thread starts.
+    app->set_cpu_debug_mode(attach_debugger);
+
     gbcemu::Debugger *const dbg = { attach_debugger ? new gbcemu::Debugger(cpu, mmu, ppu, app) : nullptr };
     std::thread *const dbg_thread{ attach_debugger ? new std::thread(&gbcemu::Debugger::run, dbg, std::ref(std::cout)) : nullptr };
 

@@ -163,6 +163,11 @@ void CPU::tick() {
 
 bool CPU::at_start_of_instruction() const { return m_current_cpu_phase_tick_count == 0 && m_state == CPU::State::FetchAndDecode; }
 
+uint16_t CPU::current_instruction_address() const {
+    // If the next instruction has already been fetched (overlapping the previous instruction), PC points past its opcode
+    return (m_state == CPU::State::FetchAndDecode && m_next_instruction_preloaded) ? static_cast<uint16_t>(m_reg_pc - 1) : m_reg_pc;
+}
+
 bool CPU::should_handle_interrupt() {
     uint8_t const interrupt_enable{ m_mmu->get_io_register(MMU::IORegister::IE) };
     uint8_t const interrupt_flag{ m_mmu->get_io_register(MMU::IORegister::IF) };
@@ -306,13 +311,11 @@ std::string CPU::disassemble_instruction_at(uint16_t current_pc, uint8_t &instru
 }
 
 void CPU::print_disassembled_instructions(std::ostream &stream, uint16_t const number_of_instructions) {
-    uint16_t current_pc{ m_reg_pc };
-    if (m_state == CPU::State::FetchAndDecode && m_next_instruction_preloaded)
-        current_pc--;
+    uint16_t current_pc{ current_instruction_address() };
 
     uint8_t last_instruction_length{ 0U };
     for (std::size_t i{ 0U }; i < number_of_instructions; ++i) {
-        stream << "\033[1;37m" << std::left << std::setw(10) << std::setfill(' ') << GeneralUtilities::formatted_string("0x%04X", m_reg_pc);
+        stream << "\033[1;37m" << std::left << std::setw(10) << std::setfill(' ') << GeneralUtilities::formatted_string("0x%04X", current_pc);
         stream << "\033[0;m";
         stream << disassemble_instruction_at(current_pc, last_instruction_length) << std::endl;
         current_pc += last_instruction_length;
@@ -335,7 +338,7 @@ void CPU::enable_breakpoint_at(uint16_t const pc) {
 
 void CPU::set_cpu_to_halt() { m_is_halted = true; }
 
-bool CPU::breakpoint_hit() const { return false; }
+bool CPU::breakpoint_hit() const { return m_has_breakpoint && at_start_of_instruction() && current_instruction_address() == m_current_breakpoint; }
 
 void CPU::clear_breakpoint() { m_has_breakpoint = false; }
 
@@ -416,15 +419,10 @@ void CPU::print_reg(std::ostream &stream, const CPU::Register reg, bool const in
 }
 
 void CPU::print_sp_and_pc(std::ostream &stream) const {
-    // if (m_state == CPU::State::FetchAndDecode && m_next_instruction_preloaded){
-    //     auto current_pc = get_16_bit_register(CPU::Register::PC);
-    //     current_pc--;
-    // }
-
     stream << "\033[0;36m" << register_name.find(CPU::Register::SP)->second << ": "
            << "\033[1;37m" << GeneralUtilities::formatted_string("0x%04x", get_16_bit_register(CPU::Register::SP)) << "\033[0;36m\t"
            << register_name.find(CPU::Register::PC)->second << ": "
-           << "\033[1;37m" << GeneralUtilities::formatted_string("0x%04x", m_state) << "\033[0m" << std::endl;
+           << "\033[1;37m" << GeneralUtilities::formatted_string("0x%04x", get_16_bit_register(CPU::Register::PC)) << "\033[0m" << std::endl;
 }
 
 void CPU::print_additional_info(std::ostream &stream) const {
