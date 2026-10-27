@@ -19,7 +19,6 @@ class Application final {
     void init();
     void run();
     void set_cpu_debug_mode(bool const);
-    void set_cpu_breakpoint(uint16_t const);
 
     // Thread-safe CPU controls for the debugger. The CPU is only ever ticked by the thread calling run().
     void pause_cpu();
