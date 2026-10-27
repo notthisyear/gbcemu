@@ -33,7 +33,7 @@ class CommandLineParser final {
     std::size_t m_parsing_error_argument_index{ 0U };
     std::unordered_map<CommandData::ArgumentType, std::shared_ptr<CommandLineArgument>> m_argument_options;
 
-    static std::size_t constexpr kNumberOfArguments{ 5 };
+    static std::size_t constexpr kNumberOfArguments{ 6 };
     static inline std::array<CommandData, kNumberOfArguments> const kArguments = {
         CommandData{
             .type = CommandData::ArgumentType::kHelp,
@@ -71,6 +71,14 @@ class CommandLineParser final {
             .help_text = "output cpu trace to file for each cycle",
             .is_switch = true,
             .short_name = 't',
+        },
+        CommandData{
+            .type = CommandData::ArgumentType::kScale,
+            .long_name = "scale",
+            .help_text = "integer factor to scale the window with (1-99, default 1)",
+            .argument_value_name = "factor",
+            .short_name = 's',
+            .validation_regex = R"(^[1-9][0-9]?$)",
         },
     };
 };

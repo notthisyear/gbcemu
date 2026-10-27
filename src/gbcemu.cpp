@@ -17,6 +17,10 @@ static bool const is_windows = true;
 static bool const is_windows = false;
 #endif
 
+// Resolution of the Game Boy screen
+static uint32_t constexpr kScreenWidth{ 160U };
+static uint32_t constexpr kScreenHeight{ 144U };
+
 void print_help(gbcemu::CommandLineParser const &parser) {
     std::cout << "gbcemu v 0.1\n";
     std::cout << "A GB/GBC/SGB emulator (at some point).\n\n";
@@ -87,12 +91,18 @@ int main(int argc, char **argv) {
 
     std::string const cartridge_path{ platform_path(parser.get_argument_value(gbcemu::CommandData::ArgumentType::kCartridgePath)) };
 
-    gbcemu::WindowProperties const window_properties{};
+    uint32_t const scale{ parser.has_argument(gbcemu::CommandData::ArgumentType::kScale)
+                              ? static_cast<uint32_t>(std::stoul(parser.get_argument_value(gbcemu::CommandData::ArgumentType::kScale)))
+                              : 1U };
 
-    std::shared_ptr<gbcemu::Renderer> const renderer{ std::make_shared<gbcemu::Renderer>(window_properties.width, window_properties.height) };
+    // The window is scaled, while the screen is always rendered at the Game Boy resolution
+    gbcemu::WindowProperties window_properties{};
+    window_properties.width = kScreenWidth * scale;
+    window_properties.height = kScreenHeight * scale;
+
+    std::shared_ptr<gbcemu::Renderer> const renderer{ std::make_shared<gbcemu::Renderer>(kScreenWidth, kScreenHeight) };
     std::shared_ptr<gbcemu::MMU> const mmu{ std::make_shared<gbcemu::MMU>(0xFFFF) };
-    std::shared_ptr<gbcemu::PPU> const ppu{ std::make_shared<gbcemu::PPU>(mmu, gbcemu::WindowProperties().width, gbcemu::WindowProperties().height,
-                                                                          gbcemu::Renderer::kBytesPerPixel) };
+    std::shared_ptr<gbcemu::PPU> const ppu{ std::make_shared<gbcemu::PPU>(mmu, kScreenWidth, kScreenHeight, gbcemu::Renderer::kBytesPerPixel) };
 
     gbcemu::LogUtilities::log_info(std::cout, "Emulator started!");
 
@@ -112,7 +122,7 @@ int main(int argc, char **argv) {
     gbcemu::LogUtilities::log_info(std::cout, gbcemu::GeneralUtilities::formatted_string("Cartridge '%s' loaded", cartridge_path));
 
     std::shared_ptr<gbcemu::CPU> const cpu{ std::make_shared<gbcemu::CPU>(mmu, ppu, parser.has_argument(gbcemu::CommandData::ArgumentType::kOutputTrace)) };
-    std::shared_ptr<gbcemu::Application> const app{ std::make_shared<gbcemu::Application>(cpu, ppu, renderer, gbcemu::WindowProperties()) };
+    std::shared_ptr<gbcemu::Application> const app{ std::make_shared<gbcemu::Application>(cpu, ppu, renderer, window_properties) };
 
     bool const attach_debugger{ parser.has_argument(gbcemu::CommandData::ArgumentType::kAttachDebugger) };
 

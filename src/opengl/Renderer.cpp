@@ -10,8 +10,10 @@ Renderer::Renderer(uint32_t width, uint32_t height) : m_width(width), m_height(h
 void Renderer::init() {
     glCreateTextures(GL_TEXTURE_2D, 1, &m_texture_id);
     glTextureStorage2D(m_texture_id, 1, GL_RGBA8, m_width, m_height);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    // Use nearest filtering so that pixels stay sharp when the window is scaled. Note: The texture is never bound
+    // here, so the parameters must be set on the texture directly rather than on the bound texture target.
+    glTextureParameteri(m_texture_id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTextureParameteri(m_texture_id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     float vertices[] = {
         // clang-format off

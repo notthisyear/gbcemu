@@ -12,6 +12,7 @@ struct CommandData final {
         kBootRomPath,
         kCartridgePath,
         kOutputTrace,
+        kScale,
     };
 
     ArgumentType type;
