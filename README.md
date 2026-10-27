@@ -16,6 +16,7 @@ Tests can be found [here](https://github.com/retrio/gb-test-roms).
 | `mem_timing` | &#x2705; |
 | `mem_timing-02` | &#x274c; | *`MBC1+RAM+BATTERY` MBC not implemented yet*
 | `oam_bug` | &#x274c; | *`MBC1+RAM+BATTERY` MBC not implemented yet*
+| `halt_bug` | &#x274c; | *`MBC1+RAM` MBC not implemented yet*
 
 ## Mooneye test suite
 Tests can be found [here](https://github.com/Gekkio/mooneye-test-suite). We do fail quite a bit of tests at the moment. A small comfort is that some emulators that work well in game also seems to fail a few of these tests. However, there are a few things to address...
