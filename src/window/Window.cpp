@@ -66,7 +66,9 @@ void Window::create_and_set_glfw_window() {
 
 void Window::set_properties_as_requested() {
 
-    glfwSwapInterval(m_properties.enable_vsync ? 1 : 0);
+    // V-SYNC is always disabled as the emulation speed is paced by the application rather than the monitor refresh rate.
+    // Set explicitly, since some drivers enable it by default.
+    glfwSwapInterval(0);
     glfwSetInputMode(m_window, GLFW_CURSOR, m_properties.capture_mouse ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 
     if (m_properties.use_raw_mouse_motion_if_possible && glfwRawMouseMotionSupported())
