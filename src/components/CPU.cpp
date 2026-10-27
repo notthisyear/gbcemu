@@ -122,11 +122,12 @@ void CPU::tick() {
                 break;
 
             case CPU::State::InterruptPushPC:
+                // Upper byte of PC is pushed in the first cycle and the lower byte in the second
                 m_current_interrupt_phase_counter++;
-                if (m_current_interrupt_phase_counter == 2) {
-                    uint16_t const sp = get_16_bit_register(CPU::Register::SP);
-                    (void)m_mmu->try_map_data_to_memory((uint8_t *)&m_reg_pc, sp - 2U, 2U);
-                    set_register(CPU::Register::SP, static_cast<uint16_t>(sp - 2));
+                if (m_current_interrupt_phase_counter == 1) {
+                    push_byte_to_stack(static_cast<uint8_t>(m_reg_pc >> 8));
+                } else {
+                    push_byte_to_stack(static_cast<uint8_t>(m_reg_pc & 0x00FF));
                     m_state = CPU::State::InterruptSetPC;
                     m_current_interrupt_phase_counter = 0;
                 }
@@ -221,6 +222,17 @@ void CPU::read_at_pc_and_store_in_intermediate(const CPU::Register reg) {
     if (reg != CPU::Register::W && reg != CPU::Register::Z)
         throw std::invalid_argument("Method can only be called with either 'W' or 'Z' register");
     set_register(reg, read_at_pc());
+}
+
+void CPU::push_byte_to_stack(uint8_t const value) {
+    uint8_t data{ value };
+    (void)m_mmu->try_map_data_to_memory(&data, --m_reg_sp, 1);
+}
+
+uint8_t CPU::pop_byte_from_stack() {
+    uint8_t byte;
+    (void)m_mmu->try_read_from_memory(&byte, m_reg_sp++, 1);
+    return byte;
 }
 
 void CPU::load_register_into_intermediate(const CPU::Register reg) {

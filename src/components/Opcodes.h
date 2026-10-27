@@ -80,14 +80,16 @@ struct StoreStackpointer final : public Opcode {
         m_operations.push_back([](CPU *cpu, MMU *) { cpu->read_at_pc_and_store_in_intermediate(CPU::Register::Z); });
         m_operations.push_back([](CPU *cpu, MMU *) { cpu->read_at_pc_and_store_in_intermediate(CPU::Register::W); });
 
-        // 16-bit operation really takes two cycles, so wait one cycle and do the entire operation at the end
-        // Also, operation involving the SP tend to take one extra cycle for some reason
-        m_operations.push_back([](CPU *, MMU *) {});
-        m_operations.push_back([](CPU *, MMU *) {});
+        // The lower byte of SP is written in the first cycle and the upper byte in the second
         m_operations.push_back([](CPU *cpu, MMU *mmu) {
-            uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
-            mmu->try_map_data_to_memory((uint8_t *)&sp, cpu->get_16_bit_register(CPU::Register::WZ), 2);
+            uint8_t sp_lower = static_cast<uint8_t>(cpu->get_16_bit_register(CPU::Register::SP) & 0x00FF);
+            (void)mmu->try_map_data_to_memory(&sp_lower, cpu->get_16_bit_register(CPU::Register::WZ), 1);
         });
+        m_operations.push_back([](CPU *cpu, MMU *mmu) {
+            uint8_t sp_upper = static_cast<uint8_t>(cpu->get_16_bit_register(CPU::Register::SP) >> 8);
+            (void)mmu->try_map_data_to_memory(&sp_upper, static_cast<uint16_t>(cpu->get_16_bit_register(CPU::Register::WZ) + 1), 1);
+        });
+        m_operations.push_back([](CPU *, MMU *) {});
     }
 
     std::string get_disassembled_instruction(uint8_t *instruction_data) const override {
@@ -240,37 +242,23 @@ struct ConditionalCallReturnOrJumpBase : public Opcode {
     }
 
     void append_call_instructions() {
-        // Wait one cycle (16-bit operation)
-        m_operations.push_back([](CPU *, MMU *) {});
-
-        // Push PC to stack and decrement stack pointer
-        m_operations.push_back([](CPU *cpu, MMU *mmu) {
-            uint16_t pc = cpu->get_16_bit_register(CPU::Register::PC);
-            uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
-            (void)mmu->try_map_data_to_memory((uint8_t *)&pc, sp - 2, 2);
-            cpu->set_register(CPU::Register::SP, static_cast<uint16_t>(sp - 2));
-        });
+        // Push PC to stack, upper byte first
+        m_operations.push_back([](CPU *cpu, MMU *) { cpu->push_byte_to_stack(static_cast<uint8_t>(cpu->get_16_bit_register(CPU::Register::PC) >> 8)); });
+        m_operations.push_back([](CPU *cpu, MMU *) { cpu->push_byte_to_stack(static_cast<uint8_t>(cpu->get_16_bit_register(CPU::Register::PC) & 0x00FF)); });
 
         // Update PC
         m_operations.push_back([&](CPU *cpu, MMU *) { cpu->set_register_from_intermediate(CPU::Register::PC); });
     }
 
     void append_return_instructions(bool enable_interrupts) {
-        // Wait one cycle (16-bit operation)
-        m_operations.push_back([](CPU *, MMU *) {});
+        // Pop upper byte of PC from stack (the lower byte has already been popped into Z)
+        m_operations.push_back([](CPU *cpu, MMU *) { cpu->set_register(CPU::Register::W, cpu->pop_byte_from_stack()); });
 
-        // Get PC from stack and increment stack pointer
-        m_operations.push_back([](CPU *cpu, MMU *mmu) {
-            uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
-            uint8_t *data = new uint8_t[2];
-            (void)mmu->try_read_from_memory(data, sp, 2);
-            cpu->set_register(CPU::Register::WZ, static_cast<uint16_t>(data[1] << 8 | data[0]));
-            cpu->set_register(CPU::Register::SP, static_cast<uint16_t>(sp + 2));
-        });
+        // Update PC
+        m_operations.push_back([](CPU *cpu, MMU *) { cpu->set_register_from_intermediate(CPU::Register::PC); });
 
-        // Update PC and optionally set interrupt flag
+        // Optionally set interrupt flag
         m_operations.push_back([enable_interrupts](CPU *cpu, MMU *) {
-            cpu->set_register_from_intermediate(CPU::Register::PC);
             if (enable_interrupts)
                 cpu->set_interrupt_enable(true);
         });
@@ -390,17 +378,22 @@ struct ReturnFromCall final : public ConditionalCallReturnOrJumpBase {
 
   public:
     ReturnFromCall(uint8_t opcode) : ConditionalCallReturnOrJumpBase(1) {
-        m_operations.push_back([](CPU *, MMU *) {
-            // Wait one cycle due to stack interaction
-        });
-
         if ((opcode & 0x0F) == 0x09) {
             m_condition = ConditionalCallReturnOrJumpBase::Condition::None;
             m_enable_interrupts = (opcode >> 4) == 0x0D;
+            m_operations.push_back([](CPU *cpu, MMU *) { cpu->set_register(CPU::Register::Z, cpu->pop_byte_from_stack()); });
         } else {
             uint8_t flag_idx = (opcode >> 3) & 0x07;
             m_condition = static_cast<ConditionalCallReturnOrJumpBase::Condition>(flag_idx);
-            m_operations.push_back([&](CPU *cpu, MMU *) { m_is_done = !condition_is_met(cpu); });
+
+            // The condition is evaluated in the first cycle. If it is not met, the second cycle is the last one,
+            // otherwise the lower byte of PC is popped from the stack in the second cycle.
+            m_operations.push_back([](CPU *, MMU *) {});
+            m_operations.push_back([&](CPU *cpu, MMU *) {
+                m_is_done = !condition_is_met(cpu);
+                if (!m_is_done)
+                    cpu->set_register(CPU::Register::Z, cpu->pop_byte_from_stack());
+            });
         }
 
         append_return_instructions(m_enable_interrupts);
@@ -1014,15 +1007,11 @@ struct Push16bitRegister final : public Opcode {
         // Target cannot be SP, top value should map to AF
         m_source = m_source == CPU::Register::SP ? CPU::Register::AF : m_source;
 
-        m_operations.push_back([](CPU *, MMU *) {});
+        // Push to stack, upper byte first
         m_operations.push_back([&](CPU *cpu, MMU *) { cpu->set_register(CPU::Register::WZ, cpu->get_16_bit_register(m_source)); });
+        m_operations.push_back([](CPU *cpu, MMU *) { cpu->push_byte_to_stack(cpu->get_8_bit_register(CPU::Register::W)); });
+        m_operations.push_back([](CPU *cpu, MMU *) { cpu->push_byte_to_stack(cpu->get_8_bit_register(CPU::Register::Z)); });
         m_operations.push_back([](CPU *, MMU *) {});
-        m_operations.push_back([](CPU *cpu, MMU *mmu) {
-            uint16_t src = cpu->get_16_bit_register(CPU::Register::WZ);
-            uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
-            (void)mmu->try_map_data_to_memory((uint8_t *)&src, sp - 2, 2);
-            cpu->set_register(CPU::Register::SP, static_cast<uint16_t>(sp - 2));
-        });
     }
 
     std::string get_disassembled_instruction(uint8_t *) const override {
@@ -1043,15 +1032,9 @@ struct Pop16bitRegister final : public Opcode {
         // Target cannot be SP, top value should map to AF
         m_target = m_target == CPU::Register::SP ? CPU::Register::AF : m_target;
 
-        m_operations.push_back([](CPU *, MMU *) {});
-        m_operations.push_back([](CPU *cpu, MMU *mmu) {
-            uint16_t sp = cpu->get_16_bit_register(CPU::Register::SP);
-            uint8_t *data = new uint8_t[2];
-            (void)mmu->try_read_from_memory(data, sp, 2);
-            cpu->set_register(CPU::Register::WZ, static_cast<uint16_t>(data[1] << 8 | data[0]));
-            cpu->set_register(CPU::Register::SP, static_cast<uint16_t>(sp + 2));
-        });
-
+        // Pop from stack, lower byte first
+        m_operations.push_back([](CPU *cpu, MMU *) { cpu->set_register(CPU::Register::Z, cpu->pop_byte_from_stack()); });
+        m_operations.push_back([](CPU *cpu, MMU *) { cpu->set_register(CPU::Register::W, cpu->pop_byte_from_stack()); });
         m_operations.push_back([&](CPU *cpu, MMU *) { cpu->set_register(m_target, cpu->get_16_bit_register(CPU::Register::WZ)); });
     }
     std::string get_disassembled_instruction(uint8_t *) const override {

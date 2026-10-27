@@ -84,6 +84,10 @@ class CPU final {
 
     void read_at_pc_and_store_in_intermediate(const CPU::Register);
 
+    void push_byte_to_stack(uint8_t const);
+
+    uint8_t pop_byte_from_stack();
+
     void load_register_into_intermediate(const CPU::Register);
 
     uint8_t get_8_bit_register(const CPU::Register reg) const {
