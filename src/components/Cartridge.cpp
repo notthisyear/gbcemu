@@ -6,7 +6,7 @@
 
 namespace gbcemu {
 
-Cartridge::Cartridge(uint8_t *const raw_data, std::size_t const raw_size) : m_raw_data{ raw_data }, m_raw_size{ raw_size } {
+Cartridge::Cartridge(std::uint8_t *const raw_data, std::size_t const raw_size) : m_raw_data{ raw_data }, m_raw_size{ raw_size } {
     m_type = static_cast<CartridgeType>(get_single_byte_header_field(Cartridge::HeaderField::CartridgeType));
     switch (m_type) {
     case Cartridge::CartridgeType::NO_MBC:
@@ -21,7 +21,7 @@ Cartridge::Cartridge(uint8_t *const raw_data, std::size_t const raw_size) : m_ra
     }
 }
 
-void Cartridge::read_from_cartridge_switchable(uint8_t *const data, uint32_t const offset, std::size_t const size) const {
+void Cartridge::read_from_cartridge_switchable(std::uint8_t *const data, std::uint32_t const offset, std::size_t const size) const {
     switch (m_type) {
     case Cartridge::CartridgeType::NO_MBC:
         for (std::size_t i{ 0 }; i < size; ++i)
@@ -37,17 +37,17 @@ void Cartridge::read_from_cartridge_switchable(uint8_t *const data, uint32_t con
     }
 }
 
-void Cartridge::read_from_cartridge_ram(uint8_t *const, uint32_t const offset, std::size_t const) const {
+void Cartridge::read_from_cartridge_ram(std::uint8_t *const, std::uint32_t const offset, std::size_t const) const {
     LogUtilities::log_error(std::cout, GeneralUtilities::formatted_string("Reading from cartridge RAM not yet supported (tried to read from 0x%04X)", offset));
     exit(1);
 }
 
-void Cartridge::write_to_cartridge_registers(uint8_t *const data, uint16_t const offset, uint16_t const size) {
+void Cartridge::write_to_cartridge_registers(std::uint8_t *const data, std::uint16_t const offset, std::uint16_t const size) {
     if (offset >= 0x2000 && offset <= 0x3FFF && size == 0x01)
         m_current_bank_number = ((data[0] & 0x1F) == 0x00) ? 0x01 : data[0] & 0x1F;
 }
 
-void Cartridge::write_to_cartridge_ram(uint8_t *const, uint16_t const offset, std::size_t const) {
+void Cartridge::write_to_cartridge_ram(std::uint8_t *const, std::uint16_t const offset, std::size_t const) {
     LogUtilities::log_error(std::cout, GeneralUtilities::formatted_string("Writing to cartridge RAM not yet supported (tried to write to 0x%04X)", offset));
     exit(1);
 }
@@ -55,17 +55,17 @@ void Cartridge::write_to_cartridge_ram(uint8_t *const, uint16_t const offset, st
 std::string Cartridge::get_title() const { return read_string_from_header(TitleStart, TitleEnd); }
 std::string Cartridge::get_manufacturer_code() const { return read_string_from_header(ManufacturerCodeStart, ManufacturerCodeEnd); }
 
-uint8_t Cartridge::get_single_byte_header_field(Cartridge::HeaderField const field) const {
+std::uint8_t Cartridge::get_single_byte_header_field(Cartridge::HeaderField const field) const {
     if (field == Cartridge::HeaderField::NewLicenseeCode || field == Cartridge::HeaderField::GlobalChecksum) {
         return 0x00;
     } else {
-        return m_raw_data[static_cast<uint16_t>(field)];
+        return m_raw_data[static_cast<std::uint16_t>(field)];
     }
 }
 
-uint16_t Cartridge::get_two_byte_header_field(Cartridge::HeaderField const field) const {
+std::uint16_t Cartridge::get_two_byte_header_field(Cartridge::HeaderField const field) const {
     if (field == Cartridge::HeaderField::NewLicenseeCode || field == Cartridge::HeaderField::GlobalChecksum) {
-        return m_raw_data[static_cast<uint16_t>(field)] << 8 | m_raw_data[static_cast<uint16_t>(field) + 1];
+        return m_raw_data[static_cast<std::uint16_t>(field)] << 8 | m_raw_data[static_cast<std::uint16_t>(field) + 1];
     } else {
         return 0x0000;
     }
@@ -98,7 +98,7 @@ void Cartridge::print_info(std::ostream &stream) const {
 
 Cartridge::~Cartridge() { delete[] m_raw_data; }
 
-std::string Cartridge::read_string_from_header(uint16_t const start_offset, uint16_t const end_offset) const {
+std::string Cartridge::read_string_from_header(std::uint16_t const start_offset, std::uint16_t const end_offset) const {
     std::size_t const buffer_size{ static_cast<std::size_t>((end_offset - start_offset) + 1U) };
     char *buffer{ new char[buffer_size + 1U] };
 

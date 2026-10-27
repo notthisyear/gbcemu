@@ -3,7 +3,7 @@
 #include <cstdint>
 
 namespace gbcemu {
-using MouseCode = uint16_t;
+using MouseCode = std::uint16_t;
 
 enum class MouseButton : MouseCode {
     // From glfw3.h

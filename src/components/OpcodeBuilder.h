@@ -10,13 +10,13 @@ class OpcodeBuilder final {
 
   private:
     template <typename T> static std::shared_ptr<Opcode> construct() { return std::make_shared<T>(); }
-    template <typename T> static std::shared_ptr<Opcode> construct(uint8_t const data) { return std::make_shared<T>(data); }
+    template <typename T> static std::shared_ptr<Opcode> construct(std::uint8_t const data) { return std::make_shared<T>(data); }
 
-    using opcode_builder = std::function<std::shared_ptr<Opcode>(uint8_t)>;
-    static inline std::unordered_map<uint8_t, opcode_builder> const k00Opcodes{
+    using opcode_builder = std::function<std::shared_ptr<Opcode>(std::uint8_t)>;
+    static inline std::unordered_map<std::uint8_t, opcode_builder> const k00Opcodes{
         { 0,
-          [](uint8_t identifier) {
-              uint8_t const y{ static_cast<uint8_t>((identifier >> 3) & 0x07) };
+          [](std::uint8_t identifier) {
+              std::uint8_t const y{ static_cast<std::uint8_t>((identifier >> 3) & 0x07) };
               switch (y) {
 
               case 0:
@@ -30,22 +30,22 @@ class OpcodeBuilder final {
               }
           } },
         { 1,
-          [](uint8_t identifier) {
-              uint8_t const q{ static_cast<uint8_t>((identifier >> 3) & 0x01) };
+          [](std::uint8_t identifier) {
+              std::uint8_t const q{ static_cast<std::uint8_t>((identifier >> 3) & 0x01) };
               if (q == 0) {
                   return construct<Load16bitImmediate>(identifier);
               } else {
                   return construct<Add16bitRegister>(identifier);
               }
           } },
-        { 2, [](uint8_t identifier) { return construct<Load16bitIndirect>(identifier); } },
-        { 3, [](uint8_t identifier) { return construct<IncrementOrDecrement8Or16bit>(identifier); } },
-        { 4, [](uint8_t identifier) { return construct<IncrementOrDecrement8Or16bit>(identifier); } },
-        { 5, [](uint8_t identifier) { return construct<IncrementOrDecrement8Or16bit>(identifier); } },
-        { 6, [](uint8_t identifier) { return construct<Load8bitImmediate>(identifier); } },
+        { 2, [](std::uint8_t identifier) { return construct<Load16bitIndirect>(identifier); } },
+        { 3, [](std::uint8_t identifier) { return construct<IncrementOrDecrement8Or16bit>(identifier); } },
+        { 4, [](std::uint8_t identifier) { return construct<IncrementOrDecrement8Or16bit>(identifier); } },
+        { 5, [](std::uint8_t identifier) { return construct<IncrementOrDecrement8Or16bit>(identifier); } },
+        { 6, [](std::uint8_t identifier) { return construct<Load8bitImmediate>(identifier); } },
         { 7,
-          [](uint8_t identifier) {
-              uint8_t const y{ static_cast<uint8_t>((identifier >> 3) & 0x07) };
+          [](std::uint8_t identifier) {
+              std::uint8_t const y{ static_cast<std::uint8_t>((identifier >> 3) & 0x07) };
               switch (y) {
 
               case 0:
@@ -67,10 +67,10 @@ class OpcodeBuilder final {
           } },
     };
 
-    static inline std::unordered_map<uint8_t, opcode_builder> const k11Opcodes{
+    static inline std::unordered_map<std::uint8_t, opcode_builder> const k11Opcodes{
         { 0,
-          [](uint8_t identifier) {
-              uint8_t const y{ static_cast<uint8_t>((identifier >> 3) & 0x07) };
+          [](std::uint8_t identifier) {
+              std::uint8_t const y{ static_cast<std::uint8_t>((identifier >> 3) & 0x07) };
               switch (y) {
               case 0:
               case 1:
@@ -88,8 +88,8 @@ class OpcodeBuilder final {
               }
           } },
         { 1,
-          [](uint8_t identifier) {
-              uint8_t const y{ static_cast<uint8_t>((identifier >> 0x03) & 0x07) };
+          [](std::uint8_t identifier) {
+              std::uint8_t const y{ static_cast<std::uint8_t>((identifier >> 0x03) & 0x07) };
               switch (y) {
               case 0:
               case 2:
@@ -108,8 +108,8 @@ class OpcodeBuilder final {
               }
           } },
         { 2,
-          [](uint8_t identifier) {
-              uint8_t y{ static_cast<uint8_t>((identifier >> 3) & 0x07) };
+          [](std::uint8_t identifier) {
+              std::uint8_t y{ static_cast<std::uint8_t>((identifier >> 3) & 0x07) };
               switch (y) {
 
               case 0:
@@ -128,8 +128,8 @@ class OpcodeBuilder final {
               }
           } },
         { 3,
-          [](uint8_t identifier) {
-              uint8_t y{ static_cast<uint8_t>((identifier >> 3) & 0x07) };
+          [](std::uint8_t identifier) {
+              std::uint8_t y{ static_cast<std::uint8_t>((identifier >> 3) & 0x07) };
               switch (y) {
               case 0:
                   return construct<JumpToImmediate>(identifier);
@@ -142,16 +142,16 @@ class OpcodeBuilder final {
               }
           } },
         { 4,
-          [](uint8_t identifier) {
-              uint8_t y{ static_cast<uint8_t>((identifier >> 3) & 0x07) };
+          [](std::uint8_t identifier) {
+              std::uint8_t y{ static_cast<std::uint8_t>((identifier >> 3) & 0x07) };
               if (y < 4)
                   return construct<Call>(identifier);
 
               INVALID_OPCODE(identifier)
           } },
         { 5,
-          [](uint8_t identifier) {
-              uint8_t y{ static_cast<uint8_t>((identifier >> 3) & 0x07) };
+          [](std::uint8_t identifier) {
+              std::uint8_t y{ static_cast<std::uint8_t>((identifier >> 3) & 0x07) };
               if (y == 1)
                   return construct<Call>(identifier);
               else if ((y & 0x01) == 0)
@@ -159,23 +159,23 @@ class OpcodeBuilder final {
 
               INVALID_OPCODE(identifier)
           } },
-        { 6, [](uint8_t identifier) { return construct<AccumulatorOperation>(identifier); } },
-        { 7, [](uint8_t identifier) { return construct<Reset>(identifier); } },
+        { 6, [](std::uint8_t identifier) { return construct<AccumulatorOperation>(identifier); } },
+        { 7, [](std::uint8_t identifier) { return construct<Reset>(identifier); } },
 
     };
 
-    static inline std::unordered_map<uint8_t, std::shared_ptr<Opcode>> s_opcode_cache{};
-    static inline std::unordered_map<uint8_t, std::shared_ptr<Opcode>> s_extended_opcode_cache{};
+    static inline std::unordered_map<std::uint8_t, std::shared_ptr<Opcode>> s_opcode_cache{};
+    static inline std::unordered_map<std::uint8_t, std::shared_ptr<Opcode>> s_extended_opcode_cache{};
 
-    static std::shared_ptr<Opcode> check_opcode_cache(uint8_t const identifier, std::unordered_map<uint8_t, std::shared_ptr<Opcode>> const &cache) {
+    static std::shared_ptr<Opcode> check_opcode_cache(std::uint8_t const identifier, std::unordered_map<std::uint8_t, std::shared_ptr<Opcode>> const &cache) {
         auto const result{ cache.find(identifier) };
         return result != cache.end() ? result->second : nullptr;
     }
 
   public:
-    static bool is_extended_opcode(uint8_t const identifier) { return identifier == 0xCB; }
+    static bool is_extended_opcode(std::uint8_t const identifier) { return identifier == 0xCB; }
 
-    static std::shared_ptr<Opcode> decode_opcode(uint8_t const identifier, bool const is_extended) {
+    static std::shared_ptr<Opcode> decode_opcode(std::uint8_t const identifier, bool const is_extended) {
 
         std::shared_ptr<Opcode> const cached_result{ is_extended ? check_opcode_cache(identifier, s_extended_opcode_cache)
                                                                  : check_opcode_cache(identifier, s_opcode_cache) };
@@ -185,7 +185,7 @@ class OpcodeBuilder final {
         }
 
         // See http://www.z80.info/decoding.htm and https://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html
-        uint8_t const x{ static_cast<uint8_t>((identifier >> 6) & 0x03) };
+        std::uint8_t const x{ static_cast<std::uint8_t>((identifier >> 6) & 0x03) };
 
         if (is_extended) {
             std::shared_ptr<Opcode> const opcode{ construct<ExtendedOpcode>(identifier) };
@@ -193,7 +193,7 @@ class OpcodeBuilder final {
             return opcode;
         }
 
-        uint8_t const z{ static_cast<uint8_t>(identifier & 0x07) };
+        std::uint8_t const z{ static_cast<std::uint8_t>(identifier & 0x07) };
         std::shared_ptr<Opcode> result{};
 
         switch (x) {

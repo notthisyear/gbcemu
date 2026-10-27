@@ -7,10 +7,10 @@
 
 namespace gbcemu {
 
-PPU::PPU(std::shared_ptr<MMU> const mmu, uint16_t const framebuffer_width, uint16_t const framebuffer_height, uint8_t const bytes_per_pixel)
+PPU::PPU(std::shared_ptr<MMU> const mmu, std::uint16_t const framebuffer_width, std::uint16_t const framebuffer_height, std::uint8_t const bytes_per_pixel)
     : m_mmu{ mmu }, m_framebuffer_width{ framebuffer_width }, m_framebuffer_height{ framebuffer_height }, m_bytes_per_pixel{ bytes_per_pixel } {
 
-    m_framebuffer = new uint8_t[m_framebuffer_width * m_framebuffer_height * m_bytes_per_pixel];
+    m_framebuffer = new std::uint8_t[m_framebuffer_width * m_framebuffer_height * m_bytes_per_pixel];
     memset(m_framebuffer, 0, m_framebuffer_width * m_framebuffer_height * m_bytes_per_pixel);
     m_pixel_fetcher = std::make_unique<PixelFetcher>(m_mmu, this);
 
@@ -56,7 +56,7 @@ void PPU::tick() {
             m_pixels_pushed_on_current_line++;
 
             // TODO: Proper color mapping
-            uint8_t c;
+            std::uint8_t c;
             if (pixel.color_index == 0) {
                 c = 255;
             } else if (pixel.color_index == 1) {
@@ -106,8 +106,8 @@ void PPU::tick() {
             m_dots_on_current_line = 0;
 
             if (m_current_scanline == kVBlankStartScanline) {
-                uint8_t if_register{ m_mmu->get_io_register(MMU::IORegister::IF) };
-                BitUtilities::set_bit_in_byte(if_register, static_cast<uint8_t>(CPU::InterruptSource::VBlank));
+                std::uint8_t if_register{ m_mmu->get_io_register(MMU::IORegister::IF) };
+                BitUtilities::set_bit_in_byte(if_register, static_cast<std::uint8_t>(CPU::InterruptSource::VBlank));
                 m_mmu->set_io_register(MMU::IORegister::IF, if_register);
                 m_mode = PPU::Mode::VBlank;
             } else {
@@ -137,7 +137,7 @@ void PPU::tick() {
         m_total_frame_dots = 0;
     }
 
-    set_bit_in_ppu_register_to_value(MMU::IORegister::STAT, static_cast<uint8_t>(PPU::LCDStatusRegisterBit::LYCEqualsLY),
+    set_bit_in_ppu_register_to_value(MMU::IORegister::STAT, static_cast<std::uint8_t>(PPU::LCDStatusRegisterBit::LYCEqualsLY),
                                      m_mmu->get_io_register(MMU::IORegister::LY) == m_mmu->get_io_register(MMU::IORegister::LYC));
 }
 
@@ -147,14 +147,14 @@ bool PPU::cycles_per_frame_reached() const { return m_frame_done_flag; }
 
 void PPU::acknowledge_frame() { m_frame_done_flag = false; }
 
-uint8_t *PPU::get_framebuffer() const { return m_framebuffer; }
+std::uint8_t *PPU::get_framebuffer() const { return m_framebuffer; }
 
 bool PPU::lcd_control_bit_is_set(LCDControlRegisterBit const bit_to_get) {
-    return BitUtilities::bit_is_set(m_mmu->get_io_register(MMU::IORegister::LCDC), static_cast<uint8_t>(bit_to_get));
+    return BitUtilities::bit_is_set(m_mmu->get_io_register(MMU::IORegister::LCDC), static_cast<std::uint8_t>(bit_to_get));
 }
 
 bool PPU::lcd_status_bit_is_set(LCDStatusRegisterBit const bit_to_get) {
-    return BitUtilities::bit_is_set(m_mmu->get_io_register(MMU::IORegister::STAT), static_cast<uint8_t>(bit_to_get));
+    return BitUtilities::bit_is_set(m_mmu->get_io_register(MMU::IORegister::STAT), static_cast<std::uint8_t>(bit_to_get));
 }
 
 PPU::~PPU() { delete[] m_framebuffer; }
@@ -177,8 +177,8 @@ void PPU::reset_ppu_state() {
     m_mmu->set_io_register(MMU::IORegister::LY, m_current_scanline);
 }
 
-void PPU::set_bit_in_ppu_register_to_value(const MMU::IORegister reg, uint8_t const bit_to_set, bool const value) {
-    uint8_t current{ m_mmu->get_io_register(reg) };
+void PPU::set_bit_in_ppu_register_to_value(const MMU::IORegister reg, std::uint8_t const bit_to_set, bool const value) {
+    std::uint8_t current{ m_mmu->get_io_register(reg) };
     if (value) {
         BitUtilities::set_bit_in_byte(current, bit_to_set);
     } else {
@@ -188,7 +188,7 @@ void PPU::set_bit_in_ppu_register_to_value(const MMU::IORegister reg, uint8_t co
 }
 
 void PPU::write_current_mode_to_status_register() {
-    uint8_t const current_stat{ m_mmu->get_io_register(MMU::IORegister::STAT) };
-    m_mmu->set_io_register(MMU::IORegister::STAT, (current_stat & 0xFC) | static_cast<uint8_t>(m_mode));
+    std::uint8_t const current_stat{ m_mmu->get_io_register(MMU::IORegister::STAT) };
+    m_mmu->set_io_register(MMU::IORegister::STAT, (current_stat & 0xFC) | static_cast<std::uint8_t>(m_mode));
 }
 }

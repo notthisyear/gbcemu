@@ -7,6 +7,7 @@
 #include "util/CommandLineParser.h"
 #include "util/GeneralUtilities.h"
 #include "util/LogUtilities.h"
+#include <cstdint>
 #include <iostream>
 #include <memory>
 #include <thread>
@@ -18,8 +19,8 @@ static bool const is_windows{ false };
 #endif
 
 // Resolution of the Game Boy screen
-static uint32_t constexpr kScreenWidth{ 160U };
-static uint32_t constexpr kScreenHeight{ 144U };
+static std::uint32_t constexpr kScreenWidth{ 160U };
+static std::uint32_t constexpr kScreenHeight{ 144U };
 
 void print_help(gbcemu::CommandLineParser const &parser) {
     std::cout << "gbcemu v 0.1\n";
@@ -33,13 +34,13 @@ void print_help(gbcemu::CommandLineParser const &parser) {
 std::string windowsify_path(std::string const &path) {
     std::size_t const path_length{ path.length() };
     bool const remove_quotes{ (path[0] == '"') && (path[path_length - 1] == '"') };
-    int64_t const number_of_backslashes{ std::count(path.cbegin(), path.cend(), '\\') };
+    std::int64_t const number_of_backslashes{ std::count(path.cbegin(), path.cend(), '\\') };
 
     std::size_t const new_length{ path_length + number_of_backslashes + (remove_quotes ? -2 : 0) };
     char *const new_path_string{ new char[new_length + 1] };
 
     std::size_t i{ 0U };
-    int32_t j{ 0 };
+    std::int32_t j{ 0 };
 
     while (true) {
         if (i == 0 && remove_quotes) {
@@ -91,9 +92,9 @@ int main(int argc, char **argv) {
 
     std::string const cartridge_path{ platform_path(parser.get_argument_value(gbcemu::CommandData::ArgumentType::kCartridgePath)) };
 
-    uint32_t const scale{ parser.has_argument(gbcemu::CommandData::ArgumentType::kScale)
-                              ? static_cast<uint32_t>(std::stoul(parser.get_argument_value(gbcemu::CommandData::ArgumentType::kScale)))
-                              : 1U };
+    std::uint32_t const scale{ parser.has_argument(gbcemu::CommandData::ArgumentType::kScale)
+                                   ? static_cast<std::uint32_t>(std::stoul(parser.get_argument_value(gbcemu::CommandData::ArgumentType::kScale)))
+                                   : 1U };
 
     // The window is scaled, while the screen is always rendered at the Game Boy resolution
     gbcemu::WindowProperties window_properties{};

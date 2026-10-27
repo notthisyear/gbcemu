@@ -31,15 +31,15 @@ bool Shader::try_construct_shader(Shader::ShaderType const type, std::string con
 
     char const *const shader_source{ shader_code.c_str() };
 
-    uint32_t const shader{ glCreateShader(m_shader_type) };
+    std::uint32_t const shader{ glCreateShader(m_shader_type) };
     glShaderSource(shader, 1, &shader_source, NULL);
     glCompileShader(shader);
 
-    int32_t shaderCompilationResult;
+    std::int32_t shaderCompilationResult;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &shaderCompilationResult);
 
     if (!shaderCompilationResult) {
-        int32_t infoLogLength;
+        std::int32_t infoLogLength;
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLength);
         GLchar *const infoLog{ new GLchar[infoLogLength + 1] };
         glGetShaderInfoLog(shader, infoLogLength, NULL, infoLog);

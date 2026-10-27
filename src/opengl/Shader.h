@@ -10,7 +10,7 @@ class Shader final {
 
   public:
     enum class ShaderType { Vertex, Fragment };
-    uint32_t shader_id;
+    std::uint32_t shader_id;
     Shader::ShaderType type;
 
     bool try_construct_shader(Shader::ShaderType const, std::string const &);

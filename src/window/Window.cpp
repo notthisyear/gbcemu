@@ -79,7 +79,7 @@ void Window::set_glfw_callbacks() {
 
     glfwSetWindowSizeCallback(m_window, [](GLFWwindow *window, int width, int height) {
         WindowData &data{ *(WindowData *)glfwGetWindowUserPointer(window) };
-        WindowResizeEvent const event{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+        WindowResizeEvent const event{ static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height) };
         data.callback(event);
     });
 
@@ -94,17 +94,17 @@ void Window::set_glfw_callbacks() {
 
         switch (action) {
         case GLFW_PRESS: {
-            KeyPressedEvent event{ static_cast<uint16_t>(key), false };
+            KeyPressedEvent event{ static_cast<std::uint16_t>(key), false };
             data.callback(event);
             break;
         }
         case GLFW_RELEASE: {
-            KeyReleasedEvent event{ static_cast<uint16_t>(key) };
+            KeyReleasedEvent event{ static_cast<std::uint16_t>(key) };
             data.callback(event);
             break;
         }
         case GLFW_REPEAT: {
-            KeyPressedEvent event{ static_cast<uint16_t>(key), true };
+            KeyPressedEvent event{ static_cast<std::uint16_t>(key), true };
             data.callback(event);
             break;
         }
@@ -114,7 +114,7 @@ void Window::set_glfw_callbacks() {
     glfwSetCharCallback(m_window, [](GLFWwindow *window, unsigned int keycode) {
         WindowData &data{ *(WindowData *)glfwGetWindowUserPointer(window) };
 
-        CharacterTypedEvent event{ static_cast<uint16_t>(keycode) };
+        CharacterTypedEvent event{ static_cast<std::uint16_t>(keycode) };
         data.callback(event);
     });
 
@@ -123,12 +123,12 @@ void Window::set_glfw_callbacks() {
 
         switch (action) {
         case GLFW_PRESS: {
-            MouseButtonPressedEvent event{ static_cast<uint16_t>(button) };
+            MouseButtonPressedEvent event{ static_cast<std::uint16_t>(button) };
             data.callback(event);
             break;
         }
         case GLFW_RELEASE: {
-            MouseButtonReleasedEvent event{ static_cast<uint16_t>(button) };
+            MouseButtonReleasedEvent event{ static_cast<std::uint16_t>(button) };
             data.callback(event);
             break;
         }

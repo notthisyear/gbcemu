@@ -12,12 +12,12 @@ namespace gbcemu {
 
 class MMU final {
   public:
-    enum class BootRomType : uint8_t {
+    enum class BootRomType : std::uint8_t {
         None,
         DMG,
     };
 
-    enum class MemoryRegion : uint8_t {
+    enum class MemoryRegion : std::uint8_t {
         CartridgeFixed,
         CartridgeSwitchable,
         VRAMSwitchable,
@@ -32,7 +32,7 @@ class MMU final {
         Restricted,
     };
 
-    enum class IORegister : uint8_t {
+    enum class IORegister : std::uint8_t {
         // Joypad input
         JOYP = 0x00,
         // Serial data transfer
@@ -93,15 +93,15 @@ class MMU final {
 
     bool try_load_cartridge(std::ostream &stream, std::string const &);
 
-    bool try_map_data_to_memory(std::uint8_t *const data, uint16_t const offset, std::size_t const size);
+    bool try_map_data_to_memory(std::uint8_t *const data, std::uint16_t const offset, std::size_t const size);
 
-    bool try_read_from_memory(std::uint8_t *const data, uint16_t const offset, std::size_t const size) const;
+    bool try_read_from_memory(std::uint8_t *const data, std::uint16_t const offset, std::size_t const size) const;
 
     void set_debug_mode(bool const);
 
     MMU::BootRomType get_boot_rom_type() const;
 
-    void set_io_register(MMU::IORegister const, uint8_t const);
+    void set_io_register(MMU::IORegister const, std::uint8_t const);
 
     std::uint8_t get_io_register(MMU::IORegister const) const;
 
@@ -109,7 +109,7 @@ class MMU final {
 
     Cartridge *get_cartridge() const;
 
-    void print_memory_at_location(std::ostream &stream, uint16_t const start, uint16_t const end) const;
+    void print_memory_at_location(std::ostream &stream, std::uint16_t const start, std::uint16_t const end) const;
 
     ~MMU();
 
@@ -120,8 +120,8 @@ class MMU final {
     };
 
     std::size_t m_memory_size;
-    uint8_t *m_memory;
-    uint8_t *m_boot_rom;
+    std::uint8_t *m_memory;
+    std::uint8_t *m_boot_rom;
 
     TimerController *m_timer_controller;
     static constexpr std::uint16_t kRegisterOffsetBase{ 0xFF00 };
@@ -134,19 +134,19 @@ class MMU final {
 
     void initialize_registers();
 
-    MMU::MemoryRegion find_memory_region(uint16_t const) const;
+    MMU::MemoryRegion find_memory_region(std::uint16_t const) const;
 
-    void read_from_memory(std::uint8_t *, uint16_t const, std::size_t const) const;
+    void read_from_memory(std::uint8_t *, std::uint16_t const, std::size_t const) const;
 
-    void write_to_memory(std::uint8_t *const, uint16_t const, std::size_t const);
+    void write_to_memory(std::uint8_t *const, std::uint16_t const, std::size_t const);
 
-    bool is_boot_rom_range(uint16_t const, std::size_t const) const;
-    void read_from_boot_rom(uint8_t *, uint16_t, std::size_t const) const;
-    bool try_load_from_file(std::string const &, uint8_t *, std::size_t const) const;
+    bool is_boot_rom_range(std::uint16_t const, std::size_t const) const;
+    void read_from_boot_rom(std::uint8_t *, std::uint16_t, std::size_t const) const;
+    bool try_load_from_file(std::string const &, std::uint8_t *, std::size_t const) const;
 
     std::string get_region_name(const MMU::MemoryRegion) const;
     std::string get_io_register_name(const MMU::IORegister) const;
-    void pre_process_io_register_access(uint8_t const, const MMU::AccessType, uint8_t *data = nullptr) const;
+    void pre_process_io_register_access(std::uint8_t const, const MMU::AccessType, std::uint8_t *data = nullptr) const;
 
     bool try_get_file_size(std::string const &, std::size_t *) const;
 

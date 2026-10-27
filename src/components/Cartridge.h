@@ -8,7 +8,7 @@ namespace gbcemu {
 
 class Cartridge final {
   public:
-    enum class HeaderField : uint16_t {
+    enum class HeaderField : std::uint16_t {
 
         CGBFlag = 0x0143,
         NewLicenseeCode = 0x0144,
@@ -24,7 +24,7 @@ class Cartridge final {
         NewLicenseCodeFlag = 0x33,
     };
 
-    enum class CartridgeType : uint8_t {
+    enum class CartridgeType : std::uint8_t {
         NO_MBC = 0x00,
         MBC1 = 0x01,
         MBC1_RAM = 0x02,
@@ -54,34 +54,34 @@ class Cartridge final {
         HuC3 = 0xFE,
         HuC1_RAM_BATTERY = 0xFF,
     };
-    Cartridge(uint8_t *const, std::size_t const);
+    Cartridge(std::uint8_t *const, std::size_t const);
 
-    void read_from_cartridge_switchable(uint8_t *const, uint32_t const, std::size_t const) const;
-    void read_from_cartridge_ram(uint8_t *const, uint32_t const, std::size_t const) const;
-    void write_to_cartridge_registers(uint8_t *const, uint16_t const, uint16_t const);
-    void write_to_cartridge_ram(uint8_t *const, uint16_t const, std::size_t const);
+    void read_from_cartridge_switchable(std::uint8_t *const, std::uint32_t const, std::size_t const) const;
+    void read_from_cartridge_ram(std::uint8_t *const, std::uint32_t const, std::size_t const) const;
+    void write_to_cartridge_registers(std::uint8_t *const, std::uint16_t const, std::uint16_t const);
+    void write_to_cartridge_ram(std::uint8_t *const, std::uint16_t const, std::size_t const);
 
     std::string get_title() const;
     std::string get_manufacturer_code() const;
-    uint8_t get_single_byte_header_field(Cartridge::HeaderField const) const;
-    uint16_t get_two_byte_header_field(Cartridge::HeaderField const) const;
+    std::uint8_t get_single_byte_header_field(Cartridge::HeaderField const) const;
+    std::uint16_t get_two_byte_header_field(Cartridge::HeaderField const) const;
     void print_info(std::ostream &stream) const;
     ~Cartridge();
 
   private:
-    uint8_t *m_raw_data;
-    [[maybe_unused]] uint64_t m_raw_size;
+    std::uint8_t *m_raw_data;
+    [[maybe_unused]] std::uint64_t m_raw_size;
     CartridgeType m_type;
-    uint8_t m_current_bank_number;
+    std::uint8_t m_current_bank_number;
 
-    constexpr static uint16_t TitleStart{ 0x0134 };
-    constexpr static uint16_t TitleEnd{ 0x0143 };
+    constexpr static std::uint16_t TitleStart{ 0x0134 };
+    constexpr static std::uint16_t TitleEnd{ 0x0143 };
 
-    constexpr static uint16_t ManufacturerCodeStart{ 0x013F };
-    constexpr static uint16_t ManufacturerCodeEnd{ 0x0142 };
+    constexpr static std::uint16_t ManufacturerCodeStart{ 0x013F };
+    constexpr static std::uint16_t ManufacturerCodeEnd{ 0x0142 };
 
-    constexpr static uint32_t RomBaseSizeBytes{ 32 * 0x400 };
-    std::string read_string_from_header(uint16_t const, uint16_t const) const;
+    constexpr static std::uint32_t RomBaseSizeBytes{ 32 * 0x400 };
+    std::string read_string_from_header(std::uint16_t const, std::uint16_t const) const;
 
     static inline std::unordered_map<Cartridge::CartridgeType, std::string> const s_mbc_names{
         { Cartridge::CartridgeType::NO_MBC, "ROM ONLY" },
@@ -113,12 +113,12 @@ class Cartridge final {
         { Cartridge::CartridgeType::HuC3, "HuC3" },
         { Cartridge::CartridgeType::HuC1_RAM_BATTERY, "HuC1 + RAM + BATTERY" },
     };
-    static inline std::unordered_map<uint8_t, uint32_t> const s_rom_sizes{
+    static inline std::unordered_map<std::uint8_t, std::uint32_t> const s_rom_sizes{
         { 0x00, RomBaseSizeBytes },      { 0x01, RomBaseSizeBytes << 1 }, { 0x02, RomBaseSizeBytes << 2 },
         { 0x03, RomBaseSizeBytes << 3 }, { 0x04, RomBaseSizeBytes << 4 }, { 0x05, RomBaseSizeBytes << 5 },
         { 0x06, RomBaseSizeBytes << 6 }, { 0x07, RomBaseSizeBytes << 7 }, { 0x08, RomBaseSizeBytes << 8 },
     };
-    static inline std::unordered_map<uint8_t, uint32_t> const s_ram_sizes{
+    static inline std::unordered_map<std::uint8_t, std::uint32_t> const s_ram_sizes{
         { 0x00, 0 }, { 0x02, 8 * 0x400 }, { 0x03, 32 * 0x400 }, { 0x04, 128 * 0x400 }, { 0x05, 64 * 0x400 }
     };
 };

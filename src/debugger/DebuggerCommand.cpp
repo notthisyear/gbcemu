@@ -29,7 +29,7 @@ void DebuggerCommand::parse_input() {
 
 std::string DebuggerCommand::get_command_data() const { return m_input; }
 
-bool DebuggerCommand::try_get_numeric_argument(uint16_t *arg, int base) const {
+bool DebuggerCommand::try_get_numeric_argument(std::uint16_t *arg, int base) const {
     auto to_parse{ command == DebuggerCommand::Command::Show ? m_input.substr(4, m_input.length() - 4) : m_input }; // remove "mem" in the beginning
     return try_parse_as_number(to_parse, arg, base);
 }
@@ -42,14 +42,14 @@ bool DebuggerCommand::try_get_address_pair_arg(DebuggerCommand::address_pair *ar
            try_parse_as_number(to_parse.substr(hypen_location + 1, to_parse.length() - hypen_location - 1), &arg->second, 16);
 }
 
-bool DebuggerCommand::try_parse_as_number(std::string const &s, uint16_t *result, int base) {
+bool DebuggerCommand::try_parse_as_number(std::string const &s, std::uint16_t *result, int base) {
     try {
         std::size_t pos{};
-        uint32_t r;
+        std::uint32_t r;
         r = std::stoi(s, &pos, base);
         if (r > 0xFFFF)
             return false;
-        *result = (uint16_t)r;
+        *result = (std::uint16_t)r;
         return true;
     } catch (std::exception const &) {
         return false;

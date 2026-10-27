@@ -129,18 +129,18 @@ void Application::draw_frame() {
     m_window->swap_buffers();
 }
 
-uint32_t Application::register_event_callback(EventType const event_type, EventCallbackHandler const callback) {
+std::uint32_t Application::register_event_callback(EventType const event_type, EventCallbackHandler const callback) {
     if (!m_event_callbacks.count(event_type)) {
-        m_event_callbacks.emplace(event_type, std::vector<std::pair<uint32_t, EventCallbackHandler>>());
+        m_event_callbacks.emplace(event_type, std::vector<std::pair<std::uint32_t, EventCallbackHandler>>());
     }
     auto &list{ m_event_callbacks.at(event_type) };
-    uint32_t const event_id{ m_current_event_id++ };
+    std::uint32_t const event_id{ m_current_event_id++ };
 
     list.push_back(std::make_pair(event_id, callback));
     return event_id;
 }
 
-bool Application::try_remove_event_callback(EventType const event_type, uint32_t const event_id) {
+bool Application::try_remove_event_callback(EventType const event_type, std::uint32_t const event_id) {
     if (!m_event_callbacks.count(event_type)) {
         return false;
     }

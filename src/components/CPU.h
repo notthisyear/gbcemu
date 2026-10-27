@@ -17,7 +17,7 @@ struct Opcode;
 
 class CPU final {
   public:
-    enum class Register : uint8_t {
+    enum class Register : std::uint8_t {
         B,
         C,
         D,
@@ -36,14 +36,14 @@ class CPU final {
         WZ, // Intermediate register pair
     };
 
-    enum class Flag : uint8_t {
+    enum class Flag : std::uint8_t {
         Z, // Zero flag
         C, // Add/sub flag (used to convert to BCD)
         N, // Half carry flag (used to convert to BCD)
         H, // Carry flag
     };
 
-    enum class InterruptSource : uint8_t {
+    enum class InterruptSource : std::uint8_t {
         VBlank = 0x00,
         LCDStat = 0x01,
         Timer = 0x02,
@@ -71,27 +71,27 @@ class CPU final {
 
     void tick();
 
-    void print_disassembled_instructions(std::ostream &, uint16_t const);
+    void print_disassembled_instructions(std::ostream &, std::uint16_t const);
 
     void clear_breakpoint();
 
-    void enable_breakpoint_at(uint16_t const);
+    void enable_breakpoint_at(std::uint16_t const);
 
     void set_interrupt_enable(bool const);
 
     bool interrupt_enabled() const;
 
-    uint8_t read_at_pc();
+    std::uint8_t read_at_pc();
 
     void read_at_pc_and_store_in_intermediate(const CPU::Register);
 
-    void push_byte_to_stack(uint8_t const);
+    void push_byte_to_stack(std::uint8_t const);
 
-    uint8_t pop_byte_from_stack();
+    std::uint8_t pop_byte_from_stack();
 
     void load_register_into_intermediate(const CPU::Register);
 
-    uint8_t get_8_bit_register(const CPU::Register reg) const {
+    std::uint8_t get_8_bit_register(const CPU::Register reg) const {
         switch (reg) {
         case CPU::Register::B:
             return get_register_upper(m_reg_bc);
@@ -116,7 +116,7 @@ class CPU final {
         }
     }
 
-    uint16_t get_16_bit_register(const CPU::Register reg) const {
+    std::uint16_t get_16_bit_register(const CPU::Register reg) const {
         switch (reg) {
         case CPU::Register::AF:
             return m_reg_af;
@@ -137,7 +137,7 @@ class CPU final {
         }
     }
 
-    void set_register(const CPU::Register reg, uint8_t const value) {
+    void set_register(const CPU::Register reg, std::uint8_t const value) {
         switch (reg) {
         case CPU::Register::B:
             set_register_upper(m_reg_bc, value);
@@ -171,7 +171,7 @@ class CPU final {
         }
     }
 
-    void set_register(const CPU::Register reg, uint16_t const value) {
+    void set_register(const CPU::Register reg, std::uint16_t const value) {
         switch (reg) {
         case CPU::Register::AF:
             set_register(m_reg_af, value & 0xFFF0); // The lower four bits should never be set
@@ -225,7 +225,7 @@ class CPU final {
     }
 
     void set_flag(const CPU::Flag flag, bool const value) {
-        uint8_t bit_to_set;
+        std::uint8_t bit_to_set;
         switch (flag) {
         case CPU::Flag::Z:
             bit_to_set = 7;
@@ -251,19 +251,19 @@ class CPU final {
 
     bool breakpoint_hit() const;
 
-    bool half_carry_occurs_on_add(uint8_t const v, uint8_t const value_to_add, bool const include_carry = false) const;
+    bool half_carry_occurs_on_add(std::uint8_t const v, std::uint8_t const value_to_add, bool const include_carry = false) const;
 
-    bool half_carry_occurs_on_add(uint16_t const v, uint16_t const value_to_add, bool const include_carry = false) const;
+    bool half_carry_occurs_on_add(std::uint16_t const v, std::uint16_t const value_to_add, bool const include_carry = false) const;
 
-    bool half_carry_occurs_on_subtract(uint8_t const v, uint8_t const value_to_subtract) const;
+    bool half_carry_occurs_on_subtract(std::uint8_t const v, std::uint8_t const value_to_subtract) const;
 
-    bool half_carry_occurs_on_subtract_with_carry(uint8_t const v, uint8_t const value_to_subtract) const;
+    bool half_carry_occurs_on_subtract_with_carry(std::uint8_t const v, std::uint8_t const value_to_subtract) const;
 
-    bool carry_occurs_on_add(uint8_t const v, uint8_t const value_to_add, bool const include_carry = false) const;
+    bool carry_occurs_on_add(std::uint8_t const v, std::uint8_t const value_to_add, bool const include_carry = false) const;
 
-    bool carry_occurs_on_add(uint16_t const v, uint16_t const value_to_add, bool const include_carry = false) const;
+    bool carry_occurs_on_add(std::uint16_t const v, std::uint16_t const value_to_add, bool const include_carry = false) const;
 
-    bool carry_occurs_on_subtract(uint16_t const v, uint16_t const value_to_subtract) const;
+    bool carry_occurs_on_subtract(std::uint16_t const v, std::uint16_t const value_to_subtract) const;
 
     void print_state(std::ostream &) const;
 
@@ -271,7 +271,7 @@ class CPU final {
 
     bool at_start_of_instruction() const;
 
-    uint16_t current_instruction_address() const;
+    std::uint16_t current_instruction_address() const;
 
     ~CPU();
 
@@ -282,7 +282,7 @@ class CPU final {
 
     std::optional<CPU::InterruptSource> select_interrupt_to_service();
 
-    enum class State : uint8_t {
+    enum class State : std::uint8_t {
         FetchAndDecode,
         FetchAndDecodeExtended,
         Execute,
@@ -293,7 +293,7 @@ class CPU final {
 
     static constexpr std::string kTraceFileName{ "trace.log" };
     static constexpr int kMaxPathLength{ 255 };
-    static constexpr uint8_t kExecutionTicksPerOperationStep{ 4 };
+    static constexpr std::uint8_t kExecutionTicksPerOperationStep{ 4 };
 
     std::shared_ptr<MMU> m_mmu;
     std::shared_ptr<PPU> m_ppu;
@@ -303,10 +303,10 @@ class CPU final {
     bool m_is_running_boot_rom;
     CPU::State m_state;
 
-    uint64_t m_tick_ctr{ 0U };
-    uint8_t m_current_cpu_phase_tick_count{ 0U };
-    uint8_t m_current_interrupt_phase_counter{ 0U };
-    int8_t m_cycles_until_interrupts_enabled{ 0 };
+    std::uint64_t m_tick_ctr{ 0U };
+    std::uint8_t m_current_cpu_phase_tick_count{ 0U };
+    std::uint8_t m_current_interrupt_phase_counter{ 0U };
+    std::int8_t m_cycles_until_interrupts_enabled{ 0 };
 
     bool m_next_instruction_preloaded{ false };
     bool m_is_extended_opcode{ false };
@@ -322,30 +322,30 @@ class CPU final {
     // is executed, i.e. that it isn't preempted by an interrupt dispatch.
     std::optional<std::string> m_pending_trace_line{};
 
-    uint16_t m_current_breakpoint{ 0U };
+    std::uint16_t m_current_breakpoint{ 0U };
 
     // Empty if the interrupt dispatch was cancelled
     std::optional<CPU::InterruptSource> m_current_interrupt{};
 
-    uint16_t m_reg_af{ 0U }; // Accumulator and flags
-    uint16_t m_reg_bc{ 0U }; // BC (can be accessed as two 8-bit registers)
-    uint16_t m_reg_de{ 0U }; // DE (can be accessed as two 8-bit registers)
-    uint16_t m_reg_hl{ 0U }; // HL (can be accessed as two 8-bit registers)
-    uint16_t m_reg_sp{ 0U }; // Stack pointer
-    uint16_t m_reg_pc{ 0U }; // Program counter
-    uint16_t m_reg_wz{ 0U }; // Internal temporary register
+    std::uint16_t m_reg_af{ 0U }; // Accumulator and flags
+    std::uint16_t m_reg_bc{ 0U }; // BC (can be accessed as two 8-bit registers)
+    std::uint16_t m_reg_de{ 0U }; // DE (can be accessed as two 8-bit registers)
+    std::uint16_t m_reg_hl{ 0U }; // HL (can be accessed as two 8-bit registers)
+    std::uint16_t m_reg_sp{ 0U }; // Stack pointer
+    std::uint16_t m_reg_pc{ 0U }; // Program counter
+    std::uint16_t m_reg_wz{ 0U }; // Internal temporary register
 
-    std::string disassemble_instruction_at(uint16_t, uint8_t &) const;
+    std::string disassemble_instruction_at(std::uint16_t, std::uint8_t &) const;
 
-    void set_register(uint16_t &reg, uint16_t const value) { reg = value; }
+    void set_register(std::uint16_t &reg, std::uint16_t const value) { reg = value; }
 
-    void set_register_lower(uint16_t &reg, uint8_t const value) { reg = (reg & 0xFF00) | value; }
+    void set_register_lower(std::uint16_t &reg, std::uint8_t const value) { reg = (reg & 0xFF00) | value; }
 
-    void set_register_upper(uint16_t &reg, uint8_t const value) { reg = (reg & 0x00FF) | (value << 8); }
+    void set_register_upper(std::uint16_t &reg, std::uint8_t const value) { reg = (reg & 0x00FF) | (value << 8); }
 
-    uint8_t get_register_lower(uint16_t const &reg) const { return reg & 0x00FF; }
+    std::uint8_t get_register_lower(std::uint16_t const &reg) const { return reg & 0x00FF; }
 
-    uint8_t get_register_upper(uint16_t const &reg) const { return reg >> 8; }
+    std::uint8_t get_register_upper(std::uint16_t const &reg) const { return reg >> 8; }
 
     void set_initial_values_for_registers(const MMU::BootRomType, bool);
 
@@ -357,7 +357,7 @@ class CPU final {
 
     void print_additional_info(std::ostream &stream) const;
 
-    std::string get_trace_line(uint16_t const) const;
+    std::string get_trace_line(std::uint16_t const) const;
 
     static inline std::unordered_map<CPU::State, std::string> s_cpu_state_name{
         { CPU::State::FetchAndDecode, "FetchAndDecode" },
@@ -368,7 +368,7 @@ class CPU final {
         { CPU::State::InterruptTransition, "InterruptTransition" },
     };
 
-    static inline std::unordered_map<CPU::InterruptSource, uint16_t> const s_interrupt_vector{
+    static inline std::unordered_map<CPU::InterruptSource, std::uint16_t> const s_interrupt_vector{
         { CPU::InterruptSource::VBlank, 0x40 }, { CPU::InterruptSource::LCDStat, 0x48 }, { CPU::InterruptSource::Timer, 0x50 },
         { CPU::InterruptSource::Serial, 0x58 }, { CPU::InterruptSource::Joypad, 0x60 },
     };

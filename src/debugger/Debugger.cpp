@@ -1,6 +1,7 @@
 #include "Debugger.h"
 #include "DebuggerCommand.h"
 #include "util/GeneralUtilities.h"
+#include <cstdint>
 #include <iostream>
 #include <memory>
 
@@ -52,7 +53,7 @@ void Debugger::run(std::ostream &output_stream) {
                 if (is_pair) {
                     result = cmd->try_get_address_pair_arg(&address);
                 } else {
-                    uint16_t addr_start;
+                    std::uint16_t addr_start;
                     result = cmd->try_get_numeric_argument(&addr_start);
                     if (result) {
                         address.first = addr_start;
@@ -75,7 +76,7 @@ void Debugger::run(std::ostream &output_stream) {
             break;
 
         case DebuggerCommand::Command::Disassemble:
-            uint16_t number_of_instructions_to_print;
+            std::uint16_t number_of_instructions_to_print;
             if (cmd->try_get_numeric_argument(&number_of_instructions_to_print))
                 m_cpu->print_disassembled_instructions(output_stream, number_of_instructions_to_print);
             else
@@ -83,7 +84,7 @@ void Debugger::run(std::ostream &output_stream) {
             break;
 
         case gbcemu::DebuggerCommand::Command::SetBreakpoint:
-            uint16_t breakpoint;
+            std::uint16_t breakpoint;
             if (cmd->try_get_numeric_argument(&breakpoint))
                 m_cpu->enable_breakpoint_at(breakpoint);
             else

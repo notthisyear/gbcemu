@@ -20,7 +20,7 @@ class DebuggerCommand {
         bool include;
     } CommandInfo;
 
-    typedef std::pair<uint16_t, uint16_t> address_pair;
+    typedef std::pair<std::uint16_t, std::uint16_t> address_pair;
 
     enum class Command {
         Help,
@@ -71,7 +71,7 @@ class DebuggerCommand {
 
     std::string get_command_data() const;
 
-    bool try_get_numeric_argument(uint16_t *, int base = 16) const;
+    bool try_get_numeric_argument(std::uint16_t *, int base = 16) const;
 
     bool try_get_address_pair_arg(address_pair *) const;
 
@@ -84,7 +84,7 @@ class DebuggerCommand {
     void set_input(std::string const &);
     void parse_input();
 
-    bool static try_parse_as_number(std::string const &, uint16_t *, int);
+    bool static try_parse_as_number(std::string const &, std::uint16_t *, int);
     static std::unordered_map<DebuggerCommand::Command, DebuggerCommand *> _s_command_cache;
     static inline CommandInfo s_command_info_map[]{
         { "(^((h)|(help))$)", "[h|help]", "show available commands", false, true },

@@ -10,18 +10,18 @@ namespace gbcemu {
 class Renderer final {
 
   public:
-    static uint8_t constexpr kBytesPerPixel{ 4 };
+    static std::uint8_t constexpr kBytesPerPixel{ 4 };
 
-    Renderer(uint32_t const, uint32_t const);
+    Renderer(std::uint32_t const, std::uint32_t const);
     void init();
-    void set_viewport(uint32_t const, uint32_t const);
-    void update_framebuffer_and_draw(uint8_t *const);
+    void set_viewport(std::uint32_t const, std::uint32_t const);
+    void update_framebuffer_and_draw(std::uint8_t *const);
 
   private:
-    uint32_t m_texture_id;
-    uint32_t m_vertex_array_object;
-    uint32_t m_width;
-    uint32_t m_height;
+    std::uint32_t m_texture_id;
+    std::uint32_t m_vertex_array_object;
+    std::uint32_t m_width;
+    std::uint32_t m_height;
 
     std::unique_ptr<ShaderProgram> m_shader_program{ nullptr };
 

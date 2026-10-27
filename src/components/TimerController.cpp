@@ -43,7 +43,7 @@ void TimerController::process() {
     m_div_value++;
     m_mmu->set_io_register(MMU::IORegister::DIV, (m_div_value & 0xFF00) >> 8);
 
-    uint8_t const tac_register{ m_mmu->get_io_register(MMU::IORegister::TAC) };
+    std::uint8_t const tac_register{ m_mmu->get_io_register(MMU::IORegister::TAC) };
     bool const current_output_value{ BitUtilities::bit_is_set(tac_register, 2) &&
                                      BitUtilities::bit_is_set(m_div_value, s_div_bit_select.find(tac_register & 0x03)->second) };
     bool const falling_edge{ !current_output_value && m_last_output_value };
@@ -52,7 +52,7 @@ void TimerController::process() {
     bool overflow_happened_this_cycle{ false };
 
     if (falling_edge && !m_overflow_process_pending) {
-        uint8_t tima_reg{ m_mmu->get_io_register(MMU::IORegister::TIMA) };
+        std::uint8_t tima_reg{ m_mmu->get_io_register(MMU::IORegister::TIMA) };
         tima_reg++;
         if (tima_reg == 0x00) {
             m_overflow_process_pending = true;
@@ -73,8 +73,8 @@ void TimerController::process() {
                 m_mmu->set_io_register(MMU::IORegister::TIMA, m_mmu->get_io_register(MMU::IORegister::TMA));
 
             if (m_set_interrupt_flag) {
-                uint8_t if_register{ m_mmu->get_io_register(MMU::IORegister::IF) };
-                BitUtilities::set_bit_in_byte(if_register, static_cast<uint8_t>(CPU::InterruptSource::Timer));
+                std::uint8_t if_register{ m_mmu->get_io_register(MMU::IORegister::IF) };
+                BitUtilities::set_bit_in_byte(if_register, static_cast<std::uint8_t>(CPU::InterruptSource::Timer));
                 m_mmu->set_io_register(MMU::IORegister::IF, if_register);
             }
         }

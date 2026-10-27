@@ -36,7 +36,7 @@ class GeneralUtilities final {
         if (string_length <= 0) {
             throw std::runtime_error("snprintf failed");
         }
-        std::size_t const size{ static_cast<size_t>(string_length) };
+        std::size_t const size{ static_cast<std::size_t>(string_length) };
         std::unique_ptr<char[]> const buffer = std::make_unique<char[]>(size);
 
         std::snprintf(buffer.get(), size, format.c_str(), args...);

@@ -9,7 +9,7 @@ namespace gbcemu {
 class ShaderProgram final {
 
   public:
-    uint32_t shader_program_id;
+    std::uint32_t shader_program_id;
 
     ShaderProgram();
 

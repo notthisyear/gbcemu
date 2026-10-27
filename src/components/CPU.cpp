@@ -134,13 +134,13 @@ void CPU::tick() {
                 // Upper byte of PC is pushed in the first cycle and the lower byte in the second
                 m_current_interrupt_phase_counter++;
                 if (m_current_interrupt_phase_counter == 1) {
-                    push_byte_to_stack(static_cast<uint8_t>(m_reg_pc >> 8));
+                    push_byte_to_stack(static_cast<std::uint8_t>(m_reg_pc >> 8));
 
                     // The interrupt to service is selected after the upper byte has been pushed. If the push
                     // overwrote IE so that no pending interrupt is enabled anymore, the dispatch is cancelled.
                     m_current_interrupt = select_interrupt_to_service();
                 } else {
-                    push_byte_to_stack(static_cast<uint8_t>(m_reg_pc & 0x00FF));
+                    push_byte_to_stack(static_cast<std::uint8_t>(m_reg_pc & 0x00FF));
                     m_state = CPU::State::InterruptSetPC;
                     m_current_interrupt_phase_counter = 0;
                 }
@@ -149,7 +149,7 @@ void CPU::tick() {
             case CPU::State::InterruptSetPC:
                 // A cancelled dispatch jumps to 0x0000 instead of an interrupt vector
                 set_register(CPU::Register::PC,
-                             m_current_interrupt.has_value() ? s_interrupt_vector.find(*m_current_interrupt)->second : static_cast<uint16_t>(0x0000));
+                             m_current_interrupt.has_value() ? s_interrupt_vector.find(*m_current_interrupt)->second : static_cast<std::uint16_t>(0x0000));
                 m_state = CPU::State::FetchAndDecode;
                 break;
 
@@ -162,7 +162,7 @@ void CPU::tick() {
 
     if (trace_preloaded_instruction_at_end) {
         // PC already points past the preloaded opcode
-        m_pending_trace_line = get_trace_line(static_cast<uint16_t>(m_reg_pc - 1));
+        m_pending_trace_line = get_trace_line(static_cast<std::uint16_t>(m_reg_pc - 1));
     }
 
     m_current_cpu_phase_tick_count = (m_current_cpu_phase_tick_count + 1) & (kExecutionTicksPerOperationStep - 1);
@@ -171,14 +171,14 @@ void CPU::tick() {
 
 bool CPU::at_start_of_instruction() const { return m_current_cpu_phase_tick_count == 0 && m_state == CPU::State::FetchAndDecode; }
 
-uint16_t CPU::current_instruction_address() const {
+std::uint16_t CPU::current_instruction_address() const {
     // If the next instruction has already been fetched (overlapping the previous instruction), PC points past its opcode
-    return (m_state == CPU::State::FetchAndDecode && m_next_instruction_preloaded) ? static_cast<uint16_t>(m_reg_pc - 1) : m_reg_pc;
+    return (m_state == CPU::State::FetchAndDecode && m_next_instruction_preloaded) ? static_cast<std::uint16_t>(m_reg_pc - 1) : m_reg_pc;
 }
 
 bool CPU::should_handle_interrupt() {
-    uint8_t const interrupt_enable{ m_mmu->get_io_register(MMU::IORegister::IE) };
-    uint8_t const interrupt_flag{ m_mmu->get_io_register(MMU::IORegister::IF) };
+    std::uint8_t const interrupt_enable{ m_mmu->get_io_register(MMU::IORegister::IE) };
+    std::uint8_t const interrupt_flag{ m_mmu->get_io_register(MMU::IORegister::IF) };
 
     bool const IME_was_set{ m_interrupt_enabled };
 
@@ -204,9 +204,9 @@ bool CPU::should_handle_interrupt() {
 }
 
 std::optional<CPU::InterruptSource> CPU::select_interrupt_to_service() {
-    uint8_t const interrupt_enable{ m_mmu->get_io_register(MMU::IORegister::IE) };
-    uint8_t interrupt_flag{ m_mmu->get_io_register(MMU::IORegister::IF) };
-    uint8_t const pending_interrupts{ static_cast<uint8_t>(interrupt_enable & interrupt_flag) };
+    std::uint8_t const interrupt_enable{ m_mmu->get_io_register(MMU::IORegister::IE) };
+    std::uint8_t interrupt_flag{ m_mmu->get_io_register(MMU::IORegister::IF) };
+    std::uint8_t const pending_interrupts{ static_cast<std::uint8_t>(interrupt_enable & interrupt_flag) };
 
     // Let's find the pending interrupt with the highest priority (lowest bit)
     std::size_t const last_interrupt_idx{ static_cast<std::size_t>(CPU::InterruptSource::Joypad) };
@@ -223,7 +223,7 @@ std::optional<CPU::InterruptSource> CPU::select_interrupt_to_service() {
 }
 
 void CPU::fetch_and_decode() {
-    uint8_t const current_byte{ read_at_pc() };
+    std::uint8_t const current_byte{ read_at_pc() };
     if (m_halt_bug_active) {
         m_reg_pc--;
         m_halt_bug_active = false;
@@ -239,8 +239,8 @@ void CPU::fetch_and_decode() {
     }
 }
 
-uint8_t CPU::read_at_pc() {
-    uint8_t byte;
+std::uint8_t CPU::read_at_pc() {
+    std::uint8_t byte;
     (void)m_mmu->try_read_from_memory(&byte, m_reg_pc++, 1);
     return byte;
 }
@@ -251,13 +251,13 @@ void CPU::read_at_pc_and_store_in_intermediate(const CPU::Register reg) {
     set_register(reg, read_at_pc());
 }
 
-void CPU::push_byte_to_stack(uint8_t const value) {
-    uint8_t data{ value };
+void CPU::push_byte_to_stack(std::uint8_t const value) {
+    std::uint8_t data{ value };
     (void)m_mmu->try_map_data_to_memory(&data, --m_reg_sp, 1);
 }
 
-uint8_t CPU::pop_byte_from_stack() {
-    uint8_t byte;
+std::uint8_t CPU::pop_byte_from_stack() {
+    std::uint8_t byte;
     (void)m_mmu->try_read_from_memory(&byte, m_reg_sp++, 1);
     return byte;
 }
@@ -290,9 +290,9 @@ void CPU::load_register_into_intermediate(const CPU::Register reg) {
     }
 }
 
-std::string CPU::disassemble_instruction_at(uint16_t current_pc, uint8_t &instruction_length) const {
-    uint8_t current_instruction;
-    uint16_t const pc_at_start{ current_pc };
+std::string CPU::disassemble_instruction_at(std::uint16_t current_pc, std::uint8_t &instruction_length) const {
+    std::uint8_t current_instruction;
+    std::uint16_t const pc_at_start{ current_pc };
     m_mmu->try_read_from_memory(&current_instruction, current_pc, 1);
     current_pc++;
 
@@ -305,7 +305,7 @@ std::string CPU::disassemble_instruction_at(uint16_t current_pc, uint8_t &instru
     std::shared_ptr<Opcode> opcode{ OpcodeBuilder::decode_opcode(current_instruction, is_extended) };
     std::string disassembled_instruction;
     if (opcode->size > 1) {
-        uint8_t *instruction_data{ new uint8_t[opcode->size - 1] };
+        std::uint8_t *instruction_data{ new std::uint8_t[opcode->size - 1] };
         m_mmu->try_read_from_memory(instruction_data, current_pc, opcode->size - 1);
         disassembled_instruction = opcode->get_disassembled_instruction(instruction_data);
         current_pc += opcode->size - 1;
@@ -318,10 +318,10 @@ std::string CPU::disassemble_instruction_at(uint16_t current_pc, uint8_t &instru
     return disassembled_instruction;
 }
 
-void CPU::print_disassembled_instructions(std::ostream &stream, uint16_t const number_of_instructions) {
-    uint16_t current_pc{ current_instruction_address() };
+void CPU::print_disassembled_instructions(std::ostream &stream, std::uint16_t const number_of_instructions) {
+    std::uint16_t current_pc{ current_instruction_address() };
 
-    uint8_t last_instruction_length{ 0U };
+    std::uint8_t last_instruction_length{ 0U };
     for (std::size_t i{ 0U }; i < number_of_instructions; ++i) {
         stream << "\033[1;37m" << std::left << std::setw(10) << std::setfill(' ') << GeneralUtilities::formatted_string("0x%04X", current_pc);
         stream << "\033[0;m";
@@ -339,7 +339,7 @@ void CPU::set_interrupt_enable(bool const on_or_off) {
 
 bool CPU::interrupt_enabled() const { return m_interrupt_enabled; }
 
-void CPU::enable_breakpoint_at(uint16_t const pc) {
+void CPU::enable_breakpoint_at(std::uint16_t const pc) {
     m_current_breakpoint = pc;
     m_has_breakpoint = true;
 }
@@ -350,29 +350,31 @@ bool CPU::breakpoint_hit() const { return m_has_breakpoint && at_start_of_instru
 
 void CPU::clear_breakpoint() { m_has_breakpoint = false; }
 
-bool CPU::half_carry_occurs_on_subtract(uint8_t const v, uint8_t const value_to_subtract) const { return ((v & 0x0F) - (value_to_subtract & 0x0F)) & 0x10; }
+bool CPU::half_carry_occurs_on_subtract(std::uint8_t const v, std::uint8_t const value_to_subtract) const {
+    return ((v & 0x0F) - (value_to_subtract & 0x0F)) & 0x10;
+}
 
-bool CPU::half_carry_occurs_on_subtract_with_carry(uint8_t const v, uint8_t const value_to_subtract) const {
+bool CPU::half_carry_occurs_on_subtract_with_carry(std::uint8_t const v, std::uint8_t const value_to_subtract) const {
     return ((v & 0x0F) - (value_to_subtract & 0x0F) - (flag_is_set(CPU::Flag::C) ? 1 : 0)) & 0x10;
 }
 
-bool CPU::half_carry_occurs_on_add(uint8_t const v, uint8_t const value_to_add, bool const include_carry) const {
+bool CPU::half_carry_occurs_on_add(std::uint8_t const v, std::uint8_t const value_to_add, bool const include_carry) const {
     return ((v & 0x0F) + (value_to_add & 0x0F) + (flag_is_set(CPU::Flag::C) & include_carry)) > 0x0F;
 }
 
-bool CPU::half_carry_occurs_on_add(uint16_t const v, uint16_t const value_to_add, bool const include_carry) const {
+bool CPU::half_carry_occurs_on_add(std::uint16_t const v, std::uint16_t const value_to_add, bool const include_carry) const {
     return ((v & 0x0FFF) + (value_to_add & 0x0FFF) + (flag_is_set(CPU::Flag::C) & include_carry)) > 0x0FFF;
 }
 
-bool CPU::carry_occurs_on_add(uint8_t const v, uint8_t const value_to_add, bool const include_carry) const {
-    return ((uint16_t)v + (uint16_t)(value_to_add) + (flag_is_set(CPU::Flag::C) & include_carry)) > 0xFF;
+bool CPU::carry_occurs_on_add(std::uint8_t const v, std::uint8_t const value_to_add, bool const include_carry) const {
+    return ((std::uint16_t)v + (std::uint16_t)(value_to_add) + (flag_is_set(CPU::Flag::C) & include_carry)) > 0xFF;
 }
 
-bool CPU::carry_occurs_on_add(uint16_t const v, uint16_t const value_to_add, bool const include_carry) const {
-    return ((uint32_t)v + (uint32_t)value_to_add + (flag_is_set(CPU::Flag::C) & include_carry)) > 0xFFFF;
+bool CPU::carry_occurs_on_add(std::uint16_t const v, std::uint16_t const value_to_add, bool const include_carry) const {
+    return ((std::uint32_t)v + (std::uint32_t)value_to_add + (flag_is_set(CPU::Flag::C) & include_carry)) > 0xFFFF;
 }
 
-bool CPU::carry_occurs_on_subtract(uint16_t const v, uint16_t const value_to_subtract) const { return value_to_subtract > v; };
+bool CPU::carry_occurs_on_subtract(std::uint16_t const v, std::uint16_t const value_to_subtract) const { return value_to_subtract > v; };
 
 void CPU::set_initial_values_for_registers(const MMU::BootRomType boot_rom_type, bool header_checksum_is_zero) {
     m_reg_bc = boot_rom_type == MMU::BootRomType::DMG ? 0x0000 : 0x0013;
@@ -442,8 +444,8 @@ void CPU::print_additional_info(std::ostream &stream) const {
            << "\033[1;37m" << (m_is_running_boot_rom ? "true" : "false") << "\033[0;m" << std::endl;
 }
 
-std::string CPU::get_trace_line(uint16_t const pc) const {
-    uint8_t instruction_length{ 0U };
+std::string CPU::get_trace_line(std::uint16_t const pc) const {
+    std::uint8_t instruction_length{ 0U };
     return GeneralUtilities::formatted_string(
                "A: 0x%02X F: %c%c%c%c BC: 0x%04X DE: 0x%04X HL: 0x%04X SP: 0x%04X PC: 0x%04X (cy: %llu, DIV: 0x%02X TIMA: 0x%02X TMA: 0x%02X TAC: 0x%02X) | ",
                get_8_bit_register(CPU::Register::A), flag_is_set(CPU::Flag::Z) ? 'Z' : '-', flag_is_set(CPU::Flag::N) ? 'N' : '-',

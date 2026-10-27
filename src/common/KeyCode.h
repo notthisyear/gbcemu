@@ -3,7 +3,7 @@
 #include <cstdint>
 
 namespace gbcemu {
-using KeyCode = uint16_t;
+using KeyCode = std::uint16_t;
 
 enum class Key : KeyCode {
     // From glfw3.h

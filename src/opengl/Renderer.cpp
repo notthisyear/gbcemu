@@ -5,7 +5,7 @@
 
 namespace gbcemu {
 
-Renderer::Renderer(uint32_t width, uint32_t height) : m_width{ width }, m_height{ height } {}
+Renderer::Renderer(std::uint32_t width, std::uint32_t height) : m_width{ width }, m_height{ height } {}
 
 void Renderer::init() {
     glCreateTextures(GL_TEXTURE_2D, 1, &m_texture_id);
@@ -25,12 +25,12 @@ void Renderer::init() {
         // clang-format on
     };
 
-    uint32_t indices[]{
+    std::uint32_t indices[]{
         0, 1, 2, // First triangle
         2, 3, 0  // Second triangle
     };
 
-    uint32_t vertexBufferObject, elementBufferObject;
+    std::uint32_t vertexBufferObject, elementBufferObject;
 
     glGenVertexArrays(1, &m_vertex_array_object);
     glGenBuffers(1, &vertexBufferObject);
@@ -81,9 +81,9 @@ void Renderer::init() {
     m_is_initialized = true;
 }
 
-void Renderer::set_viewport(uint32_t const width, uint32_t const height) { glViewport(0, 0, width, height); }
+void Renderer::set_viewport(std::uint32_t const width, std::uint32_t const height) { glViewport(0, 0, width, height); }
 
-void Renderer::update_framebuffer_and_draw(uint8_t *const buffer) {
+void Renderer::update_framebuffer_and_draw(std::uint8_t *const buffer) {
     if (!m_is_initialized)
         exit(1);
 

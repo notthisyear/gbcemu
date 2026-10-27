@@ -14,11 +14,11 @@ void ShaderProgram::attach_shader(Shader const &shader) const { glAttachShader(s
 
 bool ShaderProgram::link_program() const {
     glLinkProgram(shader_program_id);
-    int32_t shaderLinkingResult;
+    std::int32_t shaderLinkingResult;
     glGetProgramiv(shader_program_id, GL_LINK_STATUS, &shaderLinkingResult);
 
     if (!shaderLinkingResult) {
-        int32_t infoLogLength;
+        std::int32_t infoLogLength;
         glGetShaderiv(shader_program_id, GL_INFO_LOG_LENGTH, &infoLogLength);
         GLchar *const infoLog{ new GLchar[infoLogLength + 1] };
         glGetProgramInfoLog(shader_program_id, infoLogLength, NULL, infoLog);
