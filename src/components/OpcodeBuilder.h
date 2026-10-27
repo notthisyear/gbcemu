@@ -13,7 +13,7 @@ class OpcodeBuilder final {
     template <typename T> static std::shared_ptr<Opcode> construct(uint8_t const data) { return std::make_shared<T>(data); }
 
     using opcode_builder = std::function<std::shared_ptr<Opcode>(uint8_t)>;
-    static inline std::unordered_map<uint8_t, opcode_builder> const k00Opcodes = {
+    static inline std::unordered_map<uint8_t, opcode_builder> const k00Opcodes{
         { 0,
           [](uint8_t identifier) {
               uint8_t const y{ static_cast<uint8_t>((identifier >> 3) & 0x07) };
@@ -67,7 +67,7 @@ class OpcodeBuilder final {
           } },
     };
 
-    static inline std::unordered_map<uint8_t, opcode_builder> const k11Opcodes = {
+    static inline std::unordered_map<uint8_t, opcode_builder> const k11Opcodes{
         { 0,
           [](uint8_t identifier) {
               uint8_t const y{ static_cast<uint8_t>((identifier >> 3) & 0x07) };
@@ -109,7 +109,7 @@ class OpcodeBuilder final {
           } },
         { 2,
           [](uint8_t identifier) {
-              uint8_t y = (identifier >> 3) & 0x07;
+              uint8_t y{ static_cast<uint8_t>((identifier >> 3) & 0x07) };
               switch (y) {
 
               case 0:
@@ -129,7 +129,7 @@ class OpcodeBuilder final {
           } },
         { 3,
           [](uint8_t identifier) {
-              uint8_t y = (identifier >> 3) & 0x07;
+              uint8_t y{ static_cast<uint8_t>((identifier >> 3) & 0x07) };
               switch (y) {
               case 0:
                   return construct<JumpToImmediate>(identifier);
@@ -143,7 +143,7 @@ class OpcodeBuilder final {
           } },
         { 4,
           [](uint8_t identifier) {
-              uint8_t y = (identifier >> 3) & 0x07;
+              uint8_t y{ static_cast<uint8_t>((identifier >> 3) & 0x07) };
               if (y < 4)
                   return construct<Call>(identifier);
 
@@ -151,7 +151,7 @@ class OpcodeBuilder final {
           } },
         { 5,
           [](uint8_t identifier) {
-              uint8_t y = (identifier >> 3) & 0x07;
+              uint8_t y{ static_cast<uint8_t>((identifier >> 3) & 0x07) };
               if (y == 1)
                   return construct<Call>(identifier);
               else if ((y & 0x01) == 0)
@@ -168,7 +168,7 @@ class OpcodeBuilder final {
     static inline std::unordered_map<uint8_t, std::shared_ptr<Opcode>> s_extended_opcode_cache{};
 
     static std::shared_ptr<Opcode> check_opcode_cache(uint8_t const identifier, std::unordered_map<uint8_t, std::shared_ptr<Opcode>> const &cache) {
-        auto const result = cache.find(identifier);
+        auto const result{ cache.find(identifier) };
         return result != cache.end() ? result->second : nullptr;
     }
 

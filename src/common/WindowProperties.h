@@ -19,8 +19,8 @@ struct WindowProperties final {
 
     WindowProperties(std::string const &title = "gbcemu v 0.1", WindowMode const mode = WindowMode::Windowed, bool const capture_mouse = false,
                      bool const use_raw_mouse_motion_if_possible = true, uint32_t const width = 160, uint32_t const height = 144)
-        : title(title), mode(mode), capture_mouse(capture_mouse), use_raw_mouse_motion_if_possible(use_raw_mouse_motion_if_possible), width(width),
-          height(height) {}
+        : title{ title }, mode{ mode }, capture_mouse{ capture_mouse }, use_raw_mouse_motion_if_possible{ use_raw_mouse_motion_if_possible }, width{ width },
+          height{ height } {}
 
     std::string to_string() const {
 

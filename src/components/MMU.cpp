@@ -9,7 +9,7 @@
 
 namespace gbcemu {
 
-MMU::MMU(std::size_t const memory_size) : m_memory_size(memory_size) {
+MMU::MMU(std::size_t const memory_size) : m_memory_size{ memory_size } {
 
     m_memory = new uint8_t[m_memory_size];
     memset(m_memory, (uint8_t)0x00, m_memory_size);
@@ -53,7 +53,7 @@ bool MMU::try_load_cartridge(std::ostream &stream, std::string const &path) {
         return false;
     }
 
-    uint8_t *const cartridge_data = new uint8_t[size];
+    uint8_t *const cartridge_data{ new uint8_t[size] };
     bool success{ try_load_from_file(path, cartridge_data, size) };
     if (!success) {
         stream << "\033[1;31m[error] "
@@ -240,14 +240,14 @@ void MMU::print_memory_at_location(std::ostream &stream, uint16_t const start, u
     }
 
     std::size_t const number_of_bytes_to_print{ (end - start) + 1U };
-    uint8_t *const buffer = new uint8_t[number_of_bytes_to_print];
+    uint8_t *const buffer{ new uint8_t[number_of_bytes_to_print] };
 
     if (!try_read_from_memory(buffer, start, number_of_bytes_to_print)) {
         stream << "\033[1;31m[error] \033[0;mCannot show memory across memory regions" << std::endl;
         return;
     }
 
-    MemoryRegion const region = find_memory_region(start);
+    MemoryRegion const region{ find_memory_region(start) };
     bool const boot_rom_enabled{ get_io_register(MMU::IORegister::BootRomDisableOffset) == 0x00 };
     bool const is_boot_rom{ (region == MMU::MemoryRegion::CartridgeFixed) && boot_rom_enabled && is_boot_rom_range(start, (end - start) + 1) };
 
@@ -473,7 +473,7 @@ std::string MMU::get_region_name(MMU::MemoryRegion const region) const { return 
 std::string MMU::get_io_register_name(MMU::IORegister const reg) const { return MMU::s_io_register_names.find(reg)->second; }
 
 void MMU::pre_process_io_register_access(uint8_t const offset, AccessType const access_type, uint8_t *data) const {
-    IORegister const io_reg = static_cast<MMU::IORegister>(offset);
+    IORegister const io_reg{ static_cast<MMU::IORegister>(offset) };
 
     switch (io_reg) {
     case MMU::IORegister::JOYP:

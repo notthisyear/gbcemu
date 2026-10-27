@@ -13,7 +13,7 @@ TimerController *TimerController::get(MMU *const mmu) {
     return m_instance;
 }
 
-TimerController::TimerController(MMU *const mmu) : m_mmu(mmu) {
+TimerController::TimerController(MMU *const mmu) : m_mmu{ mmu } {
     // Note: I don't have a good justification for adding 0xC8 here, other than
     //       that it's required to pass some of the Mooneye test's. Apparantly,
     //       a DIV increase is supposed to happen after (boot sequence), seven NOP's
@@ -73,7 +73,7 @@ void TimerController::process() {
                 m_mmu->set_io_register(MMU::IORegister::TIMA, m_mmu->get_io_register(MMU::IORegister::TMA));
 
             if (m_set_interrupt_flag) {
-                uint8_t if_register = m_mmu->get_io_register(MMU::IORegister::IF);
+                uint8_t if_register{ m_mmu->get_io_register(MMU::IORegister::IF) };
                 BitUtilities::set_bit_in_byte(if_register, static_cast<uint8_t>(CPU::InterruptSource::Timer));
                 m_mmu->set_io_register(MMU::IORegister::IF, if_register);
             }

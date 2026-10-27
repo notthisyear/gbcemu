@@ -5,7 +5,7 @@
 
 namespace gbcemu {
 
-GraphicsContext::GraphicsContext(GLFWwindow *const window) : m_window(window) {}
+GraphicsContext::GraphicsContext(GLFWwindow *const window) : m_window{ window } {}
 
 bool GraphicsContext::init() {
     glfwMakeContextCurrent(m_window);

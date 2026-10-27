@@ -29,7 +29,7 @@ class TimerController final {
     bool m_set_interrupt_flag;
     bool m_div_was_reset;
 
-    static inline std::unordered_map<uint8_t, uint8_t> s_div_bit_select = {
+    static inline std::unordered_map<uint8_t, uint8_t> s_div_bit_select{
         // Falling edge detector, so every second flip is detected
         { 0, 9 }, // 9th bit becomes low every 1024 tick
         { 1, 3 }, // 3rd bit becomes low every 16 tick

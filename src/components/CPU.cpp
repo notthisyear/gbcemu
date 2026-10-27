@@ -18,7 +18,7 @@
 
 namespace gbcemu {
 
-CPU::CPU(std::shared_ptr<MMU> const mmu, std::shared_ptr<PPU> const ppu, bool const output_trace) : m_mmu(mmu), m_ppu(ppu), m_output_trace(output_trace) {
+CPU::CPU(std::shared_ptr<MMU> const mmu, std::shared_ptr<PPU> const ppu, bool const output_trace) : m_mmu{ mmu }, m_ppu{ ppu }, m_output_trace{ output_trace } {
     m_timer_controller = TimerController::get(m_mmu.get());
     m_state = CPU::State::FetchAndDecode;
     if (m_mmu->has_cartridge()) {
@@ -63,7 +63,7 @@ void CPU::tick() {
     bool trace_preloaded_instruction_at_end{ false };
 
     if (m_current_cpu_phase_tick_count == 0) {
-        auto run_state_machine = true;
+        auto run_state_machine{ true };
         if (m_state == CPU::State::FetchAndDecode) {
             run_state_machine = false;
 
@@ -296,16 +296,16 @@ std::string CPU::disassemble_instruction_at(uint16_t current_pc, uint8_t &instru
     m_mmu->try_read_from_memory(&current_instruction, current_pc, 1);
     current_pc++;
 
-    auto is_extended = OpcodeBuilder::is_extended_opcode(current_instruction);
+    auto is_extended{ OpcodeBuilder::is_extended_opcode(current_instruction) };
     if (is_extended) {
         m_mmu->try_read_from_memory(&current_instruction, current_pc, 1);
         current_pc++;
     }
 
-    std::shared_ptr<Opcode> opcode = OpcodeBuilder::decode_opcode(current_instruction, is_extended);
+    std::shared_ptr<Opcode> opcode{ OpcodeBuilder::decode_opcode(current_instruction, is_extended) };
     std::string disassembled_instruction;
     if (opcode->size > 1) {
-        uint8_t *instruction_data = new uint8_t[opcode->size - 1];
+        uint8_t *instruction_data{ new uint8_t[opcode->size - 1] };
         m_mmu->try_read_from_memory(instruction_data, current_pc, opcode->size - 1);
         disassembled_instruction = opcode->get_disassembled_instruction(instruction_data);
         current_pc += opcode->size - 1;
@@ -434,7 +434,7 @@ void CPU::print_sp_and_pc(std::ostream &stream) const {
 }
 
 void CPU::print_additional_info(std::ostream &stream) const {
-    auto breakpoint_string = m_has_breakpoint ? GeneralUtilities::formatted_string("0x%04x", m_current_breakpoint) : "none";
+    auto breakpoint_string{ m_has_breakpoint ? GeneralUtilities::formatted_string("0x%04x", m_current_breakpoint) : "none" };
 
     stream << "\033[0;32mbreakpoint: "
            << "\033[1;37m" << breakpoint_string << "\033[0;32m\tcpu state: "

@@ -13,7 +13,7 @@ static void glfw_error_callback(int error, char const *description) {
     LogUtilities::log_error(std::cout, GeneralUtilities::formatted_string("GLFW error (%d) - %s", error, description));
 }
 
-Window::Window(WindowProperties const &properties) : m_properties(properties) {
+Window::Window(WindowProperties const &properties) : m_properties{ properties } {
     if (!glfwInit()) {
         LogUtilities::log_error(std::cout, "GLFW initialization failed");
         return;
@@ -78,19 +78,19 @@ void Window::set_properties_as_requested() {
 void Window::set_glfw_callbacks() {
 
     glfwSetWindowSizeCallback(m_window, [](GLFWwindow *window, int width, int height) {
-        WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
+        WindowData &data{ *(WindowData *)glfwGetWindowUserPointer(window) };
         WindowResizeEvent const event{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
         data.callback(event);
     });
 
     glfwSetWindowCloseCallback(m_window, [](GLFWwindow *window) {
-        WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
+        WindowData &data{ *(WindowData *)glfwGetWindowUserPointer(window) };
         WindowCloseEvent event{};
         data.callback(event);
     });
 
     glfwSetKeyCallback(m_window, [](GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/) {
-        WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
+        WindowData &data{ *(WindowData *)glfwGetWindowUserPointer(window) };
 
         switch (action) {
         case GLFW_PRESS: {
@@ -112,14 +112,14 @@ void Window::set_glfw_callbacks() {
     });
 
     glfwSetCharCallback(m_window, [](GLFWwindow *window, unsigned int keycode) {
-        WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
+        WindowData &data{ *(WindowData *)glfwGetWindowUserPointer(window) };
 
         CharacterTypedEvent event{ static_cast<uint16_t>(keycode) };
         data.callback(event);
     });
 
     glfwSetMouseButtonCallback(m_window, [](GLFWwindow *window, int button, int action, int /*mods*/) {
-        WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
+        WindowData &data{ *(WindowData *)glfwGetWindowUserPointer(window) };
 
         switch (action) {
         case GLFW_PRESS: {
@@ -136,14 +136,14 @@ void Window::set_glfw_callbacks() {
     });
 
     glfwSetScrollCallback(m_window, [](GLFWwindow *window, double x_offset, double y_offset) {
-        WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
+        WindowData &data{ *(WindowData *)glfwGetWindowUserPointer(window) };
 
         MouseScrolledEvent event{ static_cast<float>(x_offset), static_cast<float>(y_offset) };
         data.callback(event);
     });
 
     glfwSetCursorPosCallback(m_window, [](GLFWwindow *window, double x_position, double y_position) {
-        WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
+        WindowData &data{ *(WindowData *)glfwGetWindowUserPointer(window) };
         MouseMovedEvent event{ static_cast<float>(x_position), static_cast<float>(y_position) };
         data.callback(event);
     });

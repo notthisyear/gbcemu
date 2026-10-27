@@ -8,7 +8,7 @@ namespace gbcemu {
 
 class WindowResizeEvent final : public Event {
   public:
-    WindowResizeEvent(uint32_t const width, uint32_t const height) : m_width(width), m_height(height) {
+    WindowResizeEvent(uint32_t const width, uint32_t const height) : m_width{ width }, m_height{ height } {
         set_event_type(GeneralUtilities::formatted_string("WindowResizeEvent: %i, %i", m_width, m_height), gbcemu::EventType::WindowResized);
     }
 

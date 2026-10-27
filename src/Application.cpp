@@ -9,7 +9,7 @@ namespace gbcemu {
 
 Application::Application(std::shared_ptr<CPU> const cpu, std::shared_ptr<PPU> const ppu, std::shared_ptr<Renderer> const renderer,
                          WindowProperties const &properties)
-    : m_cpu(cpu), m_ppu(ppu), m_renderer(renderer), m_window_properties(properties) {}
+    : m_cpu{ cpu }, m_ppu{ ppu }, m_renderer{ renderer }, m_window_properties{ properties } {}
 
 void Application::init() {
 

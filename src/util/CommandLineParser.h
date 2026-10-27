@@ -34,7 +34,7 @@ class CommandLineParser final {
     std::unordered_map<CommandData::ArgumentType, std::shared_ptr<CommandLineArgument>> m_argument_options;
 
     static std::size_t constexpr kNumberOfArguments{ 6 };
-    static inline std::array<CommandData, kNumberOfArguments> const kArguments = {
+    static inline std::array<CommandData, kNumberOfArguments> const kArguments{
         CommandData{
             .type = CommandData::ArgumentType::kHelp,
             .long_name = "help",

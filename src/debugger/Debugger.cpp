@@ -7,7 +7,7 @@
 namespace gbcemu {
 
 Debugger::Debugger(std::shared_ptr<CPU> cpu, std::shared_ptr<MMU> mmu, std::shared_ptr<PPU> ppu, std::shared_ptr<Application> app)
-    : m_cpu(cpu), m_mmu(mmu), m_ppu(ppu), m_app(app), m_is_in_run_mode(false) {}
+    : m_cpu{ cpu }, m_mmu{ mmu }, m_ppu{ ppu }, m_app{ app }, m_is_in_run_mode{ false } {}
 
 void Debugger::run(std::ostream &output_stream) {
     std::string input, cmd;
@@ -23,7 +23,7 @@ void Debugger::run(std::ostream &output_stream) {
         if (m_is_in_run_mode && !m_app->cpu_is_running())
             m_is_in_run_mode = false;
 
-        auto cmd = input.empty() ? DebuggerCommand::get_debugger_cmd("step") : DebuggerCommand::get_debugger_cmd(input);
+        auto cmd{ input.empty() ? DebuggerCommand::get_debugger_cmd("step") : DebuggerCommand::get_debugger_cmd(input) };
 
         if (cmd->command == DebuggerCommand::Command::Help) {
             output_stream << "\navailable commands:\n\n";
@@ -32,7 +32,7 @@ void Debugger::run(std::ostream &output_stream) {
             continue;
         }
 
-        auto cmd_data = cmd->get_command_data();
+        auto cmd_data{ cmd->get_command_data() };
         if (cmd_data.empty() || cmd_data.compare("help") == 0) {
             cmd->print_command_help(output_stream);
             continue;
@@ -45,7 +45,7 @@ void Debugger::run(std::ostream &output_stream) {
                 m_cpu->print_state(output_stream);
 
             } else if (cmd_data.rfind("mem", 0) == 0) {
-                auto is_pair = cmd_data.find('-') != std::string::npos;
+                auto is_pair{ cmd_data.find('-') != std::string::npos };
                 DebuggerCommand::address_pair address;
                 bool result;
 

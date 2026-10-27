@@ -8,7 +8,7 @@
 namespace gbcemu {
 
 PPU::PPU(std::shared_ptr<MMU> const mmu, uint16_t const framebuffer_width, uint16_t const framebuffer_height, uint8_t const bytes_per_pixel)
-    : m_mmu(mmu), m_framebuffer_width(framebuffer_width), m_framebuffer_height(framebuffer_height), m_bytes_per_pixel(bytes_per_pixel) {
+    : m_mmu{ mmu }, m_framebuffer_width{ framebuffer_width }, m_framebuffer_height{ framebuffer_height }, m_bytes_per_pixel{ bytes_per_pixel } {
 
     m_framebuffer = new uint8_t[m_framebuffer_width * m_framebuffer_height * m_bytes_per_pixel];
     memset(m_framebuffer, 0, m_framebuffer_width * m_framebuffer_height * m_bytes_per_pixel);
@@ -52,7 +52,7 @@ void PPU::tick() {
         m_pixel_fetcher->tick();
 
         if (m_pixel_fetcher->can_pop_pixel()) {
-            Pixel const pixel = m_pixel_fetcher->pop_pixel();
+            Pixel const pixel{ m_pixel_fetcher->pop_pixel() };
             m_pixels_pushed_on_current_line++;
 
             // TODO: Proper color mapping

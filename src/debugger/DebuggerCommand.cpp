@@ -7,7 +7,7 @@ namespace gbcemu {
 std::unordered_map<DebuggerCommand::Command, DebuggerCommand *> DebuggerCommand::_s_command_cache;
 
 DebuggerCommand::DebuggerCommand(DebuggerCommand::Command const command, std::string const &input)
-    : command(command), m_input(input), m_command_info(s_command_info_map[static_cast<int>(command)]) {
+    : command{ command }, m_input{ input }, m_command_info{ s_command_info_map[static_cast<int>(command)] } {
     parse_input();
 }
 
@@ -20,7 +20,7 @@ void DebuggerCommand::parse_input() {
     if (!m_command_info.has_option)
         return;
 
-    auto ws = m_input.find(' ');
+    auto ws{ m_input.find(' ') };
     if (ws == std::string::npos)
         m_input = "";
     else
@@ -30,13 +30,13 @@ void DebuggerCommand::parse_input() {
 std::string DebuggerCommand::get_command_data() const { return m_input; }
 
 bool DebuggerCommand::try_get_numeric_argument(uint16_t *arg, int base) const {
-    auto to_parse = command == DebuggerCommand::Command::Show ? m_input.substr(4, m_input.length() - 4) : m_input; // remove "mem" in the beginning
+    auto to_parse{ command == DebuggerCommand::Command::Show ? m_input.substr(4, m_input.length() - 4) : m_input }; // remove "mem" in the beginning
     return try_parse_as_number(to_parse, arg, base);
 }
 
 bool DebuggerCommand::try_get_address_pair_arg(DebuggerCommand::address_pair *arg) const {
-    auto to_parse = command == DebuggerCommand::Command::Show ? m_input.substr(4, m_input.length() - 4) : m_input; // remove "mem" in the beginning
-    auto hypen_location = to_parse.find('-');
+    auto to_parse{ command == DebuggerCommand::Command::Show ? m_input.substr(4, m_input.length() - 4) : m_input }; // remove "mem" in the beginning
+    auto hypen_location{ to_parse.find('-') };
 
     return try_parse_as_number(to_parse.substr(0, hypen_location), &arg->first, 16) &&
            try_parse_as_number(to_parse.substr(hypen_location + 1, to_parse.length() - hypen_location - 1), &arg->second, 16);

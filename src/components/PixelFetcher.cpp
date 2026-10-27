@@ -6,7 +6,7 @@
 
 namespace gbcemu {
 
-PixelFetcher::PixelFetcher(std::shared_ptr<MMU> const mmu, PPU *const ppu) : m_mmu(mmu), m_ppu(ppu) {}
+PixelFetcher::PixelFetcher(std::shared_ptr<MMU> const mmu, PPU *const ppu) : m_mmu{ mmu }, m_ppu{ ppu } {}
 
 void PixelFetcher::start_fetcher(uint8_t const current_scanline, bool const is_window, bool const trace) {
     m_current_tick = 0;

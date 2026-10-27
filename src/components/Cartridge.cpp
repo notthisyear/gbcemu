@@ -6,7 +6,7 @@
 
 namespace gbcemu {
 
-Cartridge::Cartridge(uint8_t *const raw_data, std::size_t const raw_size) : m_raw_data(raw_data), m_raw_size(raw_size) {
+Cartridge::Cartridge(uint8_t *const raw_data, std::size_t const raw_size) : m_raw_data{ raw_data }, m_raw_size{ raw_size } {
     m_type = static_cast<CartridgeType>(get_single_byte_header_field(Cartridge::HeaderField::CartridgeType));
     switch (m_type) {
     case Cartridge::CartridgeType::NO_MBC:
@@ -80,7 +80,7 @@ void Cartridge::print_info(std::ostream &stream) const {
     stream << std::left << std::setw(30) << std::setfill(' ') << "\033[0;36mManufacturer code:";
     stream << "\033[1;37m" << get_manufacturer_code() << std::endl;
 
-    auto rom_size = s_rom_sizes.find(get_single_byte_header_field(Cartridge::HeaderField::ROMSize))->second;
+    auto rom_size{ s_rom_sizes.find(get_single_byte_header_field(Cartridge::HeaderField::ROMSize))->second };
     stream << std::left << std::setw(30) << std::setfill(' ') << "\033[0;36mROM size:";
     stream << "\033[1;37m" << unsigned(rom_size) << " B (" << unsigned(rom_size >> 14) << " banks)" << std::endl;
 
@@ -100,7 +100,7 @@ Cartridge::~Cartridge() { delete[] m_raw_data; }
 
 std::string Cartridge::read_string_from_header(uint16_t const start_offset, uint16_t const end_offset) const {
     std::size_t const buffer_size{ static_cast<std::size_t>((end_offset - start_offset) + 1U) };
-    char *buffer = new char[buffer_size + 1U];
+    char *buffer{ new char[buffer_size + 1U] };
 
     for (std::size_t i{ 0 }; i < buffer_size; ++i)
         buffer[i] = m_raw_data[start_offset + i];

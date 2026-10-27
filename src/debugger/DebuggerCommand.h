@@ -39,13 +39,13 @@ class DebuggerCommand {
     DebuggerCommand(DebuggerCommand::Command const, std::string const & = "");
 
     static DebuggerCommand *get_debugger_cmd(std::string const &input) {
-        int i = 0;
+        int i{ 0 };
         for (auto const &cmd_info : s_command_info_map) {
-            std::regex r(cmd_info.regex, std::regex_constants::icase);
+            std::regex r{ cmd_info.regex, std::regex_constants::icase };
             if (std::regex_search(input, r)) {
                 DebuggerCommand *result;
-                auto cmd = static_cast<DebuggerCommand::Command>(i);
-                auto it = _s_command_cache.find(cmd);
+                auto cmd{ static_cast<DebuggerCommand::Command>(i) };
+                auto it{ _s_command_cache.find(cmd) };
 
                 if (it != _s_command_cache.end()) {
                     result = it->second;
@@ -86,7 +86,7 @@ class DebuggerCommand {
 
     bool static try_parse_as_number(std::string const &, uint16_t *, int);
     static std::unordered_map<DebuggerCommand::Command, DebuggerCommand *> _s_command_cache;
-    static inline CommandInfo s_command_info_map[] = {
+    static inline CommandInfo s_command_info_map[]{
         { "(^((h)|(help))$)", "[h|help]", "show available commands", false, true },
         { "((sh)|(show))", "[sh|show]", "show registers and memory, type 'show help' to see options", true, true },
         { "((dasm)|(disassemble))", "[dasm|disassemble] d", "disassemble the next d instructions", true, true },

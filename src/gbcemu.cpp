@@ -12,9 +12,9 @@
 #include <thread>
 
 #if defined(_WIN32)
-static bool const is_windows = true;
+static bool const is_windows{ true };
 #else
-static bool const is_windows = false;
+static bool const is_windows{ false };
 #endif
 
 // Resolution of the Game Boy screen
@@ -36,7 +36,7 @@ std::string windowsify_path(std::string const &path) {
     int64_t const number_of_backslashes{ std::count(path.cbegin(), path.cend(), '\\') };
 
     std::size_t const new_length{ path_length + number_of_backslashes + (remove_quotes ? -2 : 0) };
-    char *const new_path_string = new char[new_length + 1];
+    char *const new_path_string{ new char[new_length + 1] };
 
     std::size_t i{ 0U };
     int32_t j{ 0 };
@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
     // Start with the CPU paused when debugging. This must happen before the debugger thread starts.
     app->set_cpu_debug_mode(attach_debugger);
 
-    gbcemu::Debugger *const dbg = { attach_debugger ? new gbcemu::Debugger(cpu, mmu, ppu, app) : nullptr };
+    gbcemu::Debugger *const dbg{ attach_debugger ? new gbcemu::Debugger(cpu, mmu, ppu, app) : nullptr };
     std::thread *const dbg_thread{ attach_debugger ? new std::thread(&gbcemu::Debugger::run, dbg, std::ref(std::cout)) : nullptr };
 
     app->init();

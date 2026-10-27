@@ -5,7 +5,7 @@
 
 namespace gbcemu {
 
-Renderer::Renderer(uint32_t width, uint32_t height) : m_width(width), m_height(height) {}
+Renderer::Renderer(uint32_t width, uint32_t height) : m_width{ width }, m_height{ height } {}
 
 void Renderer::init() {
     glCreateTextures(GL_TEXTURE_2D, 1, &m_texture_id);
@@ -15,7 +15,7 @@ void Renderer::init() {
     glTextureParameteri(m_texture_id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTextureParameteri(m_texture_id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    float vertices[] = {
+    float vertices[]{
         // clang-format off
         // Positions       // Texture coordinates
         1.0f,  1.0f,  0.0f, 1.0f, 0.0f,
@@ -25,7 +25,7 @@ void Renderer::init() {
         // clang-format on
     };
 
-    uint32_t indices[] = {
+    uint32_t indices[]{
         0, 1, 2, // First triangle
         2, 3, 0  // Second triangle
     };
@@ -59,8 +59,8 @@ void Renderer::init() {
     glBindVertexArray(0);
 
     // Compile and set shaders
-    Shader *const vertexShader = new Shader();
-    Shader *const fragmentShader = new Shader();
+    Shader *const vertexShader{ new Shader() };
+    Shader *const fragmentShader{ new Shader() };
 
     if (!vertexShader->try_construct_shader(Shader::ShaderType::Vertex, GBCEMU_SHADER_DIR "/vertex.vs") ||
         !fragmentShader->try_construct_shader(Shader::ShaderType::Fragment, GBCEMU_SHADER_DIR "/frag.fs")) {

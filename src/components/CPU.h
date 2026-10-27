@@ -51,17 +51,17 @@ class CPU final {
         Joypad = 0x04,
     };
 
-    static inline CPU::Register register_map[] = { CPU::Register::B, CPU::Register::C, CPU::Register::D,  CPU::Register::E,
-                                                   CPU::Register::H, CPU::Register::L, CPU::Register::HL, CPU::Register::A };
+    static inline CPU::Register register_map[]{ CPU::Register::B, CPU::Register::C, CPU::Register::D,  CPU::Register::E,
+                                                CPU::Register::H, CPU::Register::L, CPU::Register::HL, CPU::Register::A };
 
-    static inline CPU::Register wide_register_map[] = {
+    static inline CPU::Register wide_register_map[]{
         CPU::Register::BC,
         CPU::Register::DE,
         CPU::Register::HL,
         CPU::Register::SP,
     };
 
-    static inline std::unordered_map<CPU::Register, std::string> register_name = {
+    static inline std::unordered_map<CPU::Register, std::string> register_name{
         { CPU::Register::B, "B" },   { CPU::Register::C, "C" },   { CPU::Register::D, "D" },   { CPU::Register::E, "E" },   { CPU::Register::H, "H" },
         { CPU::Register::L, "L" },   { CPU::Register::A, "A" },   { CPU::Register::AF, "AF" }, { CPU::Register::BC, "BC" }, { CPU::Register::DE, "DE" },
         { CPU::Register::HL, "HL" }, { CPU::Register::SP, "SP" }, { CPU::Register::PC, "PC" },
@@ -200,8 +200,8 @@ class CPU final {
     }
 
     void set_register_from_intermediate(const CPU::Register target) {
-        auto is_16_bit = target == CPU::Register::PC || target == CPU::Register::SP || target == CPU::Register::HL || target == CPU::Register::BC ||
-                         target == CPU::Register::DE;
+        auto is_16_bit{ target == CPU::Register::PC || target == CPU::Register::SP || target == CPU::Register::HL || target == CPU::Register::BC ||
+                        target == CPU::Register::DE };
 
         if (is_16_bit)
             set_register(target, get_16_bit_register(CPU::Register::WZ));
@@ -359,7 +359,7 @@ class CPU final {
 
     std::string get_trace_line(uint16_t const) const;
 
-    static inline std::unordered_map<CPU::State, std::string> s_cpu_state_name = {
+    static inline std::unordered_map<CPU::State, std::string> s_cpu_state_name{
         { CPU::State::FetchAndDecode, "FetchAndDecode" },
         { CPU::State::FetchAndDecodeExtended, "FetchAndDecodeExtended" },
         { CPU::State::Execute, "Execute" },
