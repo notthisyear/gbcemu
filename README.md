@@ -13,9 +13,7 @@ Tests can be found [here](https://github.com/retrio/gb-test-roms).
 | `dmg_sound` | &#x274c; | *sound not implemented yet*
 | `instr_timing` | &#x2705; |
 | `interrupt_time` | &#x274c; | *`MBC1+RAM` MBC not implemented yet*
-| `mem_timing` / `01-read_timing` | &#x274c; | *Instructions `F2`, `F0` and `F2` fails (all take one cycle too long)*
-| `mem_timing` / `02-write_timing` | &#x274c; | *All tested instructions fails (all take one cycle too long)*
-| `mem_timing` / `03-modify_timing` | &#x274c; | *All tested instructions fails (all writes takes one cycle too long)*
+| `mem_timing` | &#x2705; |
 | `mem_timing-02` | &#x274c; | *`MBC1+RAM+BATTERY` MBC not implemented yet*
 | `oam_bug` | &#x274c; | *`MBC1+RAM+BATTERY` MBC not implemented yet*
 

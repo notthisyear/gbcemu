@@ -53,6 +53,9 @@ struct Opcode {
 
   protected:
     bool m_is_done = false;
+
+    // Note: The last operation runs in the same M-cycle as the fetch of the next opcode,
+    //       so it must not access memory. Any memory access must happen in an earlier operation.
     std::vector<std::function<void(CPU *, MMU *)>> m_operations;
 
     Opcode(uint8_t opcode_number_of_bytes) : size(opcode_number_of_bytes) {}
@@ -441,11 +444,11 @@ struct Load8bitImmediate final : public Opcode {
         m_operations.push_back([](CPU *cpu, MMU *) { cpu->read_at_pc_and_store_in_intermediate(CPU::Register::Z); });
 
         if (m_target == CPU::Register::HL) {
-            m_operations.push_back([](CPU *, MMU *) {});
             m_operations.push_back([&](CPU *cpu, MMU *mmu) {
                 auto value = cpu->get_8_bit_register(CPU::Register::Z);
                 (void)mmu->try_map_data_to_memory(&value, cpu->get_16_bit_register(CPU::Register::HL), 1);
             });
+            m_operations.push_back([](CPU *, MMU *) {});
         } else {
             m_operations.push_back([&](CPU *cpu, MMU *) { cpu->set_register_from_intermediate(m_target); });
         }
@@ -476,18 +479,18 @@ struct Load8bitRegister final : public Opcode {
             throw std::invalid_argument("Loading (HL) with (HL) is invalid, should be HALT instruction");
 
         if (m_target == CPU::Register::HL) {
-            m_operations.push_back([&](CPU *cpu, MMU *) { cpu->set_register(CPU::Register::Z, cpu->get_8_bit_register(m_source)); });
             m_operations.push_back([&](CPU *cpu, MMU *mmu) {
-                auto data = cpu->get_8_bit_register(CPU::Register::Z);
+                auto data = cpu->get_8_bit_register(m_source);
                 (void)mmu->try_map_data_to_memory(&data, cpu->get_16_bit_register(CPU::Register::HL), 1);
             });
-        } else if (m_source == CPU::Register::HL) {
             m_operations.push_back([](CPU *, MMU *) {});
-            m_operations.push_back([&](CPU *cpu, MMU *mmu) {
+        } else if (m_source == CPU::Register::HL) {
+            m_operations.push_back([](CPU *cpu, MMU *mmu) {
                 uint8_t source_value;
                 (void)mmu->try_read_from_memory(&source_value, cpu->get_16_bit_register(CPU::Register::HL), 1);
-                cpu->set_register(m_target, source_value);
+                cpu->set_register(CPU::Register::Z, source_value);
             });
+            m_operations.push_back([&](CPU *cpu, MMU *) { cpu->set_register_from_intermediate(m_target); });
         } else {
             m_operations.push_back([&](CPU *cpu, MMU *) { cpu->set_register(m_target, cpu->get_8_bit_register(m_source)); });
         }
@@ -559,13 +562,13 @@ struct Load16bitIndirect final : public Opcode {
                     cpu->set_register(CPU::Register::HL, static_cast<uint16_t>(cpu->get_16_bit_register(CPU::Register::HL) + m_hl_offset));
             });
         } else {
-            m_operations.push_back([&](CPU *cpu, MMU *) { cpu->set_register(CPU::Register::Z, cpu->get_8_bit_register(CPU::Register::A)); });
             m_operations.push_back([&](CPU *cpu, MMU *mmu) {
-                uint8_t data_to_load = cpu->get_8_bit_register(CPU::Register::Z);
+                uint8_t data_to_load = cpu->get_8_bit_register(CPU::Register::A);
                 (void)mmu->try_map_data_to_memory(&data_to_load, cpu->get_16_bit_register(m_target_source), 1);
                 if (m_target_source == CPU::Register::HL)
                     cpu->set_register(CPU::Register::HL, static_cast<uint16_t>(cpu->get_16_bit_register(CPU::Register::HL) + m_hl_offset));
             });
+            m_operations.push_back([](CPU *, MMU *) {});
         }
     }
 
@@ -628,7 +631,6 @@ struct IncrementOrDecrement8Or16bit final : public Opcode {
                 (void)mmu->try_read_from_memory(&value, cpu->get_16_bit_register(CPU::Register::HL), 1);
                 cpu->set_register(CPU::Register::Z, value);
             });
-            m_operations.push_back([](CPU *, MMU *) {});
         }
 
         m_operations.push_back([&](CPU *cpu, MMU *mmu) {
@@ -646,6 +648,9 @@ struct IncrementOrDecrement8Or16bit final : public Opcode {
             cpu->set_flag(CPU::Flag::N, m_operation == IncrementOrDecrement8Or16bit::Operation::Decrement);
             cpu->set_flag(CPU::Flag::H, half_carry_flag);
         });
+
+        if (m_target == CPU::Register::HL)
+            m_operations.push_back([](CPU *, MMU *) {});
     }
 };
 
@@ -851,8 +856,8 @@ struct ReadWriteIOPortCWithA final : public Opcode {
         else
             throw std::invalid_argument("Read/Write type identifier invalid");
 
-        m_operations.push_back([](CPU *cpu, MMU *) { cpu->set_register(CPU::Register::Z, cpu->get_8_bit_register(CPU::Register::C)); });
         m_operations.push_back([&](CPU *cpu, MMU *mmu) {
+            cpu->set_register(CPU::Register::Z, cpu->get_8_bit_register(CPU::Register::C));
             cpu->set_register(CPU::Register::W, (uint8_t)0xFF);
 
             if (m_type == ReadWriteIOPortCWithA::ActionType::Write) {
@@ -861,8 +866,12 @@ struct ReadWriteIOPortCWithA final : public Opcode {
             } else {
                 uint8_t value;
                 (void)mmu->try_read_from_memory(&value, cpu->get_16_bit_register(CPU::Register::WZ), 1);
-                cpu->set_register(CPU::Register::A, value);
+                cpu->set_register(CPU::Register::Z, value);
             }
+        });
+        m_operations.push_back([&](CPU *cpu, MMU *) {
+            if (m_type == ReadWriteIOPortCWithA::ActionType::Read)
+                cpu->set_register_from_intermediate(CPU::Register::A);
         });
     }
 
@@ -889,8 +898,8 @@ struct ReadWriteIOPortNWithA final : public Opcode {
             throw std::invalid_argument("Read/Write type identifier invalid");
 
         m_operations.push_back([](CPU *cpu, MMU *) { cpu->read_at_pc_and_store_in_intermediate(CPU::Register::Z); });
-        m_operations.push_back([](CPU *cpu, MMU *) { cpu->set_register(CPU::Register::W, (uint8_t)0xFF); });
         m_operations.push_back([&](CPU *cpu, MMU *mmu) {
+            cpu->set_register(CPU::Register::W, (uint8_t)0xFF);
             auto address = cpu->get_16_bit_register(CPU::Register::WZ);
             if (m_type == ReadWriteIOPortNWithA::ActionType::Write) {
                 uint8_t reg_a = cpu->get_8_bit_register(CPU::Register::A);
@@ -898,8 +907,12 @@ struct ReadWriteIOPortNWithA final : public Opcode {
             } else {
                 uint8_t value;
                 (void)mmu->try_read_from_memory(&value, address, 1);
-                cpu->set_register(CPU::Register::A, value);
+                cpu->set_register(CPU::Register::Z, value);
             }
+        });
+        m_operations.push_back([&](CPU *cpu, MMU *) {
+            if (m_type == ReadWriteIOPortNWithA::ActionType::Read)
+                cpu->set_register_from_intermediate(CPU::Register::A);
         });
     }
 
@@ -963,7 +976,6 @@ struct LoadFromOrSetAIndirect final : public Opcode {
 
         m_operations.push_back([](CPU *cpu, MMU *) { cpu->read_at_pc_and_store_in_intermediate(CPU::Register::Z); });
         m_operations.push_back([](CPU *cpu, MMU *) { cpu->read_at_pc_and_store_in_intermediate(CPU::Register::W); });
-        m_operations.push_back([](CPU *, MMU *) {});
         m_operations.push_back([&](CPU *cpu, MMU *mmu) {
             auto address = cpu->get_16_bit_register(CPU::Register::WZ);
             if (m_type == LoadFromOrSetAIndirect::Direction::FromAccumulator) {
@@ -972,8 +984,12 @@ struct LoadFromOrSetAIndirect final : public Opcode {
             } else {
                 uint8_t value;
                 (void)mmu->try_read_from_memory(&value, address, 1);
-                cpu->set_register(CPU::Register::A, value);
+                cpu->set_register(CPU::Register::Z, value);
             }
+        });
+        m_operations.push_back([&](CPU *cpu, MMU *) {
+            if (m_type == LoadFromOrSetAIndirect::Direction::ToAccumulator)
+                cpu->set_register_from_intermediate(CPU::Register::A);
         });
     }
 
@@ -1069,9 +1085,6 @@ struct ExtendedOpcode : public Opcode {
                 (void)mmu->try_read_from_memory(&data, cpu->get_16_bit_register(CPU::Register::HL), 1);
                 cpu->set_register(CPU::Register::Z, data);
             });
-
-            if (m_type != ExtendedOpcodeType::Test)
-                m_operations.push_back([&](CPU *, MMU *) {});
         }
 
         m_operations.push_back([&](CPU *cpu, MMU *mmu) {
@@ -1114,6 +1127,9 @@ struct ExtendedOpcode : public Opcode {
                 break;
             }
         });
+
+        if (m_target == CPU::Register::HL && m_type != ExtendedOpcodeType::Test)
+            m_operations.push_back([](CPU *, MMU *) {});
     }
 
     std::string get_disassembled_instruction(uint8_t *) const override {
