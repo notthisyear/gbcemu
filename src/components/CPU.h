@@ -318,6 +318,10 @@ class CPU final {
     std::shared_ptr<Opcode> m_current_opcode{ nullptr };
     std::ofstream m_trace_stream{};
 
+    // Trace line of a preloaded instruction. It is only written once it's known that the instruction
+    // is executed, i.e. that it isn't preempted by an interrupt dispatch.
+    std::optional<std::string> m_pending_trace_line{};
+
     uint16_t m_current_breakpoint{ 0U };
 
     // Empty if the interrupt dispatch was cancelled
@@ -353,7 +357,7 @@ class CPU final {
 
     void print_additional_info(std::ostream &stream) const;
 
-    void print_trace_line();
+    std::string get_trace_line(uint16_t const) const;
 
     static inline std::unordered_map<CPU::State, std::string> s_cpu_state_name = {
         { CPU::State::FetchAndDecode, "FetchAndDecode" },

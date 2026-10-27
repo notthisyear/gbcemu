@@ -68,7 +68,7 @@ class CommandLineParser final {
         CommandData{
             .type = CommandData::ArgumentType::kOutputTrace,
             .long_name = "trace",
-            .help_text = "output cpu trace to file for each cycle",
+            .help_text = "output cpu trace for each instruction to trace.log next to the executable",
             .is_switch = true,
             .short_name = 't',
         },

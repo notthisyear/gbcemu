@@ -59,7 +59,7 @@ void CPU::tick() {
     }
 
     m_timer_controller->process();
-    bool move_pc_back_and_trace_at_end{ false };
+    bool trace_preloaded_instruction_at_end{ false };
 
     if (m_current_cpu_phase_tick_count == 0) {
         auto run_state_machine = true;
@@ -71,16 +71,24 @@ void CPU::tick() {
                 if (m_next_instruction_preloaded) {
                     m_next_instruction_preloaded = false;
                     m_reg_pc--;
+
+                    // The preloaded instruction is not executed now, so it must not be traced
+                    m_pending_trace_line.reset();
                 }
             } else {
                 if (!m_is_halted) {
                     if (!m_next_instruction_preloaded) {
                         if (m_output_trace) {
-                            print_trace_line();
+                            m_trace_stream << get_trace_line(m_reg_pc) << '\n';
                         }
                         fetch_and_decode();
                     } else {
                         run_state_machine = true;
+
+                        if (m_pending_trace_line.has_value()) {
+                            m_trace_stream << *m_pending_trace_line << '\n';
+                            m_pending_trace_line.reset();
+                        }
                     }
                     m_state = m_is_extended_opcode ? CPU::State::FetchAndDecodeExtended : CPU::State::Execute;
                 }
@@ -102,7 +110,7 @@ void CPU::tick() {
 
                     if (!m_is_halted) {
                         if (m_output_trace) {
-                            move_pc_back_and_trace_at_end = true;
+                            trace_preloaded_instruction_at_end = true;
                         }
                         fetch_and_decode();
                         m_next_instruction_preloaded = true;
@@ -151,10 +159,9 @@ void CPU::tick() {
     }
     m_ppu->tick();
 
-    if (move_pc_back_and_trace_at_end) {
-        m_reg_pc--;
-        print_trace_line();
-        m_reg_pc++;
+    if (trace_preloaded_instruction_at_end) {
+        // PC already points past the preloaded opcode
+        m_pending_trace_line = get_trace_line(static_cast<uint16_t>(m_reg_pc - 1));
     }
 
     m_current_cpu_phase_tick_count = (m_current_cpu_phase_tick_count + 1) & (kExecutionTicksPerOperationStep - 1);
@@ -434,17 +441,16 @@ void CPU::print_additional_info(std::ostream &stream) const {
            << "\033[1;37m" << (m_is_running_boot_rom ? "true" : "false") << "\033[0;m" << std::endl;
 }
 
-void CPU::print_trace_line() {
+std::string CPU::get_trace_line(uint16_t const pc) const {
     uint8_t instruction_length{ 0U };
-    std::cout
-        << GeneralUtilities::formatted_string(
-               "A: 0x%02X F: %c%c%c%c BC: 0x%04X DE: 0x%04X HL: 0x%04X SP: 0x%04X PC: 0x%04X (cy: %d, DIV: 0x%02X TIMA: 0x%02X TMA: 0x%02X TAC: 0x%02X) | ",
+    return GeneralUtilities::formatted_string(
+               "A: 0x%02X F: %c%c%c%c BC: 0x%04X DE: 0x%04X HL: 0x%04X SP: 0x%04X PC: 0x%04X (cy: %llu, DIV: 0x%02X TIMA: 0x%02X TMA: 0x%02X TAC: 0x%02X) | ",
                get_8_bit_register(CPU::Register::A), flag_is_set(CPU::Flag::Z) ? 'Z' : '-', flag_is_set(CPU::Flag::N) ? 'N' : '-',
                flag_is_set(CPU::Flag::H) ? 'H' : '-', flag_is_set(CPU::Flag::C) ? 'C' : '-', get_16_bit_register(CPU::Register::BC),
-               get_16_bit_register(CPU::Register::DE), get_16_bit_register(CPU::Register::HL), get_16_bit_register(CPU::Register::SP),
-               get_16_bit_register(CPU::Register::PC), m_tick_ctr, m_mmu->get_io_register(MMU::IORegister::DIV), m_mmu->get_io_register(MMU::IORegister::TIMA),
-               m_mmu->get_io_register(MMU::IORegister::TMA), m_mmu->get_io_register(MMU::IORegister::TAC))
-        << disassemble_instruction_at(m_reg_pc, instruction_length) << std::endl;
+               get_16_bit_register(CPU::Register::DE), get_16_bit_register(CPU::Register::HL), get_16_bit_register(CPU::Register::SP), pc,
+               static_cast<unsigned long long>(m_tick_ctr), m_mmu->get_io_register(MMU::IORegister::DIV), m_mmu->get_io_register(MMU::IORegister::TIMA),
+               m_mmu->get_io_register(MMU::IORegister::TMA), m_mmu->get_io_register(MMU::IORegister::TAC)) +
+           disassemble_instruction_at(pc, instruction_length);
 }
 
 CPU::~CPU() {
