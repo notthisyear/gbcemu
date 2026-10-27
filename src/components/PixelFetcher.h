@@ -52,7 +52,7 @@ class PixelFetcher final {
     uint8_t m_first_data_byte{ 0U };
     uint8_t m_second_data_byte{ 0U };
 
-    bool m_is_window{ false };
+    [[maybe_unused]] bool m_is_window{ false };
     PixelFetcher::Mode m_mode = PixelFetcher::Mode::ReadTileId;
 };
 }

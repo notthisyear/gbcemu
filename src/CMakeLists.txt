@@ -14,8 +14,8 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 # External
-add_subdirectory(${EXT_PATH}/glad ${EXT_PATH}/glad/build)
-add_subdirectory(${EXT_PATH}/glfw ${EXT_PATH}/glfw/build)
+add_subdirectory(${EXT_PATH}/glad ${CMAKE_BINARY_DIR}/external/glad)
+add_subdirectory(${EXT_PATH}/glfw ${CMAKE_BINARY_DIR}/external/glfw)
 
 # Internal
 add_subdirectory(util)
@@ -24,7 +24,7 @@ add_subdirectory(common)
 add_subdirectory(event)
 add_subdirectory(components)
 add_subdirectory(opengl)
-add_subdirectory(windows)
+add_subdirectory(window)
 
 # Target
 add_executable(gbcemu_main ${HEADER_FILES} ${SOURCE_FILES})
@@ -40,4 +40,4 @@ target_link_libraries(gbcemu_main PRIVATE gbcemu_util)
 target_link_libraries(gbcemu_main PRIVATE gbcemu_debugger)
 target_link_libraries(gbcemu_main PRIVATE gbcemu_components)
 target_link_libraries(gbcemu_main PRIVATE gbcemu_opengl)
-target_link_libraries(gbcemu_main PRIVATE gbcemu_windows)
+target_link_libraries(gbcemu_main PRIVATE gbcemu_window)

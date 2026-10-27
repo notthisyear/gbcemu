@@ -21,4 +21,4 @@ target_include_directories(gbcemu_debugger PUBLIC ${SRC_PATH})
 target_include_directories(gbcemu_debugger PUBLIC ${EXT_PATH}/glad/include)
 
 target_link_libraries(gbcemu_debugger PRIVATE gbcemu_components)
-target_link_libraries(gbcemu_debugger PRIVATE gbcemu_windows)
+target_link_libraries(gbcemu_debugger PRIVATE gbcemu_window)

@@ -11,7 +11,7 @@
 #include <memory>
 #include <thread>
 
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32)
+#if defined(_WIN32)
 static bool const is_windows = true;
 #else
 static bool const is_windows = false;
@@ -62,6 +62,8 @@ std::string windowsify_path(std::string const &path) {
     return result;
 }
 
+std::string platform_path(std::string const &path) { return is_windows ? windowsify_path(path) : path; }
+
 int main(int argc, char **argv) {
 
     gbcemu::CommandLineParser parser{};
@@ -78,17 +80,12 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    if (!is_windows) {
-        std::cout << "No other platform than Windows is currently supported. How did you even compile?";
-        return 1;
-    }
-
     if (!parser.has_argument(gbcemu::CommandData::ArgumentType::kCartridgePath)) {
         gbcemu::LogUtilities::log_error(std::cout, "Running without cartridge is currently not supported");
         exit(1);
     }
 
-    std::string const cartridge_path{ windowsify_path(parser.get_argument_value(gbcemu::CommandData::ArgumentType::kCartridgePath)) };
+    std::string const cartridge_path{ platform_path(parser.get_argument_value(gbcemu::CommandData::ArgumentType::kCartridgePath)) };
 
     gbcemu::WindowProperties const window_properties{};
 
@@ -100,7 +97,7 @@ int main(int argc, char **argv) {
     gbcemu::LogUtilities::log_info(std::cout, "Emulator started!");
 
     if (parser.has_argument(gbcemu::CommandData::ArgumentType::kBootRomPath)) {
-        std::string const boot_rom_path{ windowsify_path(parser.get_argument_value(gbcemu::CommandData::ArgumentType::kBootRomPath)) };
+        std::string const boot_rom_path{ platform_path(parser.get_argument_value(gbcemu::CommandData::ArgumentType::kBootRomPath)) };
         if (!mmu->try_load_boot_rom(std::cout, boot_rom_path)) {
             exit(1);
         } else {

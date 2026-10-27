@@ -70,7 +70,7 @@ class Cartridge final {
 
   private:
     uint8_t *m_raw_data;
-    uint64_t m_raw_size;
+    [[maybe_unused]] uint64_t m_raw_size;
     CartridgeType m_type;
     uint8_t m_current_bank_number;
 

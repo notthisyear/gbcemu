@@ -4,7 +4,7 @@
 #include "event/ApplicationEvent.h"
 #include "event/Event.h"
 #include "opengl/Renderer.h"
-#include "windows/WindowsWindow.h"
+#include "window/Window.h"
 #include <memory>
 
 namespace gbcemu {
@@ -37,7 +37,7 @@ class Application final {
     std::shared_ptr<Renderer> m_renderer;
     WindowProperties m_window_properties;
 
-    std::unique_ptr<WindowsWindow> m_window{ nullptr };
+    std::unique_ptr<Window> m_window{ nullptr };
 
     std::unordered_map<EventType, std::vector<std::pair<uint32_t, EventCallbackHandler>>> m_event_callbacks;
 

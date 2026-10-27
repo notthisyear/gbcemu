@@ -9,17 +9,17 @@
 
 namespace gbcemu {
 
-class WindowsWindow final {
+class Window final {
 
   public:
     bool is_initialized{ false };
 
-    WindowsWindow(WindowProperties const &);
+    Window(WindowProperties const &);
 
     void update();
     void set_event_callback(EventCallbackHandler const &);
 
-    ~WindowsWindow();
+    ~Window();
 
   private:
     struct WindowData {

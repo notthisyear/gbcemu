@@ -60,8 +60,8 @@ void Renderer::init() {
     Shader *const vertexShader = new Shader();
     Shader *const fragmentShader = new Shader();
 
-    if (!vertexShader->try_construct_shader(Shader::ShaderType::Vertex, "D:\\programming\\gbcemu\\src\\opengl\\shaders\\vertex.vs") ||
-        !fragmentShader->try_construct_shader(Shader::ShaderType::Fragment, "D:\\programming\\gbcemu\\src\\opengl\\shaders\\frag.fs")) {
+    if (!vertexShader->try_construct_shader(Shader::ShaderType::Vertex, GBCEMU_SHADER_DIR "/vertex.vs") ||
+        !fragmentShader->try_construct_shader(Shader::ShaderType::Fragment, GBCEMU_SHADER_DIR "/frag.fs")) {
         exit(1);
     }
 

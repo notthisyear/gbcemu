@@ -1,6 +1,7 @@
 #include "PixelFetcher.h"
 #include "PPU.h"
 #include "util/GeneralUtilities.h"
+#include <cstring>
 #include <iostream>
 
 namespace gbcemu {

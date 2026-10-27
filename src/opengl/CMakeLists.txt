@@ -31,6 +31,8 @@ target_include_directories(gbcemu_opengl PUBLIC ${EXT_PATH}/glfw/include)
 # TODO: Figure out how to enable -Wpedantic on our own code.
 target_compile_options(gbcemu_opengl PRIVATE -Wall -Wextra -Werror)
 
+target_compile_definitions(gbcemu_opengl PRIVATE GBCEMU_SHADER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/shaders")
+
 target_link_libraries(gbcemu_opengl PRIVATE gbcemu_util)
 target_link_libraries(gbcemu_opengl PRIVATE glad)
 target_link_libraries(gbcemu_opengl PRIVATE glfw)

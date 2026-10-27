@@ -6,6 +6,7 @@
 #include "util/GeneralUtilities.h"
 #include "util/LogUtilities.h"
 #include <cstdint>
+#include <cstring>
 #include <functional>
 #include <iostream>
 #include <stdexcept>

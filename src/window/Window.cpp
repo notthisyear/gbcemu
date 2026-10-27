@@ -1,4 +1,4 @@
-#include "windows/WindowsWindow.h"
+#include "window/Window.h"
 #include "event/ApplicationEvent.h"
 #include "event/KeyboardEvent.h"
 #include "event/MouseEvent.h"
@@ -13,7 +13,7 @@ static void glfw_error_callback(int error, char const *description) {
     LogUtilities::log_error(std::cout, GeneralUtilities::formatted_string("GLFW error (%d) - %s", error, description));
 }
 
-WindowsWindow::WindowsWindow(WindowProperties const &properties) : m_properties(properties) {
+Window::Window(WindowProperties const &properties) : m_properties(properties) {
     if (!glfwInit()) {
         LogUtilities::log_error(std::cout, "GLFW initialization failed");
         return;
@@ -45,16 +45,16 @@ WindowsWindow::WindowsWindow(WindowProperties const &properties) : m_properties(
     is_initialized = true;
 }
 
-void WindowsWindow::update() {
+void Window::update() {
     glfwPollEvents();
     m_context->swap_buffers();
 }
 
-void WindowsWindow::set_event_callback(EventCallbackHandler const &callback) { m_window_data.callback = callback; }
+void Window::set_event_callback(EventCallbackHandler const &callback) { m_window_data.callback = callback; }
 
-void WindowsWindow::set_window_hint(int const hint_to_set, int const value) { glfwWindowHint(hint_to_set, value); }
+void Window::set_window_hint(int const hint_to_set, int const value) { glfwWindowHint(hint_to_set, value); }
 
-void WindowsWindow::create_and_set_glfw_window() {
+void Window::create_and_set_glfw_window() {
     // Maybe the width and height must be changed to match the screen manually if full size?
     if (m_properties.mode == WindowProperties::WindowMode::Windowed) {
         m_window = glfwCreateWindow(m_properties.width, m_properties.height, m_properties.title.c_str(), NULL, NULL);
@@ -65,7 +65,7 @@ void WindowsWindow::create_and_set_glfw_window() {
     }
 }
 
-void WindowsWindow::set_properties_as_requested() {
+void Window::set_properties_as_requested() {
 
     glfwSwapInterval(m_properties.enable_vsync ? 1 : 0);
     glfwSetInputMode(m_window, GLFW_CURSOR, m_properties.capture_mouse ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
@@ -74,7 +74,7 @@ void WindowsWindow::set_properties_as_requested() {
         glfwSetInputMode(m_window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 }
 
-void WindowsWindow::set_glfw_callbacks() {
+void Window::set_glfw_callbacks() {
 
     glfwSetWindowSizeCallback(m_window, [](GLFWwindow *window, int width, int height) {
         WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
@@ -148,7 +148,7 @@ void WindowsWindow::set_glfw_callbacks() {
     });
 }
 
-WindowsWindow::~WindowsWindow() {
+Window::~Window() {
     if (is_initialized) {
         glfwDestroyWindow(m_window);
         glfwTerminate();

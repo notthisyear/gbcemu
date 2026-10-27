@@ -10,7 +10,7 @@ Application::Application(std::shared_ptr<CPU> const cpu, std::shared_ptr<PPU> co
 
 void Application::init() {
 
-    m_window = std::make_unique<WindowsWindow>(m_window_properties);
+    m_window = std::make_unique<Window>(m_window_properties);
 
     if (!m_window->is_initialized) {
         m_app_should_run = false;

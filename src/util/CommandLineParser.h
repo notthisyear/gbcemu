@@ -10,7 +10,7 @@
 
 namespace gbcemu {
 
-struct CommandLineArgument;
+class CommandLineArgument;
 
 class CommandLineParser final {
 
