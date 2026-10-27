@@ -27,6 +27,14 @@ void Application::init() {
         return this->Application::window_closed_event(std::forward<WindowCloseEvent const &>(static_cast<WindowCloseEvent const &>(arg)));
     });
 
+    register_event_callback(EventType::KeyPressed, [this](Event const &arg) -> void {
+        return this->Application::key_pressed_event(std::forward<KeyPressedEvent const &>(static_cast<KeyPressedEvent const &>(arg)));
+    });
+
+    register_event_callback(EventType::KeyReleased, [this](Event const &arg) -> void {
+        return this->Application::key_released_event(std::forward<KeyReleasedEvent const &>(static_cast<KeyReleasedEvent const &>(arg)));
+    });
+
     m_window->set_event_callback([this](Event const &arg) -> void { return this->Application::handle_event(std::forward<decltype(arg)>(arg)); });
 
     m_app_should_run = true;
@@ -58,6 +66,8 @@ void Application::step_cpu_instruction() {
 bool Application::cpu_is_running() const { return m_cpu_should_run; }
 
 void Application::run() {
+    m_next_frame_deadline = std::chrono::steady_clock::now();
+
     while (m_app_should_run) {
         if (m_cpu_should_run) {
             m_cpu->tick();
@@ -65,6 +75,11 @@ void Application::run() {
                 m_cpu_should_run = false;
                 LogUtilities::log_info(std::cout,
                                        GeneralUtilities::formatted_string("Breakpoint hit at 0x%04X", m_cpu->current_instruction_address()));
+            }
+
+            if (++m_ticks_in_current_frame == kTicksPerFrame) {
+                m_ticks_in_current_frame = 0;
+                pace_frame();
             }
         } else {
             m_cpu_is_paused = true;
@@ -75,17 +90,44 @@ void Application::run() {
                 } while (!m_cpu->at_start_of_instruction());
                 m_requested_instruction_steps--;
             } else {
-                // Avoid spinning at full speed while paused
+                // Keep the window responsive, but avoid spinning at full speed while paused
+                m_window->poll_events();
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
         }
 
         if (m_ppu->cycles_per_frame_reached()) {
             m_ppu->acknowledge_frame();
-            m_renderer->update_framebuffer_and_draw(m_ppu->get_framebuffer());
-            m_window->update();
+            draw_frame();
         }
     }
+}
+
+void Application::pace_frame() {
+    m_window->poll_events();
+
+    if (m_fast_forward)
+        return;
+
+    m_next_frame_deadline += kFrameDuration;
+    auto const now{ std::chrono::steady_clock::now() };
+
+    if (now > m_next_frame_deadline + kMaxFrameLag) {
+        // We have fallen too far behind (e.g. after a debugger pause or fast-forwarding), start over from now
+        m_next_frame_deadline = now;
+    } else {
+        std::this_thread::sleep_until(m_next_frame_deadline);
+    }
+}
+
+void Application::draw_frame() {
+    auto const now{ std::chrono::steady_clock::now() };
+    if (m_fast_forward && (now - m_last_draw) < kFastForwardDrawInterval)
+        return;
+
+    m_last_draw = now;
+    m_renderer->update_framebuffer_and_draw(m_ppu->get_framebuffer());
+    m_window->swap_buffers();
 }
 
 uint32_t Application::register_event_callback(EventType const event_type, EventCallbackHandler const callback) {
@@ -138,6 +180,16 @@ void Application::window_closed_event(WindowCloseEvent const &e) {
 void Application::window_resized_event(WindowResizeEvent const &e) {
     m_renderer->set_viewport(e.get_width(), e.get_height());
     return;
+}
+
+void Application::key_pressed_event(KeyPressedEvent const &e) {
+    if (e.get_key_code() == static_cast<KeyCode>(kFastForwardKey))
+        m_fast_forward = true;
+}
+
+void Application::key_released_event(KeyReleasedEvent const &e) {
+    if (e.get_key_code() == static_cast<KeyCode>(kFastForwardKey))
+        m_fast_forward = false;
 }
 
 Application::~Application() {}

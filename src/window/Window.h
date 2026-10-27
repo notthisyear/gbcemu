@@ -16,7 +16,8 @@ class Window final {
 
     Window(WindowProperties const &);
 
-    void update();
+    void poll_events();
+    void swap_buffers();
     void set_event_callback(EventCallbackHandler const &);
 
     ~Window();

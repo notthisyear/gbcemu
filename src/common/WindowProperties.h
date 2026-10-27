@@ -18,8 +18,9 @@ struct WindowProperties final {
     uint32_t width;
     uint32_t height;
 
+    // Note: V-SYNC is off by default as the emulation speed is paced by the application rather than the monitor refresh rate
     WindowProperties(std::string const &title = "gbcemu v 0.1", WindowMode const mode = WindowMode::Windowed, bool const capture_mouse = false,
-                     bool const enable_vsync = true, bool const use_raw_mouse_motion_if_possible = true, uint32_t const width = 160,
+                     bool const enable_vsync = false, bool const use_raw_mouse_motion_if_possible = true, uint32_t const width = 160,
                      uint32_t const height = 144)
         : title(title), mode(mode), capture_mouse(capture_mouse), enable_vsync(enable_vsync),
           use_raw_mouse_motion_if_possible(use_raw_mouse_motion_if_possible), width(width), height(height) {}

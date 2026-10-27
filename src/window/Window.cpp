@@ -45,10 +45,9 @@ Window::Window(WindowProperties const &properties) : m_properties(properties) {
     is_initialized = true;
 }
 
-void Window::update() {
-    glfwPollEvents();
-    m_context->swap_buffers();
-}
+void Window::poll_events() { glfwPollEvents(); }
+
+void Window::swap_buffers() { m_context->swap_buffers(); }
 
 void Window::set_event_callback(EventCallbackHandler const &callback) { m_window_data.callback = callback; }
 
