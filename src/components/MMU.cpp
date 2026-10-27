@@ -582,8 +582,8 @@ void MMU::pre_process_io_register_access(uint8_t const offset, AccessType const 
 
     case MMU::IORegister::STAT:
         if (access_type == AccessType::Write) {
-            // Bit 7 is unused (and unwriteable).
-            *data = (*data & 0x7F) | (get_io_register(MMU::IORegister::STAT) & 0x80);
+            // Bits 0-2 are readonly and bit 7 is unused (and unwriteable).
+            *data = (*data & 0x78) | (get_io_register(MMU::IORegister::STAT) & 0x87);
         }
         break;
 
