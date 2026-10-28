@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Cartridge.h"
+#include "DmaController.h"
 #include "TimerController.h"
 #include <cstdint>
 #include <map>
@@ -97,8 +98,6 @@ class MMU final {
 
     bool try_read_from_memory(std::uint8_t *const data, std::uint16_t const offset, std::size_t const size) const;
 
-    void set_debug_mode(bool const);
-
     MMU::BootRomType get_boot_rom_type() const;
 
     void set_io_register(MMU::IORegister const, std::uint8_t const);
@@ -110,6 +109,8 @@ class MMU final {
     Cartridge *get_cartridge() const;
 
     void print_memory_at_location(std::ostream &stream, std::uint16_t const start, std::uint16_t const end) const;
+
+    void process_dma();
 
     ~MMU();
 
@@ -124,6 +125,7 @@ class MMU final {
     std::uint8_t *m_boot_rom;
 
     TimerController *m_timer_controller;
+    DmaController m_dma_controller;
     static constexpr std::uint16_t kRegisterOffsetBase{ 0xFF00 };
     static constexpr std::uint16_t kDmgBootRomSize{ 0x0100 };
 
@@ -144,9 +146,9 @@ class MMU final {
     void read_from_boot_rom(std::uint8_t *, std::uint16_t, std::size_t const) const;
     bool try_load_from_file(std::string const &, std::uint8_t *, std::size_t const) const;
 
-    std::string get_region_name(const MMU::MemoryRegion) const;
-    std::string get_io_register_name(const MMU::IORegister) const;
-    void pre_process_io_register_access(std::uint8_t const, const MMU::AccessType, std::uint8_t *data = nullptr) const;
+    std::string get_region_name(MMU::MemoryRegion const) const;
+    std::string get_io_register_name(MMU::IORegister const) const;
+    void pre_process_io_register_write_access(std::uint8_t const, std::uint8_t *data);
 
     bool try_get_file_size(std::string const &, std::size_t *) const;
 

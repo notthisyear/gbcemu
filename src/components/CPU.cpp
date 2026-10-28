@@ -63,6 +63,7 @@ void CPU::tick() {
     bool trace_preloaded_instruction_at_end{ false };
 
     if (m_current_cpu_phase_tick_count == 0) {
+        m_mmu->process_dma();
         auto run_state_machine{ true };
         if (m_state == CPU::State::FetchAndDecode) {
             run_state_machine = false;

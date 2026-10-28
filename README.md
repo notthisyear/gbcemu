@@ -24,45 +24,48 @@ Tests can be found [here](https://github.com/Gekkio/mooneye-test-suite). We do f
 ### Acceptance
 | Test name | Status | Comment |
 | ----------- | -------- | --- |
-| `add_sp_e_timing` | &#x274c; | *Writing to cartridge RAM not yet supported.*
-| `boot_div-dmgABCmgb` | &#x2705; |
+| `add_sp_e_timing` | &#x2705; |
+| `boot_div-dmgABCmgb` | &#x274c; | *Off by one since memory accesses were moved one cycle earlier, the initial internal timer value needs adjusting.*
 | `boot_hwio-dmgABCmgb` | &#x2705; |
 | `boot_regs-dmgABC` | &#x2705; |
-| `call_cc_timing` | &#x274c; | *Fails in round 1.*
-| `call_cc_timing2` | &#x274c; | *Fails assertions on register `BC` and `D`. Might be releated to OAM that we've not yet looked at.*
-| `call_timing` | &#x274c; | *Fails in round 1.*
-| `call_timing2` | &#x274c; | *Fails assertions on register `BC` and `D`. Might be releated to OAM that we've not yet looked at.*
+| `call_cc_timing` | &#x2705; |
+| `call_cc_timing2` | &#x2705; |
+| `call_timing` | &#x2705; |
+| `call_timing2` | &#x2705; |
 | `di_timing-GS` | &#x274c; | *Fails in round 1.*
 | `div_timing` | &#x2705; |
-| `ei_sequence` | &#x274c; | *Crashes the emulator. Interesting.*
-| `ei_timing.` | &#x274c; | *Crashes the emulator. Interesting.*
+| `ei_sequence` | &#x274c; | *Fails on assertion on register `C`.*
+| `ei_timing` | &#x2705; |
 | `halt_ime0_ei` | &#x2705; |
-| `halt_ime0_nointr_timing` | &#x274c; | *Fails on assertions on register `DE`.*
-| `halt_ime1_timing` | &#x274c; | *Writing to cartridge RAM not yet supported.*
+| `halt_ime0_nointr_timing` | &#x274c; | *Fails on assertions on registers `D` and `E`.*
+| `halt_ime1_timing` | &#x2705; |
 | `halt_ime1_timing2-GS` | &#x274c; | *Fails in round 1.*
-| `if_ie_registers` | &#x274c; | *Crashes the emulator. Interesting.*
-| `intr_timing` | &#x274c; | *Crashes the emulator. Interesting.*
-| `jp_cc_timing` | &#x274c; | *Fails in round 1.*
-| `jp_timing` | &#x274c; | *Fails in round 1.*
-| `ld_hl_sp_e_timing` | &#x274c; | *Fails on assertions on register `BC`.*
-| `oam_dma_restart` | &#x274c; | *Quite expected, as we haven't looked at DMA/OAM yet.*
-| `oam_dma_start` | &#x274c; | *Quite expected, as we haven't looked at DMA/OAM yet.*
-| `oam_dma_timing` | &#x274c; | *Quite expected, as we haven't looked at DMA/OAM yet.*
-| `pop_timing` | &#x274c; | *Fails on assertions on register `E`.*
-| `push_timing` | &#x274c; | *Fails on assertions on register `D`.*
-| `rapid_di_ei` | &#x274c; | *Crashes the emulator. Interesting.*
-| `ret_cc_timing` | &#x274c; | *Writing to cartridge RAM not yet supported.*
-| `ret_timing` | &#x274c; | *Writing to cartridge RAM not yet supported.*
-| `reti_intr_timing` | &#x274c; | *Writing to cartridge RAM not yet supported.*
-| `reti_timing` | &#x274c; | *Writing to cartridge RAM not yet supported.*
-| `rst_timing` | &#x274c; | *Quite expected, as we haven't really looked at RST yet.*
+| `if_ie_registers` | &#x2705; |
+| `intr_timing` | &#x274c; | *Fails on assertion on register `D`.*
+| `jp_cc_timing` | &#x2705; |
+| `jp_timing` | &#x2705; |
+| `ld_hl_sp_e_timing` | &#x2705; |
+| `oam_dma_restart` | &#x2705; |
+| `oam_dma_start` | &#x2705; |
+| `oam_dma_timing` | &#x2705; |
+| `pop_timing` | &#x2705; |
+| `push_timing` | &#x2705; |
+| `rapid_di_ei` | &#x274c; | *Fails on assertions on registers `B` and `D`.*
+| `ret_cc_timing` | &#x2705; |
+| `ret_timing` | &#x2705; |
+| `reti_intr_timing` | &#x274c; | *Fails on assertion on register `B`.*
+| `reti_timing` | &#x2705; |
+| `rst_timing` | &#x2705; |
 | `bits` / `mem_oam` | &#x2705; |
 | `bits` / `reg_f` | &#x2705; |
 | `bits` / `unused_hwio-GS` | &#x2705; |
 | `instr` / `daa` | &#x2705; |
 | `interrupts` / `ie_push` | &#x2705; |
+| `oam_dma` / `basic` | &#x2705; |
+| `oam_dma` / `reg_read` | &#x2705; |
+| `oam_dma` / `sources-GS` | &#x274c; | *`MBC5+RAM+BATTERY` MBC not implemented yet*
 | `timer` / `div_write` | &#x2705; |
-| `timer` / `rapid_toggle` | &#x274c; | *Assertion of register `C` failed (expected `D9`, was `D8`)*
+| `timer` / `rapid_toggle` | &#x2705; |
 | `timer` / `tim00` | &#x2705; |
 | `timer` / `tim00_div_trigger` | &#x2705; |
 | `timer` / `tim01` | &#x2705; |
@@ -75,4 +78,4 @@ Tests can be found [here](https://github.com/Gekkio/mooneye-test-suite). We do f
 | `timer` / `tima_write_reloading` | &#x274c; | *Assertion of register `C` failed (expected `FE`, was `7F`)*
 | `timer` / `tma_write_reloading` | &#x274c; | *Assertion of register `E` failed (expected `7F`, was `FE`)*
 
-Regarding the OAM DMA, PPU and serial categories, we haven't looked at those yet.
+Regarding the PPU and serial categories, we haven't looked at those yet.
