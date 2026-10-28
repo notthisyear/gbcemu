@@ -25,7 +25,7 @@ Tests can be found [here](https://github.com/Gekkio/mooneye-test-suite). We do f
 | Test name | Status | Comment |
 | ----------- | -------- | --- |
 | `add_sp_e_timing` | &#x2705; |
-| `boot_div-dmgABCmgb` | &#x274c; | *Off by one since memory accesses were moved one cycle earlier, the initial internal timer value needs adjusting.*
+| `boot_div-dmgABCmgb` | &#x2705; |
 | `boot_hwio-dmgABCmgb` | &#x2705; |
 | `boot_regs-dmgABC` | &#x2705; |
 | `call_cc_timing` | &#x2705; |
