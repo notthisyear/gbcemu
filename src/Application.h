@@ -15,7 +15,8 @@ namespace gbcemu {
 
 class Application final {
   public:
-    Application(std::shared_ptr<CPU> const, std::shared_ptr<PPU> const, std::shared_ptr<Renderer> const, WindowProperties const &);
+    Application(std::shared_ptr<CPU> const, std::shared_ptr<PPU> const, std::uint32_t const screen_width, std::uint32_t const screen_height,
+                WindowProperties const &);
 
     void init();
     void run();
@@ -64,10 +65,14 @@ class Application final {
 
     std::shared_ptr<CPU> m_cpu;
     std::shared_ptr<PPU> m_ppu;
-    std::shared_ptr<Renderer> m_renderer;
+    std::uint32_t m_screen_width;
+    std::uint32_t m_screen_height;
     WindowProperties m_window_properties;
 
+    // Note: The renderer must be declared after the window, so that it's destroyed before it. Otherwise, the
+    //       renderer would release its OpenGL resources after the window has destroyed the OpenGL context.
     std::unique_ptr<Window> m_window{ nullptr };
+    std::unique_ptr<Renderer> m_renderer{ nullptr };
 
     std::unordered_map<EventType, std::vector<std::pair<std::uint32_t, EventCallbackHandler>>> m_event_callbacks;
 

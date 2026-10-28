@@ -7,9 +7,9 @@
 
 namespace gbcemu {
 
-Application::Application(std::shared_ptr<CPU> const cpu, std::shared_ptr<PPU> const ppu, std::shared_ptr<Renderer> const renderer,
+Application::Application(std::shared_ptr<CPU> const cpu, std::shared_ptr<PPU> const ppu, std::uint32_t const screen_width, std::uint32_t const screen_height,
                          WindowProperties const &properties)
-    : m_cpu{ cpu }, m_ppu{ ppu }, m_renderer{ renderer }, m_window_properties{ properties } {}
+    : m_cpu{ cpu }, m_ppu{ ppu }, m_screen_width{ screen_width }, m_screen_height{ screen_height }, m_window_properties{ properties } {}
 
 void Application::init() {
 
@@ -17,7 +17,12 @@ void Application::init() {
 
     if (!m_window->is_initialized) {
         m_app_should_run = false;
+        return;
     }
+
+    // The renderer can only be created once the window (and thereby the OpenGL context) exists
+    m_renderer = std::make_unique<Renderer>(m_screen_width, m_screen_height);
+    m_renderer->init();
 
     register_event_callback(EventType::WindowResized, [this](Event const &arg) -> void {
         return this->Application::window_resized_event(std::forward<WindowResizeEvent const &>(static_cast<WindowResizeEvent const &>(arg)));

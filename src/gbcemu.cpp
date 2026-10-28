@@ -101,7 +101,6 @@ int main(int argc, char **argv) {
     window_properties.width = kScreenWidth * scale;
     window_properties.height = kScreenHeight * scale;
 
-    std::shared_ptr<gbcemu::Renderer> const renderer{ std::make_shared<gbcemu::Renderer>(kScreenWidth, kScreenHeight) };
     std::shared_ptr<gbcemu::MMU> const mmu{ std::make_shared<gbcemu::MMU>(0xFFFF) };
     std::shared_ptr<gbcemu::PPU> const ppu{ std::make_shared<gbcemu::PPU>(mmu, kScreenWidth, kScreenHeight, gbcemu::Renderer::kBytesPerPixel) };
 
@@ -123,7 +122,7 @@ int main(int argc, char **argv) {
     gbcemu::LogUtilities::log_info(std::cout, gbcemu::GeneralUtilities::formatted_string("Cartridge '%s' loaded", cartridge_path));
 
     std::shared_ptr<gbcemu::CPU> const cpu{ std::make_shared<gbcemu::CPU>(mmu, ppu, parser.has_argument(gbcemu::CommandData::ArgumentType::kOutputTrace)) };
-    std::shared_ptr<gbcemu::Application> const app{ std::make_shared<gbcemu::Application>(cpu, ppu, renderer, window_properties) };
+    std::shared_ptr<gbcemu::Application> const app{ std::make_shared<gbcemu::Application>(cpu, ppu, kScreenWidth, kScreenHeight, window_properties) };
 
     bool const attach_debugger{ parser.has_argument(gbcemu::CommandData::ArgumentType::kAttachDebugger) };
 
@@ -134,7 +133,6 @@ int main(int argc, char **argv) {
     std::thread *const dbg_thread{ attach_debugger ? new std::thread(&gbcemu::Debugger::run, dbg, std::ref(std::cout)) : nullptr };
 
     app->init();
-    renderer->init();
     app->run();
 
     if (attach_debugger) {
