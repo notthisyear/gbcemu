@@ -51,6 +51,9 @@ class PPU final {
     static constexpr std::uint32_t kDotsInVBlank{ 4560 };
     static constexpr std::uint32_t kDotsInOAMSearch{ 80 };
 
+    // Delay from a rising edge on the STAT interrupt line until the STAT interrupt is requested in IF
+    static constexpr std::uint8_t kStatInterruptDelayDots{ 4 };
+
     enum class Mode : std::uint8_t {
         HBlank = 0x00,
         VBlank = 0x01,
@@ -84,6 +87,7 @@ class PPU final {
     bool m_trace_next_frame{ false };
     bool m_tracing_frame{ false };
     bool m_stat_interrupt_line{ false };
+    std::uint8_t m_dots_until_stat_interrupt_request{ 0U };
 
     std::uint32_t m_framebuffer_idx{ 0U };
     PPU::Mode m_mode{ Mode::OAMSearch };

@@ -9,7 +9,7 @@ namespace gbcemu {
 PixelFetcher::PixelFetcher(std::shared_ptr<MMU> const mmu, PPU *const ppu) : m_mmu{ mmu }, m_ppu{ ppu } {}
 
 void PixelFetcher::start_fetcher(std::uint8_t const current_scanline, bool const is_window, bool const trace) {
-    m_current_tick = 0;
+    m_in_second_dot_of_step = false;
 
     m_tile_line = (current_scanline + m_mmu->get_io_register(MMU::IORegister::SCY)) & 0x00FF;
     m_tile_index = m_mmu->get_io_register(MMU::IORegister::SCX) >> 3;
@@ -21,6 +21,7 @@ void PixelFetcher::start_fetcher(std::uint8_t const current_scanline, bool const
 
     m_pixel_fifo = {};
     m_mode = PixelFetcher::Mode::ReadTileId;
+    m_is_first_fetch_on_line = true;
     m_output_trace = trace;
 
     if (m_output_trace) {
@@ -30,12 +31,18 @@ void PixelFetcher::start_fetcher(std::uint8_t const current_scanline, bool const
 }
 
 void PixelFetcher::tick() {
-    if ((m_current_tick & 0x01) == 0) {
-        m_current_tick++;
-        return;
+    // Note: Reading the tile ID and the two tile data bytes take 2 dots each and
+    //       the step is performed on the second dot. Pushing the pixels to the FIFO,
+    //       however, is attempted every dot until it succeeds. Hence, we need
+    //       this construct below to ensure that the we let push to FIFO happen on each
+    //       tick, but the other steps only on every other tick.
+    if (m_mode != PixelFetcher::Mode::Idle) {
+        if (!m_in_second_dot_of_step) {
+            m_in_second_dot_of_step = true;
+            return;
+        }
+        m_in_second_dot_of_step = false;
     }
-
-    m_current_tick = m_current_tick == 3 ? 0 : m_current_tick + 1;
 
     switch (m_mode) {
     case PixelFetcher::Mode::ReadTileId:
@@ -79,6 +86,15 @@ void PixelFetcher::tick() {
             std::cout << GeneralUtilities::formatted_string("\033[0;32mhigh tile (0x%04X): \033[1;37m0x%02X\033[0m\n", m_tile_data_address + 1,
                                                             m_second_data_byte);
         }
+
+        // The first fetch on a line is discarded, and the same tile is fetched again. This accounts for
+        // 6 of the 12 dots that mode 3 takes on top of the 160 dots spent outputting pixels.
+        if (m_is_first_fetch_on_line) {
+            m_is_first_fetch_on_line = false;
+            m_mode = PixelFetcher::Mode::ReadTileId;
+            break;
+        }
+
         m_mode = PixelFetcher::Mode::Idle;
         break;
 

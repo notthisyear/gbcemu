@@ -40,7 +40,7 @@ class PixelFetcher final {
     std::shared_ptr<MMU> m_mmu;
     PPU *m_ppu;
     std::queue<Pixel> m_pixel_fifo;
-    std::uint8_t m_current_tick{ 0U };
+    bool m_in_second_dot_of_step{ false };
 
     std::uint16_t m_tile_index{ 0U };
     std::uint16_t m_tile_line{ 0U };
@@ -51,6 +51,9 @@ class PixelFetcher final {
     std::uint8_t m_current_tile_id{ 0U };
     std::uint8_t m_first_data_byte{ 0U };
     std::uint8_t m_second_data_byte{ 0U };
+
+    // The first tile fetched at the start of a line is discarded, and the same tile is fetched again
+    bool m_is_first_fetch_on_line{ true };
 
     [[maybe_unused]] bool m_is_window{ false };
     PixelFetcher::Mode m_mode{ PixelFetcher::Mode::ReadTileId };

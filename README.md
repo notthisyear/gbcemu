@@ -90,10 +90,10 @@ For many tests, when they fails, its result screen shows which assertions failed
 | `timer` / `tma_write_reloading` | &#x2705; |
 | `ppu` / `hblank_ly_scx_timing-GS` | &#x274c; | Tests runs and fails, needs investigation
 | `ppu` / `intr_1_2_timing-GS` |&#x2705;|
-| `ppu` / `intr_2_0_timing` | &#x274c; |  Fails on assertion of register `E`
-| `ppu` / `intr_2_mode0_timing` | &#x2705; | Fails on assertion of register `E`
+| `ppu` / `intr_2_0_timing` | &#x2705; |
+| `ppu` / `intr_2_mode0_timing` | &#x2705; |
 | `ppu` / `intr_2_mode0_timing_sprites` | &#x274c; | Test `#00` fails
-| `ppu` / `intr_2_mode3_timing` | &#x274c; | Fails on assertion of register `D`
+| `ppu` / `intr_2_mode3_timing` | &#x2705; |
 | `ppu` / `intr_2_oam_ok_timing` | &#x274c; | Fails on assertion of register `E`
 | `ppu` / `lcdon_timing-GS` | &#x274c; | Fails when checking `LY` in cycle `0x6F` (got `0x00` insted of `0x01`)
 | `ppu` / `lcdon_write_timing-GS` | &#x274c; | OAM write fails in cycle `0x12` (got `0x81` insted of `0x00`)

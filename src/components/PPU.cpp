@@ -177,6 +177,7 @@ void PPU::reset_ppu_state() {
 
     m_last_mode = m_mode;
     m_stat_interrupt_line = false;
+    m_dots_until_stat_interrupt_request = 0U;
     m_mmu->set_io_register(MMU::IORegister::LY, m_current_scanline);
 }
 
@@ -203,7 +204,15 @@ void PPU::update_stat_interrupt_line() {
                      (lcd_status_bit_is_set(LCDStatusRegisterBit::LYCEqualsLYInterrupt) &&
                       BitUtilities::bit_is_set(stat, static_cast<std::uint8_t>(LCDStatusRegisterBit::LYCEqualsLY))) };
 
+    // A rising edge on the STAT interrupt line requests the interrupt, but only kStatInterruptDelayDots later.
+    // Seen from the CPU, the interrupt is taken one M-cycle after a read of STAT (or of OAM/VRAM, whose
+    // blocking follows the mode) sees the same change. Mooneye's intr_2_* tests only pin this down to
+    // within one M-cycle (1-4 dots), so a full M-cycle is used.
     if (line && !m_stat_interrupt_line) {
+        m_dots_until_stat_interrupt_request = kStatInterruptDelayDots;
+    }
+
+    if (m_dots_until_stat_interrupt_request > 0 && --m_dots_until_stat_interrupt_request == 0) {
         std::uint8_t if_register{ m_mmu->get_io_register(MMU::IORegister::IF) };
         BitUtilities::set_bit_in_byte(if_register, static_cast<std::uint8_t>(CPU::InterruptSource::LCDStat));
         m_mmu->set_io_register(MMU::IORegister::IF, if_register);
