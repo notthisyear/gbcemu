@@ -19,9 +19,9 @@ Tests can be found [here](https://github.com/retrio/gb-test-roms).
 | `halt_bug` | &#x274c; | *`MBC1+RAM` MBC not implemented yet*
 
 ## Mooneye test suite
-Tests can be found [here](https://github.com/Gekkio/mooneye-test-suite). We do fail quite a bit of tests at the moment. A small comfort is that some emulators that work well in game also seems to fail a few of these tests. However, there are a few things to address...
+Tests can be found [here](https://github.com/Gekkio/mooneye-test-suite). Som are expected to fails, as we currently only emulate DMG (revisions ABC). Moreover, we are currently only interested in the accptance tests.
 
-When a test fails, its result screen shows which assertions failed. A failed assertion shows the *expected* value followed by `!`, and the register dump above it shows the actual values.
+For many tests, when they fails, its result screen shows which assertions failed. A failed assertion shows the *expected* value followed by `!`, and the register dump above it shows the actual values.
 
 ### Acceptance
 | Test name | Status | Comment |
@@ -88,18 +88,16 @@ When a test fails, its result screen shows which assertions failed. A failed ass
 | `timer` / `tima_reload` | &#x2705; |
 | `timer` / `tima_write_reloading` | &#x2705; |
 | `timer` / `tma_write_reloading` | &#x2705; |
-| `ppu` / `hblank_ly_scx_timing-GS` | &#x274c; | *Times out (never reports a result)*
-| `ppu` / `intr_1_2_timing-GS` | &#x274c; | *Times out (never reports a result)*
-| `ppu` / `intr_2_0_timing` | &#x274c; | *Times out (never reports a result)*
-| `ppu` / `intr_2_mode0_timing` | &#x274c; | *Times out (never reports a result)*
-| `ppu` / `intr_2_mode0_timing_sprites` | &#x274c; | *Times out (never reports a result)*
-| `ppu` / `intr_2_mode3_timing` | &#x274c; | *Times out (never reports a result)*
-| `ppu` / `intr_2_oam_ok_timing` | &#x274c; | *Times out (never reports a result)*
-| `ppu` / `lcdon_timing-GS` | &#x274c; |
-| `ppu` / `lcdon_write_timing-GS` | &#x274c; |
-| `ppu` / `stat_irq_blocking` | &#x274c; |
-| `ppu` / `stat_lyc_onoff` | &#x274c; |
-| `ppu` / `vblank_stat_intr-GS` | &#x274c; | *Times out (never reports a result)*
+| `ppu` / `hblank_ly_scx_timing-GS` | &#x274c; | Tests runs and fails, needs investigation
+| `ppu` / `intr_1_2_timing-GS` |&#x2705;|
+| `ppu` / `intr_2_0_timing` | &#x274c; |  Fails on assertion of register `E`
+| `ppu` / `intr_2_mode0_timing` | &#x2705; | Fails on assertion of register `E`
+| `ppu` / `intr_2_mode0_timing_sprites` | &#x274c; | Test `#00` fails
+| `ppu` / `intr_2_mode3_timing` | &#x274c; | Fails on assertion of register `D`
+| `ppu` / `intr_2_oam_ok_timing` | &#x274c; | Fails on assertion of register `E`
+| `ppu` / `lcdon_timing-GS` | &#x274c; | Fails when checking `LY` in cycle `0x6F` (got `0x00` insted of `0x01`)
+| `ppu` / `lcdon_write_timing-GS` | &#x274c; | OAM write fails in cycle `0x12` (got `0x81` insted of `0x00`)
+| `ppu` / `stat_irq_blocking` | &#x2705; |
+| `ppu` / `stat_lyc_onoff` | &#x274c; | Fails with message `r1 step 1`
+| `ppu` / `vblank_stat_intr-GS` | &#x274c; | Fails on assertion of registers `D` and `E`
 | `serial` / `boot_sclk_align-dmgABCmgb` | &#x274c; | *Serial transfers not implemented yet*
-
-We haven't looked into the PPU and serial categories yet, so the failing tests there have no failure details.

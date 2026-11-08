@@ -61,6 +61,7 @@ class PPU final {
     void reset_ppu_state();
     void set_bit_in_ppu_register_to_value(const MMU::IORegister, std::uint8_t const, bool const);
     void write_current_mode_to_status_register();
+    void update_stat_interrupt_line();
 
     std::shared_ptr<MMU> m_mmu;
     std::uint8_t *m_framebuffer;
@@ -82,6 +83,7 @@ class PPU final {
     bool m_screen_enabled{ false };
     bool m_trace_next_frame{ false };
     bool m_tracing_frame{ false };
+    bool m_stat_interrupt_line{ false };
 
     std::uint32_t m_framebuffer_idx{ 0U };
     PPU::Mode m_mode{ Mode::OAMSearch };

@@ -139,6 +139,8 @@ void PPU::tick() {
 
     set_bit_in_ppu_register_to_value(MMU::IORegister::STAT, static_cast<std::uint8_t>(PPU::LCDStatusRegisterBit::LYCEqualsLY),
                                      m_mmu->get_io_register(MMU::IORegister::LY) == m_mmu->get_io_register(MMU::IORegister::LYC));
+
+    update_stat_interrupt_line();
 }
 
 void PPU::request_frame_trace() { m_trace_next_frame = true; }
@@ -174,6 +176,7 @@ void PPU::reset_ppu_state() {
     m_tracing_frame = false;
 
     m_last_mode = m_mode;
+    m_stat_interrupt_line = false;
     m_mmu->set_io_register(MMU::IORegister::LY, m_current_scanline);
 }
 
@@ -190,5 +193,22 @@ void PPU::set_bit_in_ppu_register_to_value(const MMU::IORegister reg, std::uint8
 void PPU::write_current_mode_to_status_register() {
     std::uint8_t const current_stat{ m_mmu->get_io_register(MMU::IORegister::STAT) };
     m_mmu->set_io_register(MMU::IORegister::STAT, (current_stat & 0xFC) | static_cast<std::uint8_t>(m_mode));
+}
+
+void PPU::update_stat_interrupt_line() {
+    std::uint8_t const stat{ m_mmu->get_io_register(MMU::IORegister::STAT) };
+    bool const line{ (lcd_status_bit_is_set(LCDStatusRegisterBit::ModeHBLankInterrupt) && m_mode == Mode::HBlank) ||
+                     (lcd_status_bit_is_set(LCDStatusRegisterBit::ModeVBlankInterrupt) && m_mode == Mode::VBlank) ||
+                     (lcd_status_bit_is_set(LCDStatusRegisterBit::ModeOAMInterrupt) && m_mode == Mode::OAMSearch) ||
+                     (lcd_status_bit_is_set(LCDStatusRegisterBit::LYCEqualsLYInterrupt) &&
+                      BitUtilities::bit_is_set(stat, static_cast<std::uint8_t>(LCDStatusRegisterBit::LYCEqualsLY))) };
+
+    if (line && !m_stat_interrupt_line) {
+        std::uint8_t if_register{ m_mmu->get_io_register(MMU::IORegister::IF) };
+        BitUtilities::set_bit_in_byte(if_register, static_cast<std::uint8_t>(CPU::InterruptSource::LCDStat));
+        m_mmu->set_io_register(MMU::IORegister::IF, if_register);
+    }
+
+    m_stat_interrupt_line = line;
 }
 }
