@@ -75,7 +75,7 @@ Tests can be found [here](https://github.com/Gekkio/mooneye-test-suite). We do f
 | `timer` / `tim11` | &#x2705; |
 | `timer` / `tim11_div_trigger` | &#x2705; |
 | `timer` / `tima_reload` | &#x2705; |
-| `timer` / `tima_write_reloading` | &#x274c; | *Assertion of register `C` failed (expected `FE`, was `7F`)*
-| `timer` / `tma_write_reloading` | &#x274c; | *Assertion of register `E` failed (expected `7F`, was `FE`)*
+| `timer` / `tima_write_reloading` | &#x2705; |
+| `timer` / `tma_write_reloading` | &#x2705; |
 
 Regarding the PPU and serial categories, we haven't looked at those yet.

@@ -510,7 +510,12 @@ void MMU::pre_process_io_register_write_access(std::uint8_t const offset, std::u
         break;
 
     case MMU::IORegister::TIMA:
-        m_timer_controller->tima_write_occured();
+        if (!m_timer_controller->tima_write_occured())
+            *data = get_io_register(MMU::IORegister::TIMA);
+        break;
+
+    case MMU::IORegister::TMA:
+        m_timer_controller->tma_write_occured(*data);
         break;
 
     case MMU::IORegister::TAC:
@@ -590,7 +595,6 @@ void MMU::pre_process_io_register_write_access(std::uint8_t const offset, std::u
         break;
     }
     case MMU::IORegister::SB:
-    case MMU::IORegister::TMA:
     case MMU::IORegister::NR11:
     case MMU::IORegister::NR12:
     case MMU::IORegister::NR13:

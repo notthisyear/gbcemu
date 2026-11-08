@@ -12,22 +12,34 @@ class TimerController final {
   public:
     void process();
     void reset_divider();
-    void tima_write_occured();
+
+    // Returns false if the write should be ignored, i.e. TIMA must keep its current value
+    bool tima_write_occured();
+
+    void tma_write_occured(std::uint8_t const);
 
     static TimerController *get(MMU *const);
 
   private:
+    // After TIMA overflows, it reads 0x00 for one M-cycle (Overflowed). In the following M-cycle (Reloading),
+    // TIMA is loaded from TMA and the timer interrupt is requested. During that M-cycle, writes to TIMA are
+    // ignored, while writes to TMA are also written to TIMA.
+    enum class OverflowState : std::uint8_t {
+        Idle,
+        Overflowed,
+        Reloading,
+    };
+
+    static constexpr std::uint8_t kTicksPerOverflowState{ 4U };
+
     static TimerController *m_instance;
     MMU *m_mmu;
     TimerController(MMU *const);
 
     std::uint16_t m_div_value;
     bool m_last_output_value;
-    std::uint8_t m_overflow_process_pending;
-    std::uint8_t m_overflow_counter;
-    bool m_set_tima_from_tma;
-    bool m_set_interrupt_flag;
-    bool m_div_was_reset;
+    OverflowState m_overflow_state;
+    std::uint8_t m_overflow_state_ticks;
 
     static inline std::unordered_map<std::uint8_t, std::uint8_t> s_div_bit_select{
         // Falling edge detector, so every second flip is detected
