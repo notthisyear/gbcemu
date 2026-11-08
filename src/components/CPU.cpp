@@ -110,25 +110,21 @@ void CPU::tick() {
                 if (m_current_opcode->is_done()) {
                     m_state = CPU::State::FetchAndDecode;
 
-                    if (!m_is_halted) {
-                        if (m_output_trace) {
-                            trace_preloaded_instruction_at_end = true;
-                        }
-                        fetch_and_decode();
-                        m_next_instruction_preloaded = true;
-                    } else {
-                        m_next_instruction_preloaded = false;
+                    // The next opcode is fetched in the last M-cycle of every instruction, HALT included. When
+                    // HALT returns with IME=0, the prefetched instruction is executed right away. With IME=1, it's
+                    // discarded by the interrupt dispatch, which returns to it afterwards.
+                    if (m_output_trace) {
+                        trace_preloaded_instruction_at_end = true;
                     }
+                    fetch_and_decode();
+                    m_next_instruction_preloaded = true;
                 }
                 break;
 
             // see https://gbdev.io/pandocs/Interrupts.html
             case CPU::State::InterruptTransition:
-                m_current_interrupt_phase_counter++;
-                if (m_current_interrupt_phase_counter == 2) {
-                    m_state = CPU::State::InterruptPushPC;
-                    m_current_interrupt_phase_counter = 0;
-                }
+                // Second wait state. The first one is the M-cycle in which the interrupt was detected.
+                m_state = CPU::State::InterruptPushPC;
                 break;
 
             case CPU::State::InterruptPushPC:
@@ -152,6 +148,13 @@ void CPU::tick() {
                 set_register(CPU::Register::PC,
                              m_current_interrupt.has_value() ? s_interrupt_vector.find(*m_current_interrupt)->second : static_cast<std::uint16_t>(0x0000));
                 m_state = CPU::State::FetchAndDecode;
+
+                // Like the last M-cycle of an instruction, the last M-cycle of the dispatch also fetches the next opcode
+                if (m_output_trace) {
+                    trace_preloaded_instruction_at_end = true;
+                }
+                fetch_and_decode();
+                m_next_instruction_preloaded = true;
                 break;
 
             case CPU::State::FetchAndDecode:
@@ -193,12 +196,11 @@ bool CPU::should_handle_interrupt() {
         m_interrupt_enabled = false;
     }
 
-    // A pending interrupt always causes HALT to return, regardless of IME.
-    // However, if IME is not set, the "halt bug" can potentially be triggered.
+    // A pending interrupt always causes HALT to return, regardless of IME. If IME is not set, execution
+    // simply continues after HALT. (The halt bug only occurs when HALT is executed with an interrupt
+    // already pending, see set_cpu_to_halt().)
     if (interrupt_pending && m_is_halted) {
         m_is_halted = false;
-        // Halt bug is active if interrupt is pending and IME was not set
-        m_halt_bug_active = !IME_was_set;
     }
 
     return pending_interrupt_can_be_serviced;
@@ -347,7 +349,18 @@ void CPU::enable_breakpoint_at(std::uint16_t const pc) {
     m_has_breakpoint = true;
 }
 
-void CPU::set_cpu_to_halt() { m_is_halted = true; }
+void CPU::set_cpu_to_halt() {
+    bool const interrupt_pending{ (m_mmu->get_io_register(MMU::IORegister::IE) & m_mmu->get_io_register(MMU::IORegister::IF)) > 0x00 };
+
+    // If IME is not set and an interrupt is already pending, HALT doesn't halt the CPU. Instead, the halt bug
+    // causes the byte after HALT to be read twice, as PC isn't incremented when the next opcode is fetched.
+    if (!m_interrupt_enabled && interrupt_pending) {
+        m_halt_bug_active = true;
+        return;
+    }
+
+    m_is_halted = true;
+}
 
 bool CPU::breakpoint_hit() const { return m_has_breakpoint && at_start_of_instruction() && current_instruction_address() == m_current_breakpoint; }
 

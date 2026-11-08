@@ -43,7 +43,7 @@ When a test fails, its result screen shows which assertions failed. A failed ass
 | `call_cc_timing2` | &#x2705; |
 | `call_timing` | &#x2705; |
 | `call_timing2` | &#x2705; |
-| `di_timing-GS` | &#x274c; | *Fails in round 1.*
+| `di_timing-GS` | &#x2705; |
 | `div_timing` | &#x2705; |
 | `ei_sequence` | &#x2705; |
 | `ei_timing` | &#x2705; |
@@ -52,7 +52,7 @@ When a test fails, its result screen shows which assertions failed. A failed ass
 | `halt_ime1_timing` | &#x2705; |
 | `halt_ime1_timing2-GS` | &#x2705; |
 | `if_ie_registers` | &#x2705; |
-| `intr_timing` | &#x274c; | *Fails on assertion on register `D`.*
+| `intr_timing` | &#x2705; |
 | `jp_cc_timing` | &#x2705; |
 | `jp_timing` | &#x2705; |
 | `ld_hl_sp_e_timing` | &#x2705; |
