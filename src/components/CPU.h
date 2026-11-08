@@ -77,7 +77,14 @@ class CPU final {
 
     void enable_breakpoint_at(std::uint16_t const);
 
-    void set_interrupt_enable(bool const);
+    // EI: IME is set once the instruction following EI has been executed
+    void enable_interrupts_delayed();
+
+    // RETI: IME is set immediately
+    void enable_interrupts_immediately();
+
+    // DI: IME is cleared immediately, which also cancels a pending EI
+    void disable_interrupts();
 
     bool interrupt_enabled() const;
 
@@ -306,7 +313,6 @@ class CPU final {
     std::uint64_t m_tick_ctr{ 0U };
     std::uint8_t m_current_cpu_phase_tick_count{ 0U };
     std::uint8_t m_current_interrupt_phase_counter{ 0U };
-    std::int8_t m_cycles_until_interrupts_enabled{ 0 };
 
     bool m_next_instruction_preloaded{ false };
     bool m_is_extended_opcode{ false };
@@ -314,6 +320,10 @@ class CPU final {
     bool m_halt_bug_active{ false };
     bool m_has_breakpoint{ false };
     bool m_interrupt_enabled{ false };
+
+    // Set by EI. IME is set at the next instruction boundary, after the interrupt check there, so that
+    // interrupts are first serviced after the instruction following EI.
+    bool m_interrupt_enable_pending{ false };
 
     std::shared_ptr<Opcode> m_current_opcode{ nullptr };
     std::ofstream m_trace_stream{};

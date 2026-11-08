@@ -45,7 +45,7 @@ When a test fails, its result screen shows which assertions failed. A failed ass
 | `call_timing2` | &#x2705; |
 | `di_timing-GS` | &#x274c; | *Fails in round 1.*
 | `div_timing` | &#x2705; |
-| `ei_sequence` | &#x274c; | *Fails on assertion on register `C`.*
+| `ei_sequence` | &#x2705; |
 | `ei_timing` | &#x2705; |
 | `halt_ime0_ei` | &#x2705; |
 | `halt_ime0_nointr_timing` | &#x274c; | *Fails on assertions on registers `D` and `E`.*
@@ -61,10 +61,10 @@ When a test fails, its result screen shows which assertions failed. A failed ass
 | `oam_dma_timing` | &#x2705; |
 | `pop_timing` | &#x2705; |
 | `push_timing` | &#x2705; |
-| `rapid_di_ei` | &#x274c; | *Fails on assertions on registers `B` and `D`.*
+| `rapid_di_ei` | &#x2705; |
 | `ret_cc_timing` | &#x2705; |
 | `ret_timing` | &#x2705; |
-| `reti_intr_timing` | &#x274c; | *Fails on assertion on register `B`.*
+| `reti_intr_timing` | &#x2705; |
 | `reti_timing` | &#x2705; |
 | `rst_timing` | &#x2705; |
 | `bits` / `mem_oam` | &#x2705; |

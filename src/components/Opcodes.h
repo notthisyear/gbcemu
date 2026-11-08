@@ -194,7 +194,7 @@ struct ComplementCarryFlag final : public Opcode {
 struct DisableInterrupt final : public Opcode {
   public:
     DisableInterrupt() : Opcode{ 1 } {
-        m_operations.push_back([](CPU *cpu, MMU *) { cpu->set_interrupt_enable(false); });
+        m_operations.push_back([](CPU *cpu, MMU *) { cpu->disable_interrupts(); });
     }
     std::string get_disassembled_instruction(std::uint8_t *) const override { return "DI"; }
 };
@@ -203,7 +203,7 @@ struct DisableInterrupt final : public Opcode {
 struct EnableInterrupt final : public Opcode {
   public:
     EnableInterrupt() : Opcode{ 1 } {
-        m_operations.push_back([](CPU *cpu, MMU *) { cpu->set_interrupt_enable(true); });
+        m_operations.push_back([](CPU *cpu, MMU *) { cpu->enable_interrupts_delayed(); });
     }
     std::string get_disassembled_instruction(std::uint8_t *) const override { return "EI"; }
 };
@@ -258,10 +258,10 @@ struct ConditionalCallReturnOrJumpBase : public Opcode {
         // Update PC
         m_operations.push_back([](CPU *cpu, MMU *) { cpu->set_register_from_intermediate(CPU::Register::PC); });
 
-        // Optionally set interrupt flag
+        // Optionally set IME. Unlike EI, RETI sets it immediately.
         m_operations.push_back([enable_interrupts](CPU *cpu, MMU *) {
             if (enable_interrupts)
-                cpu->set_interrupt_enable(true);
+                cpu->enable_interrupts_immediately();
         });
     }
 

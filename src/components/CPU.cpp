@@ -50,15 +50,6 @@ CPU::CPU(std::shared_ptr<MMU> const mmu, std::shared_ptr<PPU> const ppu, bool co
 }
 
 void CPU::tick() {
-    if (m_cycles_until_interrupts_enabled > 0) {
-        m_cycles_until_interrupts_enabled--;
-
-        if (m_cycles_until_interrupts_enabled == 0) {
-            m_interrupt_enabled = true;
-            m_cycles_until_interrupts_enabled = -1;
-        }
-    }
-
     m_timer_controller->process();
     bool trace_preloaded_instruction_at_end{ false };
 
@@ -68,7 +59,16 @@ void CPU::tick() {
         if (m_state == CPU::State::FetchAndDecode) {
             run_state_machine = false;
 
-            if (should_handle_interrupt()) {
+            bool const handle_interrupt{ should_handle_interrupt() };
+
+            // A pending EI takes effect after the interrupt check at the boundary following EI,
+            // so the instruction after EI is always executed before an interrupt is serviced
+            if (m_interrupt_enable_pending) {
+                m_interrupt_enable_pending = false;
+                m_interrupt_enabled = true;
+            }
+
+            if (handle_interrupt) {
                 m_state = CPU::State::InterruptTransition;
                 if (m_next_instruction_preloaded) {
                     m_next_instruction_preloaded = false;
@@ -331,11 +331,13 @@ void CPU::print_disassembled_instructions(std::ostream &stream, std::uint16_t co
     }
 }
 
-void CPU::set_interrupt_enable(bool const on_or_off) {
-    if (on_or_off)
-        m_cycles_until_interrupts_enabled = kExecutionTicksPerOperationStep + 1;
-    else
-        m_interrupt_enabled = false;
+void CPU::enable_interrupts_delayed() { m_interrupt_enable_pending = true; }
+
+void CPU::enable_interrupts_immediately() { m_interrupt_enabled = true; }
+
+void CPU::disable_interrupts() {
+    m_interrupt_enabled = false;
+    m_interrupt_enable_pending = false;
 }
 
 bool CPU::interrupt_enabled() const { return m_interrupt_enabled; }
