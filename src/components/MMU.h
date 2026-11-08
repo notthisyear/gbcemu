@@ -98,6 +98,9 @@ class MMU final {
 
     bool try_read_from_memory(std::uint8_t *const data, std::uint16_t const offset, std::size_t const size) const;
 
+    // VRAM read for the PPU itself, which isn't subject to the CPU being blocked from VRAM during mode 3
+    std::uint8_t read_vram_for_ppu(std::uint16_t const offset) const;
+
     MMU::BootRomType get_boot_rom_type() const;
 
     void set_io_register(MMU::IORegister const, std::uint8_t const);
@@ -148,6 +151,9 @@ class MMU final {
     void write_to_memory(std::uint8_t *const, std::uint16_t const, std::size_t const);
 
     bool boot_rom_is_mapped() const;
+
+    // While the LCD is on, the PPU blocks CPU access to OAM during modes 2 and 3, and to VRAM during mode 3
+    bool ppu_blocks_cpu_access_to(MMU::MemoryRegion const) const;
     bool is_boot_rom_range(std::uint16_t const, std::size_t const) const;
     void read_from_boot_rom(std::uint8_t *, std::uint16_t, std::size_t const) const;
     bool try_load_from_file(std::string const &, std::uint8_t *, std::size_t const) const;

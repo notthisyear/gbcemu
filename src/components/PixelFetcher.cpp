@@ -46,7 +46,7 @@ void PixelFetcher::tick() {
 
     switch (m_mode) {
     case PixelFetcher::Mode::ReadTileId:
-        (void)m_mmu->try_read_from_memory(&m_current_tile_id, m_tile_id_row_start_address + m_tile_index, 1);
+        m_current_tile_id = m_mmu->read_vram_for_ppu(m_tile_id_row_start_address + m_tile_index);
 
         if (m_output_trace) {
             std::cout << GeneralUtilities::formatted_string("\033[0;36mTile ID (0x%04X): \033[1;37m0x%02X\033[0m, ", m_tile_id_row_start_address + m_tile_index,
@@ -69,7 +69,7 @@ void PixelFetcher::tick() {
         }
 
         m_tile_data_address = tile_address + ((m_tile_line & 0x07) << 1);
-        (void)m_mmu->try_read_from_memory(&m_first_data_byte, m_tile_data_address, 1);
+        m_first_data_byte = m_mmu->read_vram_for_ppu(m_tile_data_address);
 
         if (m_output_trace) {
             std::cout << GeneralUtilities::formatted_string("\033[0;32mlow data (0x%04X): \033[1;37m0x%02X\033[0m, ", m_tile_data_address, m_first_data_byte);
@@ -80,7 +80,7 @@ void PixelFetcher::tick() {
     break;
 
     case PixelFetcher::Mode::ReadTileData1:
-        (void)m_mmu->try_read_from_memory(&m_second_data_byte, m_tile_data_address + 1, 1);
+        m_second_data_byte = m_mmu->read_vram_for_ppu(m_tile_data_address + 1);
 
         if (m_output_trace) {
             std::cout << GeneralUtilities::formatted_string("\033[0;32mhigh tile (0x%04X): \033[1;37m0x%02X\033[0m\n", m_tile_data_address + 1,

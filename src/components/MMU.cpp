@@ -100,6 +100,8 @@ bool MMU::try_map_data_to_memory(std::uint8_t *const data, std::uint16_t const o
 
     case MMU::MemoryRegion::VRAMSwitchable:
         // TODO: Implement VRAM banks (only on CGB)
+        if (ppu_blocks_cpu_access_to(region))
+            break;
         write_to_memory(data, offset, size);
         break;
 
@@ -128,7 +130,7 @@ bool MMU::try_map_data_to_memory(std::uint8_t *const data, std::uint16_t const o
         break;
 
     case MMU::MemoryRegion::SpriteAttributeTable:
-        if (m_dma_controller.is_transferring())
+        if (m_dma_controller.is_transferring() || ppu_blocks_cpu_access_to(region))
             break;
         write_to_memory(data, offset, size);
         break;
@@ -174,6 +176,11 @@ bool MMU::try_read_from_memory(std::uint8_t *data, std::uint16_t const offset, s
 
         case MMU::MemoryRegion::VRAMSwitchable:
             // TODO: Implement VRAM banks (only on CGB)
+            if (ppu_blocks_cpu_access_to(region)) {
+                for (std::size_t i{ 0U }; i < size; ++i)
+                    data[i] = 0xFF;
+                break;
+            }
             read_from_memory(data, offset, size);
             break;
 
@@ -187,7 +194,7 @@ bool MMU::try_read_from_memory(std::uint8_t *data, std::uint16_t const offset, s
             break;
 
         case MMU::MemoryRegion::SpriteAttributeTable:
-            if (m_dma_controller.is_transferring()) {
+            if (m_dma_controller.is_transferring() || ppu_blocks_cpu_access_to(region)) {
                 for (std::size_t i{ 0U }; i < size; ++i)
                     data[i] = 0xFF;
                 break;
@@ -327,6 +334,28 @@ bool MMU::try_load_from_file(std::string const &path, std::uint8_t *buffer, std:
     }
     boot_file.read((char *)buffer, size);
     return true;
+}
+
+std::uint8_t MMU::read_vram_for_ppu(std::uint16_t const offset) const {
+    std::uint8_t data{};
+    read_from_memory(&data, offset, 1);
+    return data;
+}
+
+bool MMU::ppu_blocks_cpu_access_to(MMU::MemoryRegion const region) const {
+    bool const lcd_enabled{ (get_io_register(MMU::IORegister::LCDC) & 0x80) != 0x00 };
+    if (!lcd_enabled)
+        return false;
+
+    std::uint8_t const mode{ static_cast<std::uint8_t>(get_io_register(MMU::IORegister::STAT) & 0x03) };
+    switch (region) {
+    case MMU::MemoryRegion::SpriteAttributeTable:
+        return mode == 0x02 || mode == 0x03;
+    case MMU::MemoryRegion::VRAMSwitchable:
+        return mode == 0x03;
+    default:
+        return false;
+    }
 }
 
 bool MMU::boot_rom_is_mapped() const { return (get_io_register(MMU::IORegister::BootRomDisableOffset) & 0x01) == 0x00; }
