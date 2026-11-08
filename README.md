@@ -21,13 +21,24 @@ Tests can be found [here](https://github.com/retrio/gb-test-roms).
 ## Mooneye test suite
 Tests can be found [here](https://github.com/Gekkio/mooneye-test-suite). We do fail quite a bit of tests at the moment. A small comfort is that some emulators that work well in game also seems to fail a few of these tests. However, there are a few things to address...
 
+When a test fails, its result screen shows which assertions failed. A failed assertion shows the *expected* value followed by `!`, and the register dump above it shows the actual values.
+
 ### Acceptance
 | Test name | Status | Comment |
 | ----------- | -------- | --- |
 | `add_sp_e_timing` | &#x2705; |
+| `boot_div-dmg0` | &#x274c; | *Expects the DMG0 model, we emulate DMG ABC*
 | `boot_div-dmgABCmgb` | &#x2705; |
+| `boot_div-S` | &#x274c; | *Expects the SGB/SGB2 models, we emulate DMG ABC*
+| `boot_div2-S` | &#x274c; | *Expects the SGB/SGB2 models, we emulate DMG ABC*
+| `boot_hwio-dmg0` | &#x274c; | *Expects the DMG0 model, we emulate DMG ABC*
 | `boot_hwio-dmgABCmgb` | &#x2705; |
+| `boot_hwio-S` | &#x274c; | *Expects the SGB/SGB2 models, we emulate DMG ABC*
+| `boot_regs-dmg0` | &#x274c; | *Expects the DMG0 model, we emulate DMG ABC*
 | `boot_regs-dmgABC` | &#x2705; |
+| `boot_regs-mgb` | &#x274c; | *Expects the MGB model, we emulate DMG ABC*
+| `boot_regs-sgb` | &#x274c; | *Expects the SGB model, we emulate DMG ABC*
+| `boot_regs-sgb2` | &#x274c; | *Expects the SGB2 model, we emulate DMG ABC*
 | `call_cc_timing` | &#x2705; |
 | `call_cc_timing2` | &#x2705; |
 | `call_timing` | &#x2705; |
@@ -77,5 +88,18 @@ Tests can be found [here](https://github.com/Gekkio/mooneye-test-suite). We do f
 | `timer` / `tima_reload` | &#x2705; |
 | `timer` / `tima_write_reloading` | &#x2705; |
 | `timer` / `tma_write_reloading` | &#x2705; |
+| `ppu` / `hblank_ly_scx_timing-GS` | &#x274c; | *Times out (never reports a result)*
+| `ppu` / `intr_1_2_timing-GS` | &#x274c; | *Times out (never reports a result)*
+| `ppu` / `intr_2_0_timing` | &#x274c; | *Times out (never reports a result)*
+| `ppu` / `intr_2_mode0_timing` | &#x274c; | *Times out (never reports a result)*
+| `ppu` / `intr_2_mode0_timing_sprites` | &#x274c; | *Times out (never reports a result)*
+| `ppu` / `intr_2_mode3_timing` | &#x274c; | *Times out (never reports a result)*
+| `ppu` / `intr_2_oam_ok_timing` | &#x274c; | *Times out (never reports a result)*
+| `ppu` / `lcdon_timing-GS` | &#x274c; |
+| `ppu` / `lcdon_write_timing-GS` | &#x274c; |
+| `ppu` / `stat_irq_blocking` | &#x274c; |
+| `ppu` / `stat_lyc_onoff` | &#x274c; |
+| `ppu` / `vblank_stat_intr-GS` | &#x274c; | *Times out (never reports a result)*
+| `serial` / `boot_sclk_align-dmgABCmgb` | &#x274c; | *Serial transfers not implemented yet*
 
-Regarding the PPU and serial categories, we haven't looked at those yet.
+We haven't looked into the PPU and serial categories yet, so the failing tests there have no failure details.
