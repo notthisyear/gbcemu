@@ -108,6 +108,14 @@ void PPU::tick() {
             if (m_current_scanline == kVBlankStartScanline) {
                 std::uint8_t if_register{ m_mmu->get_io_register(MMU::IORegister::IF) };
                 BitUtilities::set_bit_in_byte(if_register, static_cast<std::uint8_t>(CPU::InterruptSource::VBlank));
+
+                // On DMG, the mode 2 (OAM) STAT source also requests a STAT interrupt when vblank starts, at the same
+                // time as the vblank interrupt, as long as the STAT interrupt line isn't already high. This is
+                // separate from the STAT interrupt line, as mode 2 isn't entered on line 144.
+                if (lcd_status_bit_is_set(LCDStatusRegisterBit::ModeOAMInterrupt) && !m_stat_interrupt_line) {
+                    BitUtilities::set_bit_in_byte(if_register, static_cast<std::uint8_t>(CPU::InterruptSource::LCDStat));
+                }
+
                 m_mmu->set_io_register(MMU::IORegister::IF, if_register);
                 m_mode = PPU::Mode::VBlank;
             } else {

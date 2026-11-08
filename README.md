@@ -95,9 +95,9 @@ For many tests, when they fails, its result screen shows which assertions failed
 | `ppu` / `intr_2_mode0_timing_sprites` | &#x274c; | Test `#00` fails
 | `ppu` / `intr_2_mode3_timing` | &#x2705; |
 | `ppu` / `intr_2_oam_ok_timing` | &#x2705; |
-| `ppu` / `lcdon_timing-GS` | &#x274c; | Fails when checking `LY` in cycle `0x6F` (got `0x00` insted of `0x01`)
-| `ppu` / `lcdon_write_timing-GS` | &#x274c; | OAM write fails in cycle `0x12` (got `0x81` insted of `0x00`)
+| `ppu` / `lcdon_timing-GS` | &#x274c; | Fails when checking `LY` in cycle `0x6F` (got `0x00` instead of `0x01`)
+| `ppu` / `lcdon_write_timing-GS` | &#x274c; | OAM write fails in cycle `0x12` (got `0x81` instead of `0x00`)
 | `ppu` / `stat_irq_blocking` | &#x2705; |
 | `ppu` / `stat_lyc_onoff` | &#x274c; | Fails with message `r1 step 1`
-| `ppu` / `vblank_stat_intr-GS` | &#x274c; | Fails on assertion of registers `D` and `E`
+| `ppu` / `vblank_stat_intr-GS` | &#x2705; |
 | `serial` / `boot_sclk_align-dmgABCmgb` | &#x274c; | *Serial transfers not implemented yet*
