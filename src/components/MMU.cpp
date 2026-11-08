@@ -40,7 +40,8 @@ bool MMU::try_load_boot_rom(std::ostream &stream, std::string const &path) {
         m_boot_rom_type = MMU::BootRomType::DMG;
     }
 
-    set_io_register(gbcemu::MMU::IORegister::BootRomDisableOffset, 0x00);
+    // Map the boot ROM. Without a boot ROM, the register keeps its initial value 0xFF, i.e. unmapped.
+    set_io_register(gbcemu::MMU::IORegister::BootRomDisableOffset, kBootRomMapped);
     return true;
 }
 
@@ -150,8 +151,7 @@ bool MMU::try_read_from_memory(std::uint8_t *data, std::uint16_t const offset, s
     std::pair<std::uint16_t, std::uint16_t> const region_endpoints{ s_region_map.find(region)->second };
 
     bool result{ true };
-    bool const boot_rom_enabled{ get_io_register(MMU::IORegister::BootRomDisableOffset) == 0x00 };
-    if ((region == MMU::MemoryRegion::CartridgeFixed) && boot_rom_enabled && is_boot_rom_range(offset, size)) {
+    if ((region == MMU::MemoryRegion::CartridgeFixed) && boot_rom_is_mapped() && is_boot_rom_range(offset, size)) {
         read_from_boot_rom(data, offset, size);
     } else {
         if ((offset + size - 1) > region_endpoints.second) {
@@ -257,8 +257,7 @@ void MMU::print_memory_at_location(std::ostream &stream, std::uint16_t const sta
     }
 
     MemoryRegion const region{ find_memory_region(start) };
-    bool const boot_rom_enabled{ get_io_register(MMU::IORegister::BootRomDisableOffset) == 0x00 };
-    bool const is_boot_rom{ (region == MMU::MemoryRegion::CartridgeFixed) && boot_rom_enabled && is_boot_rom_range(start, (end - start) + 1) };
+    bool const is_boot_rom{ (region == MMU::MemoryRegion::CartridgeFixed) && boot_rom_is_mapped() && is_boot_rom_range(start, (end - start) + 1) };
 
     std::cout << "from region "
               << "\033[1;32m" << (is_boot_rom ? "Boot ROM" : get_region_name(region)) << "\033[0m\n"
@@ -329,6 +328,8 @@ bool MMU::try_load_from_file(std::string const &path, std::uint8_t *buffer, std:
     boot_file.read((char *)buffer, size);
     return true;
 }
+
+bool MMU::boot_rom_is_mapped() const { return (get_io_register(MMU::IORegister::BootRomDisableOffset) & 0x01) == 0x00; }
 
 bool MMU::is_boot_rom_range(std::uint16_t const offset, std::size_t const size) const {
     // CGB boot ROM is split into two, 0x0000 - 0x00FF and 0x0200 - 0x08FF
@@ -584,9 +585,9 @@ void MMU::pre_process_io_register_write_access(std::uint8_t const offset, std::u
         break;
 
     case MMU::IORegister::BootRomDisableOffset:
-        // Outside of the boot rom, this register cannot be written to.
-        // TODO: Ensure that the boot rom is allowed to write to this register.
-        *data = get_io_register(MMU::IORegister::BootRomDisableOffset);
+        // Writing a value with bit 0 set unmaps the boot ROM. This is a one-way latch: once the boot ROM is
+        // unmapped, it can't be mapped again, so all further writes are ignored.
+        *data = (boot_rom_is_mapped() && (*data & 0x01)) ? kBootRomUnmapped : get_io_register(MMU::IORegister::BootRomDisableOffset);
         break;
 
     case MMU::IORegister::DMA: {

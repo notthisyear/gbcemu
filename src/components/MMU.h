@@ -129,6 +129,11 @@ class MMU final {
     static constexpr std::uint16_t kRegisterOffsetBase{ 0xFF00 };
     static constexpr std::uint16_t kDmgBootRomSize{ 0x0100 };
 
+    // Bit 0 of the boot ROM disable register (0xFF50) is a latch that unmaps the boot ROM once set.
+    // The other bits are unused and always read as 1.
+    static constexpr std::uint8_t kBootRomMapped{ 0xFE };
+    static constexpr std::uint8_t kBootRomUnmapped{ 0xFF };
+
     bool m_loading_cartridge;
     Cartridge *m_cartridge{ nullptr };
     BootRomType m_boot_rom_type{ BootRomType::None };
@@ -142,6 +147,7 @@ class MMU final {
 
     void write_to_memory(std::uint8_t *const, std::uint16_t const, std::size_t const);
 
+    bool boot_rom_is_mapped() const;
     bool is_boot_rom_range(std::uint16_t const, std::size_t const) const;
     void read_from_boot_rom(std::uint8_t *, std::uint16_t, std::size_t const) const;
     bool try_load_from_file(std::string const &, std::uint8_t *, std::size_t const) const;
