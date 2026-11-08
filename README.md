@@ -48,9 +48,9 @@ When a test fails, its result screen shows which assertions failed. A failed ass
 | `ei_sequence` | &#x2705; |
 | `ei_timing` | &#x2705; |
 | `halt_ime0_ei` | &#x2705; |
-| `halt_ime0_nointr_timing` | &#x274c; | *Fails on assertions on registers `D` and `E`.*
+| `halt_ime0_nointr_timing` | &#x2705; |
 | `halt_ime1_timing` | &#x2705; |
-| `halt_ime1_timing2-GS` | &#x274c; | *Fails in round 1.*
+| `halt_ime1_timing2-GS` | &#x2705; |
 | `if_ie_registers` | &#x2705; |
 | `intr_timing` | &#x274c; | *Fails on assertion on register `D`.*
 | `jp_cc_timing` | &#x2705; |

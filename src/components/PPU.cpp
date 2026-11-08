@@ -86,7 +86,7 @@ void PPU::tick() {
             m_current_scanline++;
         }
 
-        if (m_current_scanline > kScanlinesPerFrame) {
+        if (m_current_scanline == kScanlinesPerFrame) {
             m_mode = PPU::Mode::OAMSearch;
             m_current_scanline = 0;
             m_framebuffer_idx = 0;
