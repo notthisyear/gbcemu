@@ -21,7 +21,8 @@ Cartridge::Cartridge(std::uint8_t *const raw_data, std::size_t const raw_size) :
         if (mbc_name_it == s_mbc_names.end()) {
             LogUtilities::log_error(std::cout, GeneralUtilities::formatted_string(
                                                    "Cartridge MBC flag is '0x%02X' is not known. Did you really pass a valid cartridge file?", m_type));
-        } else {
+        }
+        else {
             LogUtilities::log_error(std::cout, GeneralUtilities::formatted_string("Cartridge MBC flag is '%s' - not supported", mbc_name_it->second));
         }
         exit(1);
@@ -66,7 +67,8 @@ std::string Cartridge::get_manufacturer_code() const { return read_string_from_h
 std::uint8_t Cartridge::get_single_byte_header_field(Cartridge::HeaderField const field) const {
     if (field == Cartridge::HeaderField::NewLicenseeCode || field == Cartridge::HeaderField::GlobalChecksum) {
         return 0x00;
-    } else {
+    }
+    else {
         return m_raw_data[static_cast<std::uint16_t>(field)];
     }
 }
@@ -74,7 +76,8 @@ std::uint8_t Cartridge::get_single_byte_header_field(Cartridge::HeaderField cons
 std::uint16_t Cartridge::get_two_byte_header_field(Cartridge::HeaderField const field) const {
     if (field == Cartridge::HeaderField::NewLicenseeCode || field == Cartridge::HeaderField::GlobalChecksum) {
         return m_raw_data[static_cast<std::uint16_t>(field)] << 8 | m_raw_data[static_cast<std::uint16_t>(field) + 1];
-    } else {
+    }
+    else {
         return 0x0000;
     }
 }

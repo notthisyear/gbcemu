@@ -133,8 +133,8 @@ struct DecimalAdjustAccumulator final : public Opcode {
 
                 if (cpu->flag_is_set(CPU::Flag::H) || ((acc & 0x0F) > 0x09))
                     acc += 0x06;
-
-            } else {
+            }
+            else {
                 if (cpu->flag_is_set(CPU::Flag::C))
                     acc -= 0x60;
 
@@ -295,7 +295,8 @@ struct JumpToImmediate final : public ConditionalCallReturnOrJumpBase {
 
         if (opcode == UnconditionalJumpOpcode) {
             m_condition = ConditionalCallReturnOrJumpBase::Condition::None;
-        } else {
+        }
+        else {
             std::uint8_t flag_idx{ static_cast<std::uint8_t>((opcode >> 3) & 0x07) };
             m_condition = static_cast<ConditionalCallReturnOrJumpBase::Condition>(flag_idx);
         }
@@ -352,7 +353,8 @@ struct Call final : public ConditionalCallReturnOrJumpBase {
     Call(std::uint8_t opcode) : ConditionalCallReturnOrJumpBase{ 3 } {
         if (opcode == UnconditionalCallOpcode) {
             m_condition = ConditionalCallReturnOrJumpBase::Condition::None;
-        } else {
+        }
+        else {
             std::uint8_t flag_idx{ static_cast<std::uint8_t>((opcode >> 3) & 0x07) };
             m_condition = static_cast<ConditionalCallReturnOrJumpBase::Condition>(flag_idx);
         }
@@ -383,7 +385,8 @@ struct ReturnFromCall final : public ConditionalCallReturnOrJumpBase {
             m_condition = ConditionalCallReturnOrJumpBase::Condition::None;
             m_enable_interrupts = (opcode >> 4) == 0x0D;
             m_operations.push_back([](CPU *cpu, MMU *) { cpu->set_register(CPU::Register::Z, cpu->pop_byte_from_stack()); });
-        } else {
+        }
+        else {
             std::uint8_t flag_idx{ static_cast<std::uint8_t>((opcode >> 3) & 0x07) };
             m_condition = static_cast<ConditionalCallReturnOrJumpBase::Condition>(flag_idx);
 
@@ -443,7 +446,8 @@ struct Load8bitImmediate final : public Opcode {
                 (void)mmu->try_map_data_to_memory(&value, cpu->get_16_bit_register(CPU::Register::HL), 1);
             });
             m_operations.push_back([](CPU *, MMU *) {});
-        } else {
+        }
+        else {
             m_operations.push_back([&](CPU *cpu, MMU *) { cpu->set_register_from_intermediate(m_target); });
         }
     }
@@ -478,14 +482,16 @@ struct Load8bitRegister final : public Opcode {
                 (void)mmu->try_map_data_to_memory(&data, cpu->get_16_bit_register(CPU::Register::HL), 1);
             });
             m_operations.push_back([](CPU *, MMU *) {});
-        } else if (m_source == CPU::Register::HL) {
+        }
+        else if (m_source == CPU::Register::HL) {
             m_operations.push_back([](CPU *cpu, MMU *mmu) {
                 std::uint8_t source_value;
                 (void)mmu->try_read_from_memory(&source_value, cpu->get_16_bit_register(CPU::Register::HL), 1);
                 cpu->set_register(CPU::Register::Z, source_value);
             });
             m_operations.push_back([&](CPU *cpu, MMU *) { cpu->set_register_from_intermediate(m_target); });
-        } else {
+        }
+        else {
             m_operations.push_back([&](CPU *cpu, MMU *) { cpu->set_register(m_target, cpu->get_8_bit_register(m_source)); });
         }
     }
@@ -555,7 +561,8 @@ struct Load16bitIndirect final : public Opcode {
                 if (m_target_source == CPU::Register::HL)
                     cpu->set_register(CPU::Register::HL, static_cast<std::uint16_t>(cpu->get_16_bit_register(CPU::Register::HL) + m_hl_offset));
             });
-        } else {
+        }
+        else {
             m_operations.push_back([&](CPU *cpu, MMU *mmu) {
                 std::uint8_t data_to_load{ cpu->get_8_bit_register(CPU::Register::A) };
                 (void)mmu->try_map_data_to_memory(&data_to_load, cpu->get_16_bit_register(m_target_source), 1);
@@ -590,7 +597,8 @@ struct IncrementOrDecrement8Or16bit final : public Opcode {
             m_target = CPU::wide_register_map[(opcode >> 4) & 0x03];
             m_operation = ((opcode >> 3) & 0x01) == 0 ? IncrementOrDecrement8Or16bit::Operation::Increment : IncrementOrDecrement8Or16bit::Operation::Decrement;
             append_16_bit_instructions();
-        } else {
+        }
+        else {
             m_target = CPU::register_map[(opcode >> 3) & 0x07];
             m_operation = (opcode & 0x01) == 0 ? IncrementOrDecrement8Or16bit::Operation::Increment : IncrementOrDecrement8Or16bit::Operation::Decrement;
             append_8_bit_instructions();
@@ -857,7 +865,8 @@ struct ReadWriteIOPortCWithA final : public Opcode {
             if (m_type == ReadWriteIOPortCWithA::ActionType::Write) {
                 std::uint8_t reg_a{ cpu->get_8_bit_register(CPU::Register::A) };
                 (void)mmu->try_map_data_to_memory(&reg_a, cpu->get_16_bit_register(CPU::Register::WZ), 1);
-            } else {
+            }
+            else {
                 std::uint8_t value;
                 (void)mmu->try_read_from_memory(&value, cpu->get_16_bit_register(CPU::Register::WZ), 1);
                 cpu->set_register(CPU::Register::Z, value);
@@ -898,7 +907,8 @@ struct ReadWriteIOPortNWithA final : public Opcode {
             if (m_type == ReadWriteIOPortNWithA::ActionType::Write) {
                 std::uint8_t reg_a{ cpu->get_8_bit_register(CPU::Register::A) };
                 (void)mmu->try_map_data_to_memory(&reg_a, address, 1);
-            } else {
+            }
+            else {
                 std::uint8_t value;
                 (void)mmu->try_read_from_memory(&value, address, 1);
                 cpu->set_register(CPU::Register::Z, value);
@@ -975,7 +985,8 @@ struct LoadFromOrSetAIndirect final : public Opcode {
             if (m_type == LoadFromOrSetAIndirect::Direction::FromAccumulator) {
                 std::uint8_t reg_a{ cpu->get_8_bit_register(CPU::Register::A) };
                 (void)mmu->try_map_data_to_memory(&reg_a, address, 1);
-            } else {
+            }
+            else {
                 std::uint8_t value;
                 (void)mmu->try_read_from_memory(&value, address, 1);
                 cpu->set_register(CPU::Register::Z, value);
@@ -1122,7 +1133,8 @@ struct ExtendedOpcode : public Opcode {
             auto operation_name{ RotationsTypeName.find(m_rot_type)->second };
             return m_target == CPU::Register::HL ? GeneralUtilities::formatted_string("%s (%s)", operation_name, target_name)
                                                  : GeneralUtilities::formatted_string("%s %s", operation_name, target_name);
-        } else {
+        }
+        else {
             auto operation_name{ ExtendedOpcodeTypeName.find(m_type)->second };
             return m_target == CPU::Register::HL ? GeneralUtilities::formatted_string("%s %d, (%s)", operation_name, m_bit, target_name)
                                                  : GeneralUtilities::formatted_string("%s %d, %s", operation_name, m_bit, target_name);

@@ -12,7 +12,8 @@ bool CommandLineArgument::is_command(std::string const &s) const {
     if (m_command_data.short_name.has_value()) {
         command_regex = std::regex(GeneralUtilities::formatted_string("(-%c)|(--%s)", m_command_data.short_name.value(), m_command_data.long_name),
                                    std::regex_constants::icase);
-    } else {
+    }
+    else {
         command_regex = std::regex(GeneralUtilities::formatted_string("--%s", m_command_data.long_name), std::regex_constants::icase);
     }
     return std::regex_search(s, sm, command_regex);
@@ -44,7 +45,8 @@ std::string CommandLineArgument::get_command_in_help() const {
                                                : "" };
     if (m_command_data.short_name.has_value()) {
         return GeneralUtilities::formatted_string("-%c, --%s%s", m_command_data.short_name.value(), m_command_data.long_name, argument_value_name);
-    } else {
+    }
+    else {
         return GeneralUtilities::formatted_string("--%s%s", m_command_data.long_name, argument_value_name);
     }
 }
@@ -57,7 +59,8 @@ std::string CommandLineArgument::get_command_in_usage() const {
                                                : "" };
     if (m_command_data.is_required) {
         return GeneralUtilities::formatted_string("%s%s", argument_name, argument_value_name);
-    } else {
+    }
+    else {
         return GeneralUtilities::formatted_string("[%s%s]", argument_name, argument_value_name);
     }
 }

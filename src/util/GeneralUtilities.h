@@ -22,7 +22,8 @@ class GeneralUtilities final {
     template <typename T> inline static auto convert(T &&t) {
         if constexpr (std::is_same<std::remove_cv_t<std::remove_reference_t<T>>, std::string>::value) {
             return std::forward<T>(t).c_str();
-        } else {
+        }
+        else {
             return std::forward<T>(t);
         }
     }

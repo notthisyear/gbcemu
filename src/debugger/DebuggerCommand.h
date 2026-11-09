@@ -50,7 +50,8 @@ class DebuggerCommand {
                 if (it != _s_command_cache.end()) {
                     result = it->second;
                     result->set_input(input);
-                } else {
+                }
+                else {
                     result = new DebuggerCommand(cmd, input);
                     _s_command_cache.insert({ cmd, result });
                 }

@@ -44,15 +44,16 @@ void Debugger::run(std::ostream &output_stream) {
         case DebuggerCommand::Command::Show:
             if (cmd_data.compare("cpu") == 0) {
                 m_cpu->print_state(output_stream);
-
-            } else if (cmd_data.rfind("mem", 0) == 0) {
+            }
+            else if (cmd_data.rfind("mem", 0) == 0) {
                 auto is_pair{ cmd_data.find('-') != std::string::npos };
                 DebuggerCommand::address_pair address;
                 bool result;
 
                 if (is_pair) {
                     result = cmd->try_get_address_pair_arg(&address);
-                } else {
+                }
+                else {
                     std::uint16_t addr_start;
                     result = cmd->try_get_numeric_argument(&addr_start);
                     if (result) {
@@ -63,14 +64,14 @@ void Debugger::run(std::ostream &output_stream) {
 
                 if (result)
                     m_mmu->print_memory_at_location(output_stream, address.first, address.second);
-
-            } else if (cmd_data.compare("cartridge") == 0) {
+            }
+            else if (cmd_data.compare("cartridge") == 0) {
                 if (m_mmu->has_cartridge())
                     m_mmu->get_cartridge()->print_info(output_stream);
                 else
                     output_stream << "No cartridge loaded!" << std::endl;
-
-            } else {
+            }
+            else {
                 cmd->print_command_help(output_stream);
             }
             break;

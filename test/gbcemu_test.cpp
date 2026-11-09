@@ -137,7 +137,8 @@ static void test_relative_jumps(gbcemu::Opcode *opcode, gbcemu::CPU *cpu, gbcemu
     if (!has_condition) {
         tick_ctr = execute_opcode_verify_pc_and_flags(opcode, cpu, mmu, 1 + offset);
         assert_equal(12, tick_ctr, "cycles [no condition]");
-    } else {
+    }
+    else {
         cpu->set_flag(flag, !execute_if_set);
         auto tick_ctr = execute_opcode_verify_pc_and_flags(opcode, cpu, mmu, 1);
         assert_equal(8, tick_ctr, "cycles [condition not met]");
@@ -196,7 +197,8 @@ static void test_increment_or_decrement_8_bit(gbcemu::Opcode *opcode, gbcemu::CP
     if (indirect_from_hl) {
         bool result = mmu->try_map_data_to_memory(&start_value, hl_value, 1);
         cpu->set_register(gbcemu::CPU::Register::HL, hl_value);
-    } else {
+    }
+    else {
         cpu->set_register(reg, start_value);
     }
 
@@ -207,7 +209,8 @@ static void test_increment_or_decrement_8_bit(gbcemu::Opcode *opcode, gbcemu::CP
     uint8_t actual_value;
     if (indirect_from_hl) {
         (void)mmu->try_read_from_memory(&actual_value, hl_value, 1);
-    } else {
+    }
+    else {
         actual_value = cpu->get_8_bit_register(reg);
     }
 
@@ -228,7 +231,8 @@ static void test_load_8bit_from_immediate(gbcemu::Opcode *opcode, gbcemu::CPU *c
     uint8_t actual;
     if (indirect_from_hl) {
         (void)mmu->try_read_from_memory(&actual, hl_value, 1);
-    } else {
+    }
+    else {
         actual = cpu->get_8_bit_register(target);
     }
 
@@ -279,7 +283,8 @@ static void test_load_register_from_register(gbcemu::Opcode *opcode, gbcemu::CPU
             value_to_load = cpu->get_8_bit_register(source);
         else
             cpu->set_register(source, value_to_load);
-    } else {
+    }
+    else {
         cpu->set_register(source, value_to_load);
     }
 
@@ -295,7 +300,8 @@ static void test_load_register_from_register(gbcemu::Opcode *opcode, gbcemu::CPU
             actual = hl_value & 0x00FF;
         else
             actual = cpu->get_8_bit_register(target);
-    } else {
+    }
+    else {
         actual = cpu->get_8_bit_register(target);
     }
 
@@ -325,7 +331,8 @@ static void test_add_8bit_arithmetic_from_reg(gbcemu::Opcode *opcode, gbcemu::CP
         uint16_t hl_value = 0xC081;
         bool result = mmu->try_map_data_to_memory(&source_value, hl_value, 1);
         cpu->set_register(gbcemu::CPU::Register::HL, hl_value);
-    } else {
+    }
+    else {
         cpu->set_register(source, source_value);
     }
 
@@ -359,7 +366,8 @@ static void test_return_instructions(gbcemu::Opcode *opcode, gbcemu::CPU *cpu, g
         assert_equal(expected_sp, cpu->get_16_bit_register(gbcemu::CPU::Register::SP), "SP");
         if (sets_interrupt)
             assert_equal(true, cpu->interrupt_enabled(), "interrupt");
-    } else {
+    }
+    else {
         cpu->set_flag(flag, !execute_if_set);
         auto tick_ctr = execute_opcode_verify_pc_and_flags(opcode, cpu, mmu, 0);
         assert_equal(8, tick_ctr, "cycles [condition not met]");
@@ -388,7 +396,8 @@ static void test_pop_instructions(gbcemu::Opcode *opcode, gbcemu::CPU *cpu, gbce
         FlagAction *flags = new FlagAction[4]{ FlagAction::Set, FlagAction::NotSet, FlagAction::Set, FlagAction::NotSet };
         tick_ctr = execute_opcode_verify_pc_and_flags(opcode, cpu, mmu, 0, flags);
         delete[] flags;
-    } else {
+    }
+    else {
         tick_ctr = execute_opcode_verify_pc_and_flags(opcode, cpu, mmu, 0);
     }
 
@@ -407,7 +416,8 @@ static void test_jump_absolute(gbcemu::Opcode *opcode, gbcemu::CPU *cpu, gbcemu:
     if (!has_condition) {
         tick_ctr = execute_opcode_verify_pc_and_flags(opcode, cpu, mmu, expected_pc);
         assert_equal(16, tick_ctr, "cycles [no condition]");
-    } else {
+    }
+    else {
         cpu->set_flag(flag, !execute_if_set);
         tick_ctr = execute_opcode_verify_pc_and_flags(opcode, cpu, mmu, 2);
         assert_equal(12, tick_ctr, "cycles [condition not met]");
@@ -439,7 +449,8 @@ static void test_call_instructions(gbcemu::Opcode *opcode, gbcemu::CPU *cpu, gbc
         assert_equal(24, tick_ctr, "cycles [no condition]");
         assert_equal(expected_sp, cpu->get_16_bit_register(gbcemu::CPU::Register::SP), "SP");
         assert_equal(expected_value_at_stack, actual_value_at_stack, "value");
-    } else {
+    }
+    else {
         cpu->set_flag(flag, !execute_if_set);
         tick_ctr = execute_opcode_verify_pc_and_flags(opcode, cpu, mmu, 2);
         assert_equal(12, tick_ctr, "cycles [condition not met]");
@@ -500,7 +511,8 @@ static void test_set_reset_test_instructions(gbcemu::Opcode *opcode, gbcemu::CPU
     if (target_register == gbcemu::CPU::Register::HL) {
         cpu->set_register(gbcemu::CPU::Register::HL, hl_value);
         (void)mmu->try_map_data_to_memory(&value, hl_value, 1);
-    } else {
+    }
+    else {
         cpu->set_register(target_register, value);
     }
 
@@ -510,7 +522,8 @@ static void test_set_reset_test_instructions(gbcemu::Opcode *opcode, gbcemu::CPU
                                                FlagAction::Set, FlagAction::None };
         tick_ctr = execute_opcode_verify_pc_and_flags(opcode, cpu, mmu, 0, flags);
         delete[] flags;
-    } else {
+    }
+    else {
         tick_ctr = execute_opcode_verify_pc_and_flags(opcode, cpu, mmu, 0);
     }
 
@@ -535,7 +548,8 @@ static void test_swap_instruction(gbcemu::Opcode *opcode, gbcemu::CPU *cpu, gbce
     if (target_register == gbcemu::CPU::Register::HL) {
         cpu->set_register(gbcemu::CPU::Register::HL, hl_value);
         (void)mmu->try_map_data_to_memory(&value, hl_value, 1);
-    } else {
+    }
+    else {
         cpu->set_register(target_register, value);
     }
 
@@ -2399,12 +2413,14 @@ void test_opcodes(ExpectedOpcode *expected_opcodes, int size, bool is_extended) 
 
         try {
             decoded_opcode = gbcemu::decode_opcode(current_opcode.identifier, is_extended);
-        } catch (std::runtime_error e) {
+        }
+        catch (std::runtime_error e) {
             if (!current_opcode.name.empty()) {
                 print_error();
                 std::cout << "Opcode '0x" << std::hex << std::uppercase << unsigned(current_opcode.identifier) << "' marked invalid, should be '"
                           << current_opcode.name << "'" << std::endl;
-            } else {
+            }
+            else {
                 std::stringstream ss;
                 ss << "0x" << std::hex << std::uppercase << unsigned(current_opcode.identifier) << " (invalid)";
                 print_opcode_passed(ss.str());
@@ -2415,7 +2431,8 @@ void test_opcodes(ExpectedOpcode *expected_opcodes, int size, bool is_extended) 
         assert_equal(current_opcode.size, decoded_opcode->size, "size");
         if (current_opcode.instruction_data == nullptr) {
             assert_equal(current_opcode.name, decoded_opcode->get_disassembled_instruction(nullptr), "name");
-        } else {
+        }
+        else {
             for (auto const &placeholder : data_placeholders) {
                 std::regex r(placeholder);
                 if (std::regex_search(current_opcode.name, r)) {
@@ -2424,10 +2441,12 @@ void test_opcodes(ExpectedOpcode *expected_opcodes, int size, bool is_extended) 
                         uint16_t data = current_opcode.instruction_data[1] << 8 | current_opcode.instruction_data[0];
                         assert_equal(get_final_opcode_name(current_opcode, location_of_token, data),
                                      decoded_opcode->get_disassembled_instruction(current_opcode.instruction_data), "disassembled name");
-                    } else if (placeholder.compare("d8") == 0) {
+                    }
+                    else if (placeholder.compare("d8") == 0) {
                         assert_equal(get_final_opcode_name(current_opcode, location_of_token, current_opcode.instruction_data[0]),
                                      decoded_opcode->get_disassembled_instruction(current_opcode.instruction_data), "disassembled name");
-                    } else {
+                    }
+                    else {
                         assert_equal(
                             get_final_opcode_name(current_opcode, location_of_token, static_cast<uint16_t>(0xFF00 + current_opcode.instruction_data[0])),
                             decoded_opcode->get_disassembled_instruction(current_opcode.instruction_data), "disassembled name");
@@ -2439,7 +2458,8 @@ void test_opcodes(ExpectedOpcode *expected_opcodes, int size, bool is_extended) 
         if (current_opcode.execution_test != nullptr) {
             current_opcode.execution_test(decoded_opcode.get(), cpu, mmu.get(), current_opcode.instruction_data);
             print_opcode_passed(current_opcode.name);
-        } else {
+        }
+        else {
             print_warning();
             std::cout << "'" << current_opcode.name << "' passes, but does not have an execution test" << std::endl;
         }

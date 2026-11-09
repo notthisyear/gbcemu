@@ -85,7 +85,8 @@ void Application::run() {
                 m_ticks_in_current_frame = 0;
                 pace_frame();
             }
-        } else {
+        }
+        else {
             m_cpu_is_paused = true;
 
             if (m_requested_instruction_steps > 0) {
@@ -93,7 +94,8 @@ void Application::run() {
                     m_cpu->tick();
                 } while (!m_cpu->at_start_of_instruction());
                 m_requested_instruction_steps--;
-            } else {
+            }
+            else {
                 // Keep the window responsive, but avoid spinning at full speed while paused
                 m_window->poll_events();
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -119,7 +121,8 @@ void Application::pace_frame() {
     if (now > m_next_frame_deadline + kMaxFrameLag) {
         // We have fallen too far behind (e.g. after a debugger pause or fast-forwarding), start over from now
         m_next_frame_deadline = now;
-    } else {
+    }
+    else {
         std::this_thread::sleep_until(m_next_frame_deadline);
     }
 }

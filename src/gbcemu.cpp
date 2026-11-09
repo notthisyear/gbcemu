@@ -45,11 +45,14 @@ std::string windowsify_path(std::string const &path) {
     while (true) {
         if (i == 0 && remove_quotes) {
             j--;
-        } else if ((i == path_length - 1) && remove_quotes) {
+        }
+        else if ((i == path_length - 1) && remove_quotes) {
             break;
-        } else if (i == path_length) {
+        }
+        else if (i == path_length) {
             break;
-        } else {
+        }
+        else {
             new_path_string[j] = path[i];
             if (number_of_backslashes > 0) {
                 if (path[i] == '\\')
@@ -110,7 +113,8 @@ int main(int argc, char **argv) {
         std::string const boot_rom_path{ platform_path(parser.get_argument_value(gbcemu::CommandData::ArgumentType::kBootRomPath)) };
         if (!mmu->try_load_boot_rom(std::cout, boot_rom_path)) {
             exit(1);
-        } else {
+        }
+        else {
             gbcemu::LogUtilities::log_info(std::cout, "Boot ROM loaded");
         }
     }

@@ -34,7 +34,8 @@ class OpcodeBuilder final {
               std::uint8_t const q{ static_cast<std::uint8_t>((identifier >> 3) & 0x01) };
               if (q == 0) {
                   return construct<Load16bitImmediate>(identifier);
-              } else {
+              }
+              else {
                   return construct<Add16bitRegister>(identifier);
               }
           } },

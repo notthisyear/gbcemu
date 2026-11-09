@@ -51,7 +51,8 @@ bool DebuggerCommand::try_parse_as_number(std::string const &s, std::uint16_t *r
             return false;
         *result = (std::uint16_t)r;
         return true;
-    } catch (std::exception const &) {
+    }
+    catch (std::exception const &) {
         return false;
     }
 }
@@ -60,10 +61,12 @@ void DebuggerCommand::print_command_help(std::ostream &stream) const {
     if (command == DebuggerCommand::Command::Show) {
         stream << "available options: ";
         stream << "[cpu|cartridge|mem a16|mem a16-a16]" << std::endl;
-    } else if (command == DebuggerCommand::Command::Trace) {
+    }
+    else if (command == DebuggerCommand::Command::Trace) {
         stream << "available options: ";
         stream << "[frame]" << std::endl;
-    } else {
+    }
+    else {
         stream << m_command_info.description << std::endl;
     }
 }

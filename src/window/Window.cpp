@@ -57,9 +57,11 @@ void Window::create_and_set_glfw_window() {
     // Maybe the width and height must be changed to match the screen manually if full size?
     if (m_properties.mode == WindowProperties::WindowMode::Windowed) {
         m_window = glfwCreateWindow(m_properties.width, m_properties.height, m_properties.title.c_str(), NULL, NULL);
-    } else if (m_properties.mode == WindowProperties::WindowMode::FullScreen) {
+    }
+    else if (m_properties.mode == WindowProperties::WindowMode::FullScreen) {
         m_window = glfwCreateWindow(m_properties.width, m_properties.height, m_properties.title.c_str(), glfwGetPrimaryMonitor(), NULL);
-    } else {
+    }
+    else {
         m_window = nullptr;
     }
 }

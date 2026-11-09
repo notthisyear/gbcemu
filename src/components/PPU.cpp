@@ -25,10 +25,12 @@ void PPU::tick() {
             reset_ppu_state();
             write_current_mode_to_status_register();
             m_screen_enabled = true;
-        } else {
+        }
+        else {
             return;
         }
-    } else {
+    }
+    else {
         if (!lcd_control_bit_is_set(PPU::LCDControlRegisterBit::LCDAndPPUEnable)) {
             m_screen_enabled = false;
             return;
@@ -59,13 +61,17 @@ void PPU::tick() {
             std::uint8_t c;
             if (pixel.color_index == 0) {
                 c = 255;
-            } else if (pixel.color_index == 1) {
+            }
+            else if (pixel.color_index == 1) {
                 c = 200;
-            } else if (pixel.color_index == 2) {
+            }
+            else if (pixel.color_index == 2) {
                 c = 60;
-            } else if (pixel.color_index == 3) {
+            }
+            else if (pixel.color_index == 3) {
                 c = 0;
-            } else {
+            }
+            else {
                 __builtin_unreachable();
             }
 
@@ -94,7 +100,8 @@ void PPU::tick() {
             if (m_trace_next_frame) {
                 m_tracing_frame = true;
                 m_trace_next_frame = false;
-            } else {
+            }
+            else {
                 m_tracing_frame = false;
             }
         }
@@ -118,7 +125,8 @@ void PPU::tick() {
 
                 m_mmu->set_io_register(MMU::IORegister::IF, if_register);
                 m_mode = PPU::Mode::VBlank;
-            } else {
+            }
+            else {
                 m_mode = PPU::Mode::OAMSearch;
             }
         }
@@ -193,7 +201,8 @@ void PPU::set_bit_in_ppu_register_to_value(const MMU::IORegister reg, std::uint8
     std::uint8_t current{ m_mmu->get_io_register(reg) };
     if (value) {
         BitUtilities::set_bit_in_byte(current, bit_to_set);
-    } else {
+    }
+    else {
         BitUtilities::reset_bit_in_byte(current, bit_to_set);
     }
     m_mmu->set_io_register(reg, current);

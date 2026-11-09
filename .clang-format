@@ -5,3 +5,7 @@ AccessModifierOffset: -2
 Cpp11BracedListStyle: false
 AllowShortFunctionsOnASingleLine: All
 FixNamespaceComments: false
+BreakBeforeBraces: Custom
+BraceWrapping:
+  BeforeElse: true
+  BeforeCatch: true

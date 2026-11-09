@@ -93,7 +93,8 @@ void TimerController::process() {
         std::uint8_t if_register{ m_mmu->get_io_register(MMU::IORegister::IF) };
         BitUtilities::set_bit_in_byte(if_register, static_cast<std::uint8_t>(CPU::InterruptSource::Timer));
         m_mmu->set_io_register(MMU::IORegister::IF, if_register);
-    } else {
+    }
+    else {
         m_overflow_state = OverflowState::Idle;
     }
 }

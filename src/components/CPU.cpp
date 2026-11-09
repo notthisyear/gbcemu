@@ -41,7 +41,8 @@ CPU::CPU(std::shared_ptr<MMU> const mmu, std::shared_ptr<PPU> const ppu, bool co
             std::string const s{ GeneralUtilities::formatted_string("%s/%s", GeneralUtilities::get_folder_name_from_full_path(full_path),
                                                                     CPU::kTraceFileName) };
             m_trace_stream = std::ofstream(s);
-        } else {
+        }
+        else {
             LogUtilities::log_error(std::cout,
                                     GeneralUtilities::formatted_string("Path to executable cannot be longer than %d characters", CPU::kMaxPathLength));
             std::exit(1);
@@ -77,14 +78,16 @@ void CPU::tick() {
                     // The preloaded instruction is not executed now, so it must not be traced
                     m_pending_trace_line.reset();
                 }
-            } else {
+            }
+            else {
                 if (!m_is_halted) {
                     if (!m_next_instruction_preloaded) {
                         if (m_output_trace) {
                             m_trace_stream << get_trace_line(m_reg_pc) << '\n';
                         }
                         fetch_and_decode();
-                    } else {
+                    }
+                    else {
                         run_state_machine = true;
 
                         if (m_pending_trace_line.has_value()) {
@@ -136,7 +139,8 @@ void CPU::tick() {
                     // The interrupt to service is selected after the upper byte has been pushed. If the push
                     // overwrote IE so that no pending interrupt is enabled anymore, the dispatch is cancelled.
                     m_current_interrupt = select_interrupt_to_service();
-                } else {
+                }
+                else {
                     push_byte_to_stack(static_cast<std::uint8_t>(m_reg_pc & 0x00FF));
                     m_state = CPU::State::InterruptSetPC;
                     m_current_interrupt_phase_counter = 0;
@@ -237,7 +241,8 @@ void CPU::fetch_and_decode() {
         if (!m_is_extended_opcode) {
             m_current_opcode = OpcodeBuilder::decode_opcode(current_byte, false);
         }
-    } else if (m_state == State::FetchAndDecodeExtended) {
+    }
+    else if (m_state == State::FetchAndDecodeExtended) {
         m_current_opcode = OpcodeBuilder::decode_opcode(current_byte, true);
     }
 }
@@ -313,7 +318,8 @@ std::string CPU::disassemble_instruction_at(std::uint16_t current_pc, std::uint8
         disassembled_instruction = opcode->get_disassembled_instruction(instruction_data);
         current_pc += opcode->size - 1;
         delete[] instruction_data;
-    } else {
+    }
+    else {
         disassembled_instruction = opcode->get_disassembled_instruction(nullptr);
     }
 

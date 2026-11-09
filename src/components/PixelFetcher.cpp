@@ -64,7 +64,8 @@ void PixelFetcher::tick() {
             std::int8_t offset;
             memcpy(&offset, &m_current_tile_id, 1);
             tile_address = tile_data_start_address + (static_cast<std::int16_t>(offset) << 4);
-        } else {
+        }
+        else {
             tile_address = tile_data_start_address + (m_current_tile_id << 4);
         }
 

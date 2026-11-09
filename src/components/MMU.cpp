@@ -90,10 +90,12 @@ bool MMU::try_map_data_to_memory(std::uint8_t *const data, std::uint16_t const o
         if (!m_loading_cartridge) {
             if (has_cartridge()) {
                 m_cartridge->write_to_cartridge_registers(data, offset, size);
-            } else {
+            }
+            else {
                 result = false;
             }
-        } else {
+        }
+        else {
             write_to_memory(data, offset, size);
         }
         break;
@@ -155,7 +157,8 @@ bool MMU::try_read_from_memory(std::uint8_t *data, std::uint16_t const offset, s
     bool result{ true };
     if ((region == MMU::MemoryRegion::CartridgeFixed) && boot_rom_is_mapped() && is_boot_rom_range(offset, size)) {
         read_from_boot_rom(data, offset, size);
-    } else {
+    }
+    else {
         if ((offset + size - 1) > region_endpoints.second) {
             return false;
         }
@@ -251,7 +254,8 @@ void MMU::print_memory_at_location(std::ostream &stream, std::uint16_t const sta
     std::uint16_t address_start{};
     if (start % 16 != 0) {
         address_start = start - (start % 16);
-    } else {
+    }
+    else {
         address_start = start;
     }
 
@@ -299,7 +303,8 @@ void MMU::print_memory_at_location(std::ostream &stream, std::uint16_t const sta
             stream << std::left << std::setw(4);
             if (i < start) {
                 stream << std::setfill(' ') << " ";
-            } else {
+            }
+            else {
                 stream << GeneralUtilities::formatted_string("%02x", buffer[buffer_idx++]);
             }
         }
@@ -322,7 +327,8 @@ bool MMU::try_get_file_size(std::string const &path, std::size_t *size) const {
     try {
         *size = std::filesystem::file_size(path);
         return true;
-    } catch (std::filesystem::filesystem_error &e) {
+    }
+    catch (std::filesystem::filesystem_error &e) {
         return false;
     }
 }
