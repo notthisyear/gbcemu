@@ -15,9 +15,17 @@ Cartridge::Cartridge(std::uint8_t *const raw_data, std::size_t const raw_size) :
     case Cartridge::CartridgeType::MBC1:
         m_current_bank_number = 1;
         break;
-    default:
-        LogUtilities::log_error(std::cout, GeneralUtilities::formatted_string("Cartridge MBC flag is '%s' - not supported", s_mbc_names.find(m_type)->second));
+    default: {
+
+        auto const mbc_name_it{ s_mbc_names.find(m_type) };
+        if (mbc_name_it == s_mbc_names.end()) {
+            LogUtilities::log_error(std::cout, GeneralUtilities::formatted_string(
+                                                   "Cartridge MBC flag is '0x%02X' is not known. Did you really pass a valid cartridge file?", m_type));
+        } else {
+            LogUtilities::log_error(std::cout, GeneralUtilities::formatted_string("Cartridge MBC flag is '%s' - not supported", mbc_name_it->second));
+        }
         exit(1);
+    }
     }
 }
 
